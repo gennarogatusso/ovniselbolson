@@ -1,0 +1,80 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { PageHeader, EmptyState, FieldSchema } from "@/components/site/Archive";
+import { materiales } from "@/lib/archive";
+
+export const Route = createFileRoute("/imagenes")({
+  head: () => ({
+    meta: [
+      { title: "Imágenes — APFAA" },
+      { name: "description", content: "Archivo visual de fotografías, videos y documentos escaneados asociados a los casos de APFAA." },
+      { property: "og:title", content: "Imágenes — APFAA" },
+      { property: "og:description", content: "Material visual documentado del archivo patagónico." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: Imagenes,
+});
+
+function Imagenes() {
+  const [idx, setIdx] = useState<number | null>(null);
+  const n = materiales.length;
+  useEffect(() => {
+    if (idx === null) return;
+    const k = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIdx(null);
+      if (e.key === "ArrowRight") setIdx((i) => (i! + 1) % n);
+      if (e.key === "ArrowLeft") setIdx((i) => (i! - 1 + n) % n);
+    };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [idx, n]);
+  const cur = idx !== null ? materiales[idx] : null;
+
+  return (
+    <>
+      <PageHeader code="Sección 03" title="Imágenes" lead="Fotografías, videos, capturas y documentos escaneados vinculados a expedientes. Cada pieza consigna su procedencia." />
+      <section className="mx-auto max-w-7xl px-6 pb-28 md:px-10">
+        {n === 0 ? (
+          <EmptyState code="Galería · Sin materiales" title="No hay materiales visuales publicados todavía.">
+            Solo se incorporarán imágenes con procedencia verificable. APFAA no publica material generado ni lo presenta como evidencia.
+          </EmptyState>
+        ) : (
+          <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
+            {materiales.map((m, i) => (
+              <button key={m.id} onClick={() => setIdx(i)} className="group mb-4 block w-full break-inside-avoid text-left">
+                <img src={m.src} alt={m.titulo} className="w-full grayscale-[30%] transition group-hover:grayscale-0" loading="lazy" />
+                <div className="flex justify-between py-2">
+                  <span className="text-sm">{m.titulo}</span>
+                  <span className="label-mono">{m.fecha}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+        <FieldSchema fields={["Título", "Fecha", "Localidad", "Descripción", "Procedencia", "Expediente asociado"]} />
+      </section>
+
+      {cur && (
+        <div className="fixed inset-0 z-[2000] flex flex-col bg-background/95 backdrop-blur" role="dialog" aria-modal="true">
+          <div className="flex justify-between p-4">
+            <span className="label-mono">{idx! + 1} / {n}</span>
+            <button onClick={() => setIdx(null)} aria-label="Cerrar"><X /></button>
+          </div>
+          <div className="flex flex-1 items-center justify-center gap-4 px-4">
+            <button onClick={() => setIdx((idx! - 1 + n) % n)} aria-label="Anterior"><ChevronLeft /></button>
+            <img src={cur.src} alt={cur.titulo} className="max-h-[70vh] max-w-full object-contain" />
+            <button onClick={() => setIdx((idx! + 1) % n)} aria-label="Siguiente"><ChevronRight /></button>
+          </div>
+          <div className="mx-auto max-w-3xl p-6 text-center">
+            <p className="font-serif text-2xl">{cur.titulo}</p>
+            <p className="label-mono mt-2">{cur.fecha} · {cur.localidad} · {cur.procedencia}{cur.expediente ? ` · ${cur.expediente}` : ""}</p>
+            <p className="mt-3 text-sm text-muted-foreground">{cur.descripcion}</p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
