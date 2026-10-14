@@ -6,7 +6,7 @@ import logo from "@/assets/logo.png.asset.json";
 export const NAV = [
   { to: "/casos", label: "Casos" },
   { to: "/mapa", label: "Mapa de Casos" },
-  { to: "/imagenes", label: "Imágenes" },
+  { to: "/imagenes", label: "Imágenes y videos" },
   { to: "/reportes", label: "Reportes" },
   { to: "/about", label: "About" },
 ] as const;
