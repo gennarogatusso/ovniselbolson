@@ -1,4 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useState } from "react";
+import { X } from "lucide-react";
 import { expedientes } from "@/lib/archive";
 
 export const Route = createFileRoute("/casos/$codigo")({
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/casos/$codigo")({
 
 function Ficha() {
   const e = Route.useLoaderData();
+  const [zoom, setZoom] = useState<string | null>(null);
   const rows: [string, string][] = [
     ["Fecha", e.fechaDetalle ?? e.fecha],
     ["Ubicación", e.region],
@@ -50,7 +53,31 @@ function Ficha() {
           </div>
         ))}
       </dl>
-      <p className="mt-10 max-w-3xl font-serif text-xl leading-relaxed">{e.descripcion}</p>
+      {e.protagonista && <p className="mt-6 text-sm text-muted-foreground"><span className="label-mono mr-3">Protagonista</span>{e.protagonista}</p>}
+      {e.imagenes && e.imagenes.length > 0 && (
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
+          {e.imagenes.map((im) => (
+            <figure key={im.src} className="border border-border bg-card">
+              <button onClick={() => setZoom(im.src)} className="block w-full" aria-label="Ampliar imagen">
+                <img src={im.src} alt={im.pie} className="aspect-[4/3] w-full object-cover transition hover:opacity-90" loading="lazy" />
+              </button>
+              <figcaption className="p-4">
+                <p className="text-sm">{im.pie}</p>
+                <p className="label-mono mt-2">Fuente: {im.fuente}</p>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
+      {e.lead && <p className="mt-10 max-w-3xl font-serif text-2xl font-medium leading-snug">{e.lead}</p>}
+      <p className="mt-8 max-w-3xl whitespace-pre-line font-serif text-xl leading-relaxed">{e.descripcion}</p>
+      {e.cierre && <p className="mt-8 max-w-3xl border-l-2 border-celeste pl-5 font-serif text-xl font-medium leading-relaxed">{e.cierre}</p>}
+      {zoom && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-background/95 p-4 backdrop-blur" role="dialog" aria-modal="true" onClick={() => setZoom(null)}>
+          <button className="absolute right-4 top-4" aria-label="Cerrar"><X /></button>
+          <img src={zoom} alt="" className="max-h-[90vh] max-w-full object-contain" />
+        </div>
+      )}
       {e.audio && (
         <section className="mt-14 border border-celeste/40 bg-graphite/20 p-6">
           <h2 className="label-mono !text-celeste">Audio original de la comunicación con Prefectura</h2>
