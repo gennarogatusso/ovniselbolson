@@ -1,7 +1,9 @@
+import polancoDiario from "@/assets/polanco-diario.jpg.asset.json";
+import polancoEsquema from "@/assets/polanco-esquema.jpg.asset.json";
 // Estructuras del archivo APFAA. Los arreglos están vacíos a propósito:
 // solo deben contener registros reales y documentados.
 
-export type EstadoInvestigacion = "Abierto" | "En análisis" | "Explicado" | "No concluyente" | "Archivado" | "Sin explicación concluyente documentada";
+export type EstadoInvestigacion = "Abierto" | "En análisis" | "Explicado" | "No concluyente" | "Archivado" | "Sin explicación concluyente documentada" | "Caso histórico con hipótesis oficial posterior";
 
 export interface Fuente {
   titulo: string;
@@ -15,6 +17,10 @@ export interface Expediente {
   fecha: string; // ISO yyyy-mm-dd
   fechaDetalle?: string;
   audio?: string;
+  lead?: string;
+  cierre?: string;
+  protagonista?: string;
+  imagenes?: { src: string; pie: string; fuente: string }[];
   localidad: string;
   region: string;
   tipo: string;
@@ -32,8 +38,12 @@ export interface MaterialVisual {
   descripcion: string;
   procedencia: string;
   expediente?: string;
-  src: string;
-  tipo: "Fotografía" | "Video" | "Captura" | "Documento escaneado";
+  src?: string;
+  tipo: "Fotografía" | "Video" | "Captura" | "Documento" | "Reconstrucción" | "Documento escaneado";
+  url?: string;
+  creditos?: string;
+  verificacion?: string;
+  pendiente?: boolean;
 }
 
 export interface Reporte {
@@ -81,12 +91,54 @@ export const expedientes: Expediente[] = [
       { titulo: "La 100", tipo: "Prensa", url: "https://la100.cienradios.com/sociedad/aparecieron-luces-extranas-multicolores-en-el-cielo-de-el-bolson-y-los-vecinos-entraron-en-panico/" },
     ],
   },
+  {
+    codigo: "APFAA-003",
+    titulo: "El incidente OVNI de Bariloche: Caso Polanco",
+    fecha: "1995-07-31",
+    fechaDetalle: "31 de julio de 1995",
+    localidad: "Bariloche",
+    region: "Bariloche, Río Negro, Argentina",
+    tipo: "Fenómeno aéreo anómalo reportado por tripulación aeronáutica",
+    protagonista: "Jorge Polanco, comandante de una aeronave de Aerolíneas Argentinas",
+    lead: "Una noche, una aproximación a Bariloche y una presencia luminosa que la tripulación no esperaba encontrar.",
+    imagenes: [
+      { src: polancoDiario.url, pie: "Recorte de prensa sobre el incidente: «Otro piloto confirma que vio al OVNI».", fuente: "Recorte periodístico. Medio y fecha de publicación sin verificar." },
+      { src: polancoEsquema.url, pie: "Esquema de reconstrucción de la trayectoria de la luz sobre el lago Nahuel Huapi, con fragmentos de las comunicaciones entre ARG 674 y la torre.", fuente: "Reconstrucción posterior. Autoría sin verificar." },
+    ],
+    descripcion: `El 31 de julio de 1995, el comandante Jorge Polanco se encontraba al mando de un vuelo de Aerolíneas Argentinas que se aproximaba a Bariloche. Lo que debía ser una operación aérea rutinaria terminó convirtiéndose en uno de los episodios más conocidos de la ufología argentina.
+
+Según los relatos difundidos posteriormente, durante la aproximación apareció una intensa luz que llamó la atención de la tripulación. El fenómeno habría permanecido visible durante varios minutos y, de acuerdo con los testimonios, la situación llegó a interferir con el desarrollo normal de la aproximación. El incidente también involucró comunicaciones con el aeropuerto y referencias a otra aeronave. Los relatos señalan además que se produjo un corte de energía eléctrica en el momento en que la tripulación observaba el fenómeno.
+
+Lo que vuelve particularmente interesante este episodio no es solamente lo que los tripulantes afirmaron haber visto, sino la posibilidad de contrastar sus testimonios con las comunicaciones aeronáuticas, las declaraciones posteriores y la documentación reunida años después.
+
+El caso adquirió una importante repercusión pública y fue retomado en programas televisivos y publicaciones dedicadas a los fenómenos aéreos anómalos. Décadas después, continúa siendo una referencia habitual cuando se habla de avistamientos reportados por pilotos en Argentina.
+
+Sin embargo, hay un detalle fundamental: la Fuerza Aérea Argentina examinó posteriormente el incidente y planteó una hipótesis explicativa relacionada con un reflector y la iluminación de las nubes. Esa interpretación también forma parte del expediente y se presenta junto con los testimonios, sin ocultarla ni dar por resuelta toda cuestión que no esté respaldada por la documentación disponible.`,
+    cierre: "El interés de este caso está precisamente en esa tensión: un testimonio aeronáutico extraordinario, documentación que permite reconstruir parte de lo sucedido y una explicación posterior que puede contrastarse con los relatos originales.",
+    estado: "Caso histórico con hipótesis oficial posterior",
+    fuentes: [
+      { titulo: "CEFORA — documentación y antecedentes sobre el caso", tipo: "Documento", url: "https://www.cefora.com.ar/archivos/701" },
+      { titulo: "Informe de la Fuerza Aérea Argentina (CEFAe, 2018)", tipo: "Documento", url: "https://www.argentina.gob.ar/sites/default/files/informe_cefae_2018.pdf" },
+    ],
+  },
 ];
-export const materiales: MaterialVisual[] = [];
+export const materiales: MaterialVisual[] = [
+  {
+    id: "DOD_109584445",
+    titulo: "DOD_109584445 — Registro UAP en Medio Oriente",
+    fecha: "",
+    localidad: "",
+    descripcion: "",
+    procedencia: "",
+    tipo: "Video",
+    pendiente: true,
+    verificacion: "Fuente y metadatos pendientes de verificación",
+  },
+];
 export const reportes: Reporte[] = [];
 
 export const localidades = ["El Bolsón", "Lago Puelo", "El Hoyo", "Epuyén", "Bariloche", "Cholila", "El Maitén", "Península Valdés"];
-export const tiposFenomeno = ["Luz nocturna", "Objeto diurno", "Fenómeno lumínico múltiple", "Rastro / marca en suelo", "Interferencia", "Avistamiento luminoso reportado por testigos", "Avistamiento luminoso con registro de comunicación de radio", "Otro"];
-export const estados: EstadoInvestigacion[] = ["Abierto", "En análisis", "Explicado", "No concluyente", "Archivado", "Sin explicación concluyente documentada"];
+export const tiposFenomeno = ["Luz nocturna", "Objeto diurno", "Fenómeno lumínico múltiple", "Rastro / marca en suelo", "Interferencia", "Avistamiento luminoso reportado por testigos", "Avistamiento luminoso con registro de comunicación de radio", "Fenómeno aéreo anómalo reportado por tripulación aeronáutica", "Otro"];
+export const estados: EstadoInvestigacion[] = ["Abierto", "En análisis", "Explicado", "No concluyente", "Archivado", "Sin explicación concluyente documentada", "Caso histórico con hipótesis oficial posterior"];
 
 export const CONTACTO_EMAIL = "montecinogenaro@gmail.com";

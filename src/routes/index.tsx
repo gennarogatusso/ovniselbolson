@@ -28,7 +28,7 @@ const SIGLA = [
 const SECCIONES = [
   { to: "/casos", n: "01", t: "Casos", d: "Catálogo de expedientes con fuentes y estado de investigación." },
   { to: "/mapa", n: "02", t: "Mapa de Casos", d: "Cartografía interactiva de la Comarca Andina y la Patagonia." },
-  { to: "/imagenes", n: "03", t: "Imágenes", d: "Fotografías, videos y documentos escaneados asociados." },
+  { to: "/imagenes", n: "03", t: "Imágenes y videos", d: "Fotografías, videos y documentos escaneados asociados." },
   { to: "/reportes", n: "04", t: "Reportes", d: "Publicaciones, análisis y documentos de investigación." },
 ] as const;
 
