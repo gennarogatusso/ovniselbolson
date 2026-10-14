@@ -32,10 +32,9 @@ export const Route = createFileRoute("/casos/$codigo")({
 function Ficha() {
   const e = Route.useLoaderData();
   const rows: [string, string][] = [
-    ["Fecha", e.fecha],
-    ["Localidad", e.localidad],
-    ["Región", e.region],
-    ["Tipo de fenómeno", e.tipo],
+    ["Fecha", e.fechaDetalle ?? e.fecha],
+    ["Ubicación", e.region],
+    ["Clasificación", e.tipo],
     ["Estado", e.estado],
   ];
   return (
@@ -43,7 +42,7 @@ function Ficha() {
       <Link to="/casos" className="label-mono hover:text-celeste">← Archivo de Casos</Link>
       <p className="label-mono mt-10 !text-celeste">{e.codigo}</p>
       <h1 className="display-serif mt-4 text-5xl">{e.titulo}</h1>
-      <dl className="mt-10 grid grid-cols-2 border-t border-border md:grid-cols-5">
+      <dl className="mt-10 grid grid-cols-2 border-t border-border md:grid-cols-4">
         {rows.map(([k, v]) => (
           <div key={k} className="border-b border-border py-4 pr-4">
             <dt className="label-mono">{k}</dt>
@@ -52,11 +51,18 @@ function Ficha() {
         ))}
       </dl>
       <p className="mt-10 max-w-3xl font-serif text-xl leading-relaxed">{e.descripcion}</p>
+      {e.audio && (
+        <section className="mt-14 border border-celeste/40 bg-graphite/20 p-6">
+          <h2 className="label-mono !text-celeste">Audio original de la comunicación con Prefectura</h2>
+          <audio controls preload="none" src={e.audio} className="mt-5 w-full">Tu navegador no admite audio HTML5.</audio>
+          <a href={e.audio} target="_blank" rel="noreferrer" className="mt-4 inline-block text-sm underline underline-offset-4 hover:text-celeste">Abrir o descargar el audio original ↗</a>
+        </section>
+      )}
       <h2 className="label-mono mt-14">Fuentes y documentación</h2>
       <ul className="mt-4 divide-y divide-border border-y border-border">
         {e.fuentes.map((f, i) => (
           <li key={i} className="flex justify-between py-3 text-sm">
-            <span>{f.url ? <a href={f.url} target="_blank" rel="noreferrer" className="hover:text-celeste">{f.titulo}</a> : f.titulo}</span>
+            <span>{f.url ? <a href={f.url} target="_blank" rel="noreferrer" className="text-celeste underline underline-offset-4 hover:text-foreground">{f.titulo} ↗</a> : f.titulo}</span>
             <span className="label-mono">{f.tipo}</span>
           </li>
         ))}
