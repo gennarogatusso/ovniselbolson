@@ -1,5 +1,10 @@
 import polancoDiario from "@/assets/polanco-diario.jpg.asset.json";
 import polancoEsquema from "@/assets/polanco-esquema.jpg.asset.json";
+import bolson1 from "@/assets/el_bolson_1.jpg.asset.json";
+import bolson2 from "@/assets/el_bolson_2.png.asset.json";
+import chubut0 from "@/assets/OVNI_CHUBUT_0.jpg.asset.json";
+import chubut1 from "@/assets/OVNI_CHUBUT_1.png.asset.json";
+import chubut2 from "@/assets/OVNI_CHUBUT_2.jpg.asset.json";
 // Estructuras del archivo APFAA. Los arreglos están vacíos a propósito:
 // solo deben contener registros reales y documentados.
 
@@ -125,6 +130,64 @@ Sin embargo, hay un detalle fundamental: la Fuerza Aérea Argentina examinó pos
     fuentes: [
       { titulo: "CEFORA — documentación y antecedentes sobre el caso", tipo: "Documento", url: "https://www.cefora.com.ar/archivos/701" },
       { titulo: "Informe de la Fuerza Aérea Argentina (CEFAe, 2018)", tipo: "Documento", url: "https://www.argentina.gob.ar/sites/default/files/informe_cefae_2018.pdf" },
+    ],
+  },
+  {
+    codigo: "APFAA-004",
+    titulo: "La esfera metálica de El Bolsón",
+    fecha: "1984-01-01",
+    fechaDetalle: "Entre 1984 y 1986 (fecha exacta no confirmada)",
+    localidad: "El Bolsón",
+    region: "El Bolsón, Río Negro, Patagonia Argentina",
+    tipo: "Avistamiento OVNI histórico",
+    protagonista: "Familia Carranza (según el relato recopilado por Javier E. Stagnaro)",
+    imagenes: [
+      { src: bolson1.url, pie: "Imagen asociada al relato de la familia Carranza y el avistamiento de El Bolsón.", fuente: "Material aportado al archivo. Procedencia sin verificar." },
+      { src: bolson2.url, pie: "Imagen asociada al avistamiento de El Bolsón.", fuente: "Material aportado al archivo. Procedencia sin verificar." },
+    ],
+    descripcion: `Una familia de El Bolsón habría reportado un UAP / OVNI en el año 1984.
+
+Según el relato recopilado por Javier E. Stagnaro, la familia Carranza observó una misteriosa esfera de apariencia metálica que se desplazaba a baja altura. El objeto tenía pequeñas aletas y reflejaba el color del cielo. No parecía una aeronave convencional.
+
+Mientras los testigos seguían el movimiento del objeto, se habría producido un corte de electricidad en la zona. El relato también menciona que un locutor de Radio Nacional habría sido alertado y comentado lo sucedido en vivo.
+
+Finalmente, la esfera habría ascendido y desaparecido detrás del imponente cerro Piltriquitrón, en dirección a El Maitén, dejando atrás una historia difícil de olvidar.
+
+Lo que vuelve especial a este caso es que habría ocurrido en nuestra propia región, con una familia como protagonista y una historia que merece ser investigada.`,
+    cierre: "Relato histórico recopilado por Javier E. Stagnaro. La fecha exacta y los detalles del corte eléctrico aún requieren corroboración independiente.",
+    estado: "Sin explicación concluyente documentada",
+    fuentes: [
+      { titulo: "Consultar relato original — Javier E. Stagnaro, «Austerria, los túneles de Agharta en América»", tipo: "Testimonio", url: "https://elsurdelgrantriangulo-pablo.blogspot.com/2012/09/austerria-los-tuneles-de-agharta-en.html" },
+    ],
+  },
+  {
+    codigo: "APFAA-005",
+    titulo: "El OVNI de Chubut: «Un objeto nos pasó por arriba»",
+    fecha: "1985-08-20",
+    fechaDetalle: "20 de agosto de 1985",
+    localidad: "Trelew",
+    region: "Trelew y valle inferior del río Chubut, Chubut, Patagonia Argentina",
+    tipo: "Avistamiento OVNI histórico / registro fotográfico reportado",
+    imagenes: [
+      { src: chubut0.url, pie: "Material vinculado al episodio de Chubut, agosto de 1985.", fuente: "Material aportado al archivo. Procedencia sin verificar." },
+      { src: chubut1.url, pie: "Material vinculado al episodio de Chubut, agosto de 1985.", fuente: "Material aportado al archivo. Procedencia sin verificar." },
+      { src: chubut2.url, pie: "Material vinculado al episodio de Chubut, agosto de 1985.", fuente: "Material aportado al archivo. Procedencia sin verificar." },
+    ],
+    descripcion: `En agosto de 1985, un avistamiento ocurrido en el cielo de Chubut llegó a los medios de comunicación y dejó una imagen que, con el paso del tiempo, se convirtió en parte de la historia ufológica de la Patagonia.
+
+Según las crónicas publicadas en aquella época, el 20 de agosto se observó un objeto de apariencia metálica en el cielo de la región. El episodio fue recogido por la prensa bajo un título tan directo como inquietante: «Un OVNI nos pasó por arriba».
+
+Entre los materiales vinculados al caso se menciona una fotografía atribuida a Marcelo Furs. La imagen y los relatos publicados en torno al episodio alimentaron las preguntas sobre qué era aquel objeto y qué había ocurrido realmente en el cielo chubutense.
+
+Algunas versiones también mencionan información relacionada con observaciones de radar, aunque ese aspecto no puede presentarse como una conclusión definitiva sin documentación suficiente que permita establecer exactamente qué se detectó y dónde.
+
+Décadas después, el caso continúa siendo un episodio llamativo de la historia OVNI argentina. Las imágenes y las crónicas de la época constituyen el punto de partida para reconstruir lo sucedido, aunque por sí solas no permiten determinar la naturaleza del objeto.`,
+    cierre: "Caso reconstruido a partir de crónicas periodísticas y recopilaciones posteriores. La naturaleza del objeto y algunos detalles técnicos del episodio no están establecidos de manera concluyente.",
+    estado: "Sin explicación concluyente documentada",
+    fuentes: [
+      { titulo: "Crónica de 1985 — El País, 23 de agosto de 1985", tipo: "Prensa", url: "https://elpais.com/diario/1985/08/23/sociedad/493596007_850215.html" },
+      { titulo: "Reproducción de la noticia original — El Chubut", tipo: "Prensa", url: "https://bahiasinfondo.blogspot.com/2016/02/1985-un-ovni-en-el-cielo-de-puerto.html" },
+      { titulo: "Investigación complementaria — Visión OVNI", tipo: "Documento", url: "https://www.visionovni.com.ar/archivos/1302" },
     ],
   },
 ];
