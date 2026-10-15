@@ -22,9 +22,8 @@ export default function CaseMap({ cases, onSelect }: { cases: Expediente[]; onSe
     if (!ref.current || mapRef.current) return;
     const map = L.map(ref.current, { zoomControl: true, minZoom: 3 });
     map.fitBounds([[-36.0, -73.5], [-55.2, -62.5]]);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: "abcd",
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
     }).addTo(map);
     layerRef.current = L.layerGroup().addTo(map);
