@@ -59,7 +59,7 @@ function Ficha() {
           {e.imagenes.map((im) => (
             <figure key={im.src} className="border border-border bg-card">
               <button onClick={() => setZoom(im.src)} className="block w-full" aria-label="Ampliar imagen">
-                <img src={im.src} alt={im.pie} className="aspect-[4/3] w-full object-cover transition hover:opacity-90" loading="lazy" />
+                <img src={im.src} alt={im.pie} className="aspect-[4/3] w-full bg-background object-contain transition hover:opacity-90" loading="lazy" />
               </button>
               <figcaption className="p-4">
                 <p className="text-sm">{im.pie}</p>
