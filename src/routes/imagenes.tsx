@@ -48,11 +48,21 @@ function Imagenes() {
                   {m.verificacion && <span className="border border-border px-2 py-1 font-mono text-[0.65rem] text-muted-foreground">{m.verificacion}</span>}
                 </div>
                 <h2 className="mt-4 font-serif text-2xl">{m.titulo}</h2>
-                <div className="mt-5 flex aspect-video items-center justify-center border border-border bg-background">
-                  <span className="label-mono">Espacio reservado para el video</span>
-                </div>
+                {m.video ? (
+                  <video src={m.video} controls preload="metadata" playsInline className="mt-5 aspect-video w-full border border-border bg-background" />
+                ) : (
+                  <div className="mt-5 flex aspect-video items-center justify-center border border-border bg-background">
+                    <span className="label-mono">Espacio reservado para el video</span>
+                  </div>
+                )}
+                {m.video && (
+                  <div className="mt-3 flex flex-wrap gap-4 text-xs">
+                    {m.url && <a href={m.url} target="_blank" rel="noreferrer" className="text-celeste underline">Ver fuente oficial ↗</a>}
+                    <a href={m.video} target="_blank" rel="noreferrer" className="text-muted-foreground underline">Abrir archivo MP4 ↗</a>
+                  </div>
+                )}
                 <dl className="mt-5 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
-                  {([["Archivo o URL del video", m.url], ["Fuente original", m.procedencia], ["Fecha de publicación", m.fecha], ["Lugar del incidente", m.localidad], ["Descripción", m.descripcion], ["Créditos o atribución", m.creditos], ["Estado de verificación", m.verificacion]] as [string, string | undefined][]).map(([k, v]) => (
+                  {([["Identificador", m.id], ["Fuente original", m.procedencia], ["Fecha", m.fecha], ["Lugar", m.localidad], ["Descripción", m.descripcion], ["Estado de verificación", m.verificacion]] as [string, string | undefined][]).map(([k, v]) => (
                     <div key={k} className="border-b border-border py-2">
                       <dt className="label-mono">{k}</dt>
                       <dd className="mt-1 text-sm text-muted-foreground">{v || "Pendiente"}</dd>
