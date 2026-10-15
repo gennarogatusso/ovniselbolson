@@ -27,7 +27,8 @@ export interface Expediente {
   descripcion: string;
   estado: EstadoInvestigacion;
   fuentes: Fuente[];
-  coordenadas?: [number, number]; // [lat, lng]
+  coordenadas?: [number, number]; // [lat, lng] aproximadas
+  coordenadasNota?: string;
 }
 
 export interface MaterialVisual {
@@ -44,6 +45,7 @@ export interface MaterialVisual {
   creditos?: string;
   verificacion?: string;
   pendiente?: boolean;
+  video?: string;
 }
 
 export interface Reporte {
@@ -68,6 +70,8 @@ export const expedientes: Expediente[] = [
     tipo: "Avistamiento luminoso con registro de comunicación de radio",
     descripcion: "El primer oficial del buque mercante San Matías I comunicó a la estación L4S de Prefectura Naval Argentina que la tripulación observaba varias luces anaranjadas que parecían emerger desde el horizonte marítimo y desplazarse por el cielo en distintas direcciones. Durante la comunicación describieron movimientos de ida y vuelta, desapariciones y reapariciones. Según la cobertura periodística, se consultaron los radares sin obtener detecciones relacionadas con el fenómeno. El episodio quedó registrado en una comunicación de radio difundida posteriormente por medios de comunicación. La naturaleza de las luces no quedó establecida mediante la información publicada.",
     estado: "Sin explicación concluyente documentada",
+    coordenadas: [-42.6, -63.8],
+    coordenadasNota: "Punto orientativo: zona general del reporte, no posición exacta.",
     audio: "https://partedepesca.com.ar/d/wp-content/uploads/2023/08/comunicacion-BT-San-Matias-con-L4S-PNA.mp3?utm_source=chatgpt.com",
     fuentes: [
       { titulo: "Parte de Pesca", tipo: "Prensa", url: "https://partedepesca.com.ar/d/un-buque-mercante-reporto-a-prefectura-el-avistamiento-de-ovnis-cerca-de-peninsula-valdes/" },
@@ -82,6 +86,7 @@ export const expedientes: Expediente[] = [
     fechaDetalle: "22 de junio de 2022, aprox. 22:30",
     localidad: "El Bolsón",
     region: "El Bolsón, Río Negro, Argentina",
+    coordenadas: [-41.9644, -71.5337],
     tipo: "Avistamiento luminoso reportado por testigos",
     descripcion: "Varios vecinos reportaron luces multicolores que parecían desplazarse de forma errática sobre los cerros Morrudo, Barda Negra y Perito Moreno. Según el testimonio de un refugiero citado por la prensa, las luces cambiaban entre blanco, rojo y azul. Una de ellas habría comenzado a elevarse antes de desaparecer. Los relatos no permitieron establecer una explicación concluyente y la noticia señaló que no había evidencia fotográfica fiable para confirmar la naturaleza del fenómeno.",
     estado: "Sin explicación concluyente documentada",
@@ -98,6 +103,7 @@ export const expedientes: Expediente[] = [
     fechaDetalle: "31 de julio de 1995",
     localidad: "Bariloche",
     region: "Bariloche, Río Negro, Argentina",
+    coordenadas: [-41.1335, -71.3103],
     tipo: "Fenómeno aéreo anómalo reportado por tripulación aeronáutica",
     protagonista: "Jorge Polanco, comandante de una aeronave de Aerolíneas Argentinas",
     lead: "Una noche, una aproximación a Bariloche y una presencia luminosa que la tripulación no esperaba encontrar.",
@@ -125,14 +131,16 @@ Sin embargo, hay un detalle fundamental: la Fuerza Aérea Argentina examinó pos
 export const materiales: MaterialVisual[] = [
   {
     id: "DOD_109584445",
-    titulo: "DOD_109584445 — Registro UAP en Medio Oriente",
-    fecha: "",
-    localidad: "",
-    descripcion: "",
-    procedencia: "",
+    titulo: "DOD_109584445 — Objeto registrado por un sensor militar en Medio Oriente",
+    fecha: "2022",
+    localidad: "Medio Oriente",
+    descripcion: "Registro de un objeto aparentemente esférico observado por un sensor militar en Medio Oriente. La fuente oficial no establece su naturaleza.",
+    procedencia: "DVIDS / Departamento de Defensa de Estados Unidos",
     tipo: "Video",
+    video: "https://d34w7g4gy10iej.cloudfront.net/video/2304/DOD_109584445/DOD_109584445.mp4",
+    url: "https://www.dvidshub.net/video/880273/middle-east-object",
     pendiente: true,
-    verificacion: "Fuente y metadatos pendientes de verificación",
+    verificacion: "Fuente oficial: DVIDS",
   },
 ];
 export const reportes: Reporte[] = [];
