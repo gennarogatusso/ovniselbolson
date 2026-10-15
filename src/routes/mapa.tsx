@@ -26,6 +26,7 @@ function Mapa() {
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
   const [sel, setSel] = useState<Expediente | null>(null);
+  const [open, setOpen] = useState(false);
   const onSelect = useCallback((e: Expediente) => setSel(e), []);
 
   const cases = useMemo(
@@ -42,60 +43,38 @@ function Mapa() {
   );
 
   return (
-    <section className="flex flex-col pt-16 md:h-screen md:pt-20">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border px-6 py-5 md:px-10">
-        <div>
-          <p className="label-mono !text-celeste">Sección 02</p>
-          <h1 className="display-serif mt-2 text-4xl">Mapa de Casos</h1>
-        </div>
-        <div className="text-right">
-          <p className="label-mono">Casos registrados</p>
-          <p className="font-mono text-3xl">{String(cases.length).padStart(3, "0")}</p>
-        </div>
-      </div>
-      <div className="flex flex-1 flex-col md:flex-row md:overflow-hidden">
-        <aside className="order-2 w-full space-y-6 overflow-y-auto border-border p-6 md:order-1 md:w-96 md:border-r">
-          <div className="space-y-3">
-            <p className="label-mono">Filtros</p>
-            <Select label="Localidad" value={loc} onChange={setLoc} options={localidades} />
-            <Select label="Categoría" value={tipo} onChange={setTipo} options={tiposFenomeno} />
-            <div className="grid grid-cols-2 gap-2">
-              <label><span className="label-mono">Desde</span><input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className={`${inputCls} mt-1`} /></label>
-              <label><span className="label-mono">Hasta</span><input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={`${inputCls} mt-1`} /></label>
-            </div>
-          </div>
-          <div className="border-t border-border pt-6">
-            <p className="label-mono">Expediente seleccionado</p>
-            {sel ? (
-              <div className="mt-3">
-                <p className="font-mono text-xs text-celeste">{sel.codigo}</p>
-                <p className="mt-1 font-serif text-2xl">{sel.titulo}</p>
-                <p className="mt-2 text-xs text-muted-foreground">{sel.fecha} · {sel.localidad} · {sel.tipo}</p>
-                <p className="mt-3 text-sm text-foreground/80">{sel.descripcion}</p>
-                <Link to="/casos/$codigo" params={{ codigo: sel.codigo }} className="mt-4 inline-block border border-border px-4 py-2 text-sm hover:border-celeste hover:text-celeste">Abrir ficha completa</Link>
+    <section className="relative h-[100svh] pt-16 md:pt-20">
+      <div className="relative h-full w-full">
+        <ClientOnly fallback={<div className="h-full w-full bg-card" />}>
+          <Suspense fallback={<div className="h-full w-full bg-card" />}>
+            <CaseMap cases={cases} onSelect={onSelect} />
+          </Suspense>
+        </ClientOnly>
+        <div className="absolute left-3 top-3 z-[1000] w-[min(20rem,calc(100%-4.5rem))] border border-border bg-background/85 backdrop-blur md:left-14">
+          <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between px-4 py-3 text-left">
+            <span>
+              <span className="label-mono !text-celeste">Sección 02 · Mapa de casos</span>
+              <span className="mt-1 block font-mono text-xs text-muted-foreground">{String(cases.length).padStart(3, "0")} registros · {open ? "Ocultar filtros" : "Filtros"}</span>
+            </span>
+            <span className="font-mono text-celeste">{open ? "−" : "+"}</span>
+          </button>
+          {open && (
+            <div className="space-y-3 border-t border-border p-4">
+              <Select label="Localidad" value={loc} onChange={setLoc} options={localidades} />
+              <Select label="Categoría" value={tipo} onChange={setTipo} options={tiposFenomeno} />
+              <div className="grid grid-cols-2 gap-2">
+                <label><span className="label-mono">Desde</span><input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className={`${inputCls} mt-1`} /></label>
+                <label><span className="label-mono">Hasta</span><input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={`${inputCls} mt-1`} /></label>
               </div>
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">
-                {expedientes.length === 0
-                  ? "Aún no hay casos georreferenciados. La cartografía está lista para incorporar registros verificados."
-                  : "Seleccione un marcador para consultar el expediente."}
-              </p>
-            )}
-          </div>
-          <div className="border-t border-border pt-6">
-            <p className="label-mono mb-3">Leyenda</p>
-            <ul className="space-y-2 text-sm text-foreground/80">
-              <li className="flex items-center gap-3"><span className="h-3 w-3 rounded-full border border-celeste bg-celeste/30" /> Registro documentado</li>
-              <li className="flex items-center gap-3"><span className="font-mono text-xs text-silver">+</span> Localidad de referencia</li>
-            </ul>
-          </div>
-        </aside>
-        <div className="relative order-1 h-[60vh] flex-1 md:order-2 md:h-auto">
-          <ClientOnly fallback={<div className="h-full w-full bg-card" />}>
-            <Suspense fallback={<div className="h-full w-full bg-card" />}>
-              <CaseMap cases={cases} onSelect={onSelect} />
-            </Suspense>
-          </ClientOnly>
+              {sel && (
+                <div className="border-t border-border pt-3">
+                  <p className="font-mono text-xs text-celeste">{sel.codigo}</p>
+                  <p className="mt-1 font-serif text-lg">{sel.titulo}</p>
+                  <Link to="/casos/$codigo" params={{ codigo: sel.codigo }} className="mt-2 inline-block text-xs text-celeste underline">Abrir expediente</Link>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </section>
