@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as ImagenesRouteImport } from './routes/imagenes'
+import { Route as JuegoRouteImport } from './routes/juego'
 import { Route as MapaRouteImport } from './routes/mapa'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as CasosIndexRouteImport } from './routes/casos.index'
@@ -30,6 +31,11 @@ const AboutRoute = AboutRouteImport.update({
 const ImagenesRoute = ImagenesRouteImport.update({
   id: '/imagenes',
   path: '/imagenes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JuegoRoute = JuegoRouteImport.update({
+  id: '/juego',
+  path: '/juego',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapaRoute = MapaRouteImport.update({
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/imagenes': typeof ImagenesRoute
+  '/juego': typeof JuegoRoute
   '/mapa': typeof MapaRoute
   '/reportes': typeof ReportesRoute
   '/casos/$codigo': typeof CasosCodigoRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/imagenes': typeof ImagenesRoute
+  '/juego': typeof JuegoRoute
   '/mapa': typeof MapaRoute
   '/reportes': typeof ReportesRoute
   '/casos/$codigo': typeof CasosCodigoRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/imagenes': typeof ImagenesRoute
+  '/juego': typeof JuegoRoute
   '/mapa': typeof MapaRoute
   '/reportes': typeof ReportesRoute
   '/casos/$codigo': typeof CasosCodigoRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/imagenes'
+    | '/juego'
     | '/mapa'
     | '/reportes'
     | '/casos/$codigo'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/imagenes'
+    | '/juego'
     | '/mapa'
     | '/reportes'
     | '/casos/$codigo'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/imagenes'
+    | '/juego'
     | '/mapa'
     | '/reportes'
     | '/casos/$codigo'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   ImagenesRoute: typeof ImagenesRoute
+  JuegoRoute: typeof JuegoRoute
   MapaRoute: typeof MapaRoute
   ReportesRoute: typeof ReportesRoute
   CasosCodigoRoute: typeof CasosCodigoRoute
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/imagenes'
       fullPath: '/imagenes'
       preLoaderRoute: typeof ImagenesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/juego': {
+      id: '/juego'
+      path: '/juego'
+      fullPath: '/juego'
+      preLoaderRoute: typeof JuegoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mapa': {
@@ -179,6 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   ImagenesRoute: ImagenesRoute,
+  JuegoRoute: JuegoRoute,
   MapaRoute: MapaRoute,
   ReportesRoute: ReportesRoute,
   CasosCodigoRoute: CasosCodigoRoute,

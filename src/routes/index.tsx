@@ -104,6 +104,23 @@ function Index() {
         </div>
       </section>
 
+      <section className="border-t border-border">
+        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-16 md:grid-cols-12 md:px-10 md:py-20">
+          <div className="md:col-span-7">
+            <p className="label-mono !text-celeste">¡NUEVO EN APFAA!</p>
+            <h2 className="display-serif mt-4 text-4xl md:text-5xl">OVNIS EN EL BOLSÓN — JUEGO TEST</h2>
+            <p className="mt-4 max-w-xl leading-relaxed text-muted-foreground">
+              Una noche tranquila en la Patagonia. Un OVNI aparece sobre El Bolsón y se lleva a tu gato. Ahora depende de vos perseguirlo.
+            </p>
+          </div>
+          <div className="flex items-end md:col-span-5 md:justify-end">
+            <Link to="/juego" className="group inline-flex items-center gap-2 bg-foreground px-6 py-4 font-mono text-sm tracking-widest text-background transition-colors hover:bg-celeste">
+              JUGAR AHORA <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="border-t border-border bg-night/40">
         <div className="mx-auto grid max-w-7xl md:grid-cols-4">
           {SECCIONES.map((s) => (
