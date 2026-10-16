@@ -19,7 +19,7 @@ function newState() {
     cat: { x: 150, y: GROUND, gone: false, walk: 0 },
     u: { x: 600, y: -80, hp: 100, hit: 0, tx: 600, cd: 2, vis: false },
     shots: [] as Shot[], lasers: [] as Shot[], fx: [] as { x: number; y: number; life: number; c: string }[],
-    msg: "", msgT: 0, keys: {} as Record<string, boolean>, fire: false, fireCd: 0,
+    msg: "", msgT: 0, keys: {} as { l?: boolean; r?: boolean; j?: boolean; c?: boolean; [k: string]: boolean | undefined }, fire: false, fireCd: 0,
   };
 }
 type S = ReturnType<typeof newState>;
