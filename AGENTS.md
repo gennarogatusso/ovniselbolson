@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep game simulation in game-engine.ts, Canvas drawing in game-renderer.ts, and React input/screens in UfoGame.tsx; this extends the existing engine while keeping both endings testable independently of rendering.
+- Resolve Canvas colors from game-scoped CSS tokens and load uploaded art via asset pointers; this preserves theming and keeps uploaded binaries outside the repository.
