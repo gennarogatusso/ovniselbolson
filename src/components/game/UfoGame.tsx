@@ -43,7 +43,7 @@ export function UfoGame() {
     }else if(screen!=='paused'){
      // Mantener vivos humo y chispas detrás de las pantallas finales.
      const s=st.current;s.t+=dt;s.fx=s.fx.filter(f=>(f.life-=dt)>0);
-     if(s.phase==='over'&&Math.random()<dt*6)s.fx.push({x:s.u.x+(Math.random()-.5)*60,y:GROUND-20,life:1.2,c:'smoke'});
+     if(s.phase==='over'&&Math.random()<dt*6)s.fx.push({x:s.u.x+(Math.random()-.5)*60,y:st.current.p.y-20,life:1.2,c:'smoke'});
     }
     draw(ctx,st.current,images.current,colors);host.current?.setAttribute('data-phase',st.current.phase);host.current?.setAttribute('data-ufo-health',String(st.current.u.hp));
    }catch(err){console.error('Error en el juego',err);}
