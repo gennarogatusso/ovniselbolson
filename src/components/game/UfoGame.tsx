@@ -35,13 +35,19 @@ export function UfoGame() {
   const colors=palette.current;
   ctx.imageSmoothingEnabled=true;let raf=0,last=performance.now(),acc=0;
   const loop=(now:number)=>{const dt=Math.min(.05,(now-last)/1000);last=now;
-   if(screen==='play'){
-    const result=update(st.current,dt);acc+=dt;
-    if(acc>.12){acc=0;setContext(canAskHelp(st.current));setCombat(st.current.phase==='fight');}
-    if(result){setEnding(result==='win'?'revenge':result==='continue'?'continuation':null);setScreen(result==='lose'?'lose':'win');return;}
-   }
-   draw(ctx,st.current,images.current,colors);host.current?.setAttribute('data-phase',st.current.phase);host.current?.setAttribute('data-ufo-health',String(st.current.u.hp));
-   if(screen==='play')raf=requestAnimationFrame(loop);
+   try{
+    if(screen==='play'){
+     const result=update(st.current,dt);acc+=dt;
+     if(acc>.12){acc=0;setContext(canAskHelp(st.current));setCombat(st.current.phase==='fight');}
+     if(result){setEnding(result==='win'?'revenge':result==='continue'?'continuation':null);setScreen(result==='lose'?'lose':'win');}
+    }else if(screen!=='paused'){
+     // Mantener vivos humo y chispas detrás de las pantallas finales.
+     const s=st.current;s.t+=dt;s.fx=s.fx.filter(f=>(f.life-=dt)>0);
+     if(s.phase==='over'&&Math.random()<dt*6)s.fx.push({x:s.u.x+(Math.random()-.5)*60,y:GROUND-20,life:1.2,c:'smoke'});
+    }
+    draw(ctx,st.current,images.current,colors);host.current?.setAttribute('data-phase',st.current.phase);host.current?.setAttribute('data-ufo-health',String(st.current.u.hp));
+   }catch(err){console.error('Error en el juego',err);}
+   raf=requestAnimationFrame(loop);
   };raf=requestAnimationFrame(loop);return()=>cancelAnimationFrame(raf);
  },[screen,loading,assetError]);
  const start=()=>{st.current=newState();setEnding(null);setContext(false);setCombat(false);setScreen('play');};

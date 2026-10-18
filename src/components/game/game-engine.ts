@@ -49,9 +49,11 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       break;
     }
     case "arrive": {
-      p.x=approach(p.x,s.crashX-175,310*dt); p.y=GROUND; p.walk+=dt*10; p.face=1;
-      for (const [i,a] of s.allies.entries()) { a.x=approach(a.x,s.crashX-250-i*65,310*dt); a.walk+=dt*10; a.hp=Math.max(1,a.hp); }
-      if (Math.abs(p.x-(s.crashX-175))<1 && s.allies.every((a,i)=>Math.abs(a.x-(s.crashX-250-i*65))<1) && s.pt>2) { p.walk=0; cat.gone=false; cat.x=u.x-25; cat.y=GROUND; next(s,"reunion"); }
+      // El grupo aparece junto a la nave y camina unos pasos; avanza siempre por tiempo.
+      if (s.pt <= dt + 1e-6) { p.x = s.crashX - 330; p.vy = 0; s.allies.forEach((a,i)=>{ a.x = s.crashX - 400 - i*65; a.y = GROUND; a.dead = false; }); }
+      p.x=approach(p.x,s.crashX-175,160*dt); p.y=GROUND; p.walk+=dt*10; p.face=1;
+      for (const [i,a] of s.allies.entries()) { a.x=approach(a.x,s.crashX-250-i*65,160*dt); a.walk+=dt*10; a.hp=Math.max(1,a.hp); }
+      if (s.pt>=2.2) { p.x=s.crashX-175; s.allies.forEach((a,i)=>{a.x=s.crashX-250-i*65;}); p.walk=0; cat.gone=false; cat.x=u.x-25; cat.y=GROUND; next(s,"reunion"); }
       break;
     }
     case "reunion": cat.x=approach(cat.x,p.x+22,65*dt); cat.walk+=dt*10; p.crouch=Math.abs(cat.x-p.x)<45; if(s.pt>=6) next(s,"alien"); break;
