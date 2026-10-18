@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import mountain from '@/assets/piltriquitron-cartoon.png.asset.json';
 import player from '@/assets/personaje-juego.png.asset.json';
 import cat from '@/assets/gato-juego.png.asset.json';
+import alien from '@/assets/alien-rise.png.asset.json';
+import reunion from '@/assets/cat-reunion.png.asset.json';
 import { W, H, ENDINGS, CINEMATIC, canAskHelp, newState, update, type Ending, type Screen } from './game-engine';
 import { draw, type GameImages, type Palette } from './game-renderer';
 
@@ -16,7 +18,7 @@ export function UfoGame() {
   const mq=window.matchMedia('(pointer: coarse)');const changed=()=>setTouch(mq.matches);changed();mq.addEventListener('change',changed);
   const readPalette=()=>{if(!host.current)return;const css=getComputedStyle(host.current);const colors={} as Palette;for(const key of ['sky','rose','gold','sunset','light','ice','panel','ink','forest','trunk','wall','roof','leaf','road','curb','lane','shadow','hill','metal','glass','laser','smoke','stone','skin','red','alien'] as const)colors[key]=css.getPropertyValue('--game-'+key).trim();palette.current=colors;};readPalette();
   const load=(url:string)=>new Promise<HTMLImageElement>((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=url;});let active=true;
-  Promise.all([load(mountain.url),load(player.url),load(cat.url)]).then(([mountain,player,cat])=>{if(!active)return;images.current={mountain,player,cat};setLoading(false);}).catch(()=>{if(active){setAssetError(true);setLoading(false);}});
+  Promise.all([load(mountain.url),load(player.url),load(cat.url),load(alien.url),load(reunion.url)]).then(([mountain,player,cat,alien,reunion])=>{if(!active)return;images.current={mountain,player,cat,alien,reunion};setLoading(false);}).catch(()=>{if(active){setAssetError(true);setLoading(false);}});
   return()=>{active=false;mq.removeEventListener('change',changed);};
  },[]);
  useEffect(()=>{
