@@ -1,8 +1,8 @@
 export const W = 960, H = 540, GROUND = 450, WORLD = 3200;
 export const DIFFICULTY = { movement: 1.20, frequency: 1.20, aggression: 1.20 } as const;
-export const ALIEN_MESSAGE = "#%3# indescribable.... GATO....#%3 ME PERTENECE ... #%3indescribable";
+export const ALIEN_MESSAGE = "#%3# indescifrable.... GATO....#%3 ME PERTENECE ... #%indescifrable";
 export const ENDINGS = {
-  revenge: { title: "¡FELICIDADES! MATASTE AL OVNI PERO NO RECUPERASTE TU GATO", sub: "FINAL N.º 1 — VENGANZA EN LA COMARCA" },
+  revenge: { title: "¡FELICIDADES! MATASTE AL OVNI PERO NO RECUPERASTE TU GATO", sub: "FINAL N.º 1 — BAD ENDING" },
   continuation: { title: "CONTINUARÁ", sub: "FINAL N.º 2 — ALGO SALIÓ DE LA NAVE" },
 } as const;
 export type Ending = keyof typeof ENDINGS;
@@ -115,7 +115,7 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
     case "rise":
       u.y += (110 - u.y) * dt * 2; u.x += 160 * dt;
       if (s.pt > 0.4 && s.msgT <= 0) say(s, "¡NOOO! ¡SE LLEVARON A MI GATO!", 2.2);
-      if (s.pt > 2.4) { s.phase = "draw"; s.pt = 0; say(s, "Se metieron con el gato equivocado…", 2.2); }
+      if (s.pt > 2.4) { s.phase = "draw"; s.pt = 0; say(s, "Devolveme el gato lcdtm >:(", 2.2); }
       break;
     case "draw":
       p.armed = Math.min(1, s.pt / 1.2);

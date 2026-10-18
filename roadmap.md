@@ -1,6 +1,4 @@
-# Actualización del juego
-- [ ] Integrar sprites propios y nuevo Piltriquitrón con atardecer y animación.
-- [ ] Adaptar pantalla completa y controles táctiles.
-- [ ] Aplicar y probar multiplicadores del OVNI sin alterar vida ni daño.
-- [ ] Integrar ayuda, combate cooperativo y cinemática del segundo final.
-- [ ] Verificar ambos finales, reinicio y escritorio/celular.
+# Actualización visual del juego
+- [ ] Preparar e integrar sprites de alien levantándose y abrazo del gato sin alterar mecánicas.
+- [ ] Sustituir los dos diálogos y la denominación del final 1.
+- [ ] Verificar ambos finales completos, nuevos recursos y reinicio sin congelamientos.
