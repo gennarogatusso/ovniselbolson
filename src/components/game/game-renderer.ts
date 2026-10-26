@@ -114,7 +114,6 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  if(s.phase==='speech')bubble(c,ALIEN_MESSAGE.slice(0,Math.floor(s.pt*22)),s.alien.x-s.cam,GROUND-112,p,630);
  if(s.phase==='attack' && s.pt<1.6)bubble(c,'¡PARÁ…!',s.allies[0].x-s.cam,GROUND-95,p,180);
  if(s.msgT>0 && !['help','crash','arrive','reunion','alien','speech','attack','fade'].includes(s.phase))bubble(c,s.msg,W/2,155,p,850);
-  if(s.phase==='introReveal'){c.globalAlpha=Math.max(0,1-s.pt/1.5);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
- if(s.phase==='introWalk'){const shade=Math.max(0,.22-s.pt*.08);c.globalAlpha=shade;box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+  
  if(s.phase==='fade'){c.globalAlpha=Math.min(1,s.pt/3.5);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
 }
