@@ -146,6 +146,14 @@
 .game-expanded, .ufo-game:fullscreen { position: fixed; inset: 0; z-index: 100; width: 100%; height: 100svh; }
 .game-expanded .game-stage, .ufo-game:fullscreen .game-stage { width: min(100%, calc(100svh * 16 / 9)); }
 .game-title { font-size: 56px; line-height: 1.05; max-width: 780px; }
+.game-overlay[data-menu="title"] { background: linear-gradient(90deg, rgb(8 12 25 / 0.72), rgb(8 12 25 / 0.18) 58%, rgb(8 12 25 / 0.1)); }
+.game-title-card { position: absolute; inset: 0 auto 0 0; width: min(48%, 470px); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 18px; padding: clamp(18px, 5vw, 56px); text-align: left; text-shadow: 0 2px 12px #000; }
+.game-stage:has(.game-title-card) { background: center / cover no-repeat url('/imagens/imagem-223b9118.webp'); }
+.game-stage:has(.game-title-card) canvas { visibility: hidden; }
+.game-stage:has(.game-title-card) .game-overlay { background: transparent; }
+.game-title-card p:nth-child(2) { max-width: 390px; }
+.game-title-card button { min-width: 150px; }
+@media(max-width:767px) { .game-title-card { width: min(68%, 390px); padding: 18px; gap: 12px; } .game-title-card p:nth-child(2) { font-size: 14px; } }
 .game-ending { font-size: 40px; line-height: 1.1; max-width: 820px; }
 .game-control { width: 54px; height: 54px; flex-shrink: 0; }
 .game-control svg { width: 22px; height: 22px; }
