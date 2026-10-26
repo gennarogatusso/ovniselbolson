@@ -55,12 +55,12 @@ function pose(c:CanvasRenderingContext2D,im:HTMLImageElement,frame:number,count:
  c.save();c.imageSmoothingEnabled=false;c.globalAlpha=alpha;
  c.drawImage(im,frame*fw,0,fw,im.naturalHeight,x-w/2,y-h,w,h);c.restore();
 }
-function alien(c:CanvasRenderingContext2D,s:S,im:HTMLImageElement) {
- // Fixed cells share a ground anchor; blend available poses, never scale the anatomy.
- const progress=s.phase==='alien'?Math.max(0,Math.min(2,(s.pt-1.5)/2)):2;
- const frame=Math.floor(progress),blend=progress-frame;
- pose(c,im,frame,3,s.alien.x,GROUND,110,s.alien.reveal*(1-blend));
- if(frame<2)pose(c,im,frame+1,3,s.alien.x,GROUND,110,s.alien.reveal*blend);
+function alien(c:CanvasRenderingContext2D,s:S,frames:GameImages['alienFrames']) {
+ const frame=s.phase==='alien'?Math.min(3,Math.floor(Math.max(0,s.pt-1.5)/1.1)):3;
+ const current=frames[frame];if(!ready(current))return;
+ const h=110, w=h*current.naturalWidth/current.naturalHeight;
+ c.save();c.imageSmoothingEnabled=false;c.globalAlpha=s.alien.reveal;
+ c.drawImage(current,s.alien.x-w/2,GROUND-h,w,h);c.restore();
 }
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
  c.clearRect(0,0,W,H);const sky=c.createLinearGradient(0,0,0,GROUND);sky.addColorStop(0,p.sky);sky.addColorStop(.55,p.rose);sky.addColorStop(1,p.gold);c.fillStyle=sky;c.fillRect(0,0,W,H);
