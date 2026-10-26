@@ -7,14 +7,14 @@ export const ENDINGS = {
 } as const;
 export type Ending = keyof typeof ENDINGS;
 export type Screen = "title" | "play" | "paused" | "win" | "lose";
-export const CINEMATIC = new Set(["introReveal", "introWalk", "help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade"]);
+export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade"]);
 export function shotInterval(hp: number) { return (hp < 40 ? 0.9 : 1.4) / DIFFICULTY.frequency; }
 export function projectileDamage(b: {kind?: string}) { return b.kind === "stone" ? 3 : 4; }
 export type Shot = { x: number; y: number; vx: number; vy: number; life: number; kind?: "stone" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
 export function newState() {
   return {
-        t: 0, phase: "introReveal" as "introReveal" | "introWalk" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade",
+                t: 0, phase: "walk" as "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade",
     pt: 0, cam: 0,
     p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0 },
     cat: { x: 150, y: GROUND, gone: false, walk: 0 },
@@ -40,16 +40,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
   s.cam += (Math.max(0, Math.min(WORLD-W, cameraTarget)) - s.cam) * Math.min(1,dt*3);
   for (const a of s.allies) a.hurt = Math.max(0,a.hurt-dt);
     switch(s.phase) {
-    case "introReveal":
-      p.x=200; p.y=GROUND; p.face=1; p.walk+=dt*2;
-      cat.x=150; cat.y=GROUND; cat.walk+=dt*2;
-      if(s.pt>=1.5) next(s,"introWalk");
-      break;
-    case "introWalk":
-      p.x=approach(p.x,285,42*dt); p.y=GROUND; p.face=1; p.walk+=dt*7;
-      cat.x=approach(cat.x,p.x-48,70*dt); cat.y=GROUND; cat.walk+=dt*8;
-      if(s.pt>=2.5) next(s,"walk");
-      break;
+    
     case "help": if (s.pt >= 3) { next(s,"fight"); s.msgT=0; u.cd=1; } break;
     case "crash": {
       const q = Math.min(1,s.pt/5), ease = q*q*(3-2*q);

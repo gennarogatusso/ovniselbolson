@@ -67,7 +67,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  // Single proportion-preserving panorama; no repeating mountain or text artifacts.
  if(im && ready(im.mountain)){const h=430,w=h*im.mountain.naturalWidth/im.mountain.naturalHeight; c.drawImage(im.mountain,(W-w)/2-s.cam*.015,GROUND-h,w,h);c.globalCompositeOperation='soft-light';box(c,p.sunset,0,0,W,GROUND);c.globalCompositeOperation='source-over';}
   c.globalAlpha=.15;for(let i=0;i<5;i++){const x=(i*243+s.t*2)%1200-100;oval(c,p.light,x,50+i*13,90,9);}c.globalAlpha=1;
- if(['introReveal','introWalk'].includes(s.phase)){const zoom=s.phase==='introReveal'?1+Math.min(.08,s.pt*.035):1.08;c.translate(W/2,H/2);c.scale(zoom,zoom);c.translate(-W/2,-H/2);}
+ 
  // Distant forest, then the town and the playable street.
  c.save();c.translate(-s.cam*.35,0);for(let x=-200;x<WORLD;x+=95){box(c,p.trunk,x,360,5,90);c.fillStyle=p.forest;c.beginPath();c.moveTo(x-27,415);c.lineTo(x+3,320+(x%3)*12);c.lineTo(x+33,415);c.fill();}c.restore();
  c.save();c.translate(-s.cam,0);
@@ -114,7 +114,6 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  if(s.phase==='speech')bubble(c,ALIEN_MESSAGE.slice(0,Math.floor(s.pt*22)),s.alien.x-s.cam,GROUND-112,p,630);
  if(s.phase==='attack' && s.pt<1.6)bubble(c,'¡PARÁ…!',s.allies[0].x-s.cam,GROUND-95,p,180);
  if(s.msgT>0 && !['help','crash','arrive','reunion','alien','speech','attack','fade'].includes(s.phase))bubble(c,s.msg,W/2,155,p,850);
-  if(s.phase==='introReveal'){c.globalAlpha=Math.max(0,1-s.pt/1.5);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
- if(s.phase==='introWalk'){const shade=Math.max(0,.22-s.pt*.08);c.globalAlpha=shade;box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+  
  if(s.phase==='fade'){c.globalAlpha=Math.min(1,s.pt/3.5);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
 }
