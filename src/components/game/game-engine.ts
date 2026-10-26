@@ -7,21 +7,21 @@ export const ENDINGS = {
 } as const;
 export type Ending = keyof typeof ENDINGS;
 export type Screen = "title" | "play" | "paused" | "win" | "lose";
-export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade"]);
+export const CINEMATIC = new Set(["introReveal", "introWalk", "help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade"]);
 export function shotInterval(hp: number) { return (hp < 40 ? 0.9 : 1.4) / DIFFICULTY.frequency; }
 export function projectileDamage(b: {kind?: string}) { return b.kind === "stone" ? 3 : 4; }
 export type Shot = { x: number; y: number; vx: number; vy: number; life: number; kind?: "stone" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
 export function newState() {
   return {
-    t: 0, phase: "walk" as "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade",
+        t: 0, phase: "introReveal" as "introReveal" | "introWalk" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade",
     pt: 0, cam: 0,
     p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0 },
     cat: { x: 150, y: GROUND, gone: false, walk: 0 },
     u: { x: 600, y: -80, hp: 100, hit: 0, tx: 600, cd: 2, vis: false },
     shots: [] as Shot[], lasers: [] as Shot[], fx: [] as { x: number; y: number; life: number; c: string }[],
     allies: [{ x: 430, y: GROUND, hp: 100, hurt: 0, cd: 0.3, walk: 0, dead: false }, { x: 490, y: GROUND, hp: 100, hurt: 0, cd: 0.8, walk: 0, dead: false }] as [Ally, Ally],
-    recruited: false, pendingHelp: false, crashX: 2820, crashStart: { x: 0, y: 0 }, alien: { x: 2840, reveal: 0, stand: 0 },
+    recruited: false, pendingHelp: false, crashX: 2820, crashStart: { x: 0, y: 0 }, alien: { x: 2840, reveal: 0, stand: 0, riseFrame: 0 },
     msg: "", msgT: 0, keys: {} as { l?: boolean; r?: boolean; j?: boolean; c?: boolean; e?: boolean; [k: string]: boolean | undefined }, fire: false, fireCd: 0,
   };
 }
@@ -35,11 +35,21 @@ function approach(x: number, target: number, speed: number) { return x + Math.si
 function updateCinematic(s: S, dt: number): "continue" | null {
   const {u,p,cat} = s;
   s.shots = []; s.lasers = []; s.fire = false;
-  let cameraTarget = p.x - W * 0.4;
-  if (s.phase !== "help") cameraTarget = (s.phase === "crash" ? u.x : s.crashX - 70) - W * 0.55;
+    let cameraTarget = p.x - W * 0.4;
+  if (["crash","arrive","reunion","alien","speech","attack","fade"].includes(s.phase)) cameraTarget = (s.phase === "crash" ? u.x : s.crashX - 70) - W * 0.55;
   s.cam += (Math.max(0, Math.min(WORLD-W, cameraTarget)) - s.cam) * Math.min(1,dt*3);
   for (const a of s.allies) a.hurt = Math.max(0,a.hurt-dt);
-  switch(s.phase) {
+    switch(s.phase) {
+    case "introReveal":
+      p.x=200; p.y=GROUND; p.face=1; p.walk+=dt*2;
+      cat.x=150; cat.y=GROUND; cat.walk+=dt*2;
+      if(s.pt>=1.5) next(s,"introWalk");
+      break;
+    case "introWalk":
+      p.x=approach(p.x,285,42*dt); p.y=GROUND; p.face=1; p.walk+=dt*7;
+      cat.x=approach(cat.x,p.x-48,70*dt); cat.y=GROUND; cat.walk+=dt*8;
+      if(s.pt>=2.5) next(s,"walk");
+      break;
     case "help": if (s.pt >= 3) { next(s,"fight"); s.msgT=0; u.cd=1; } break;
     case "crash": {
       const q = Math.min(1,s.pt/5), ease = q*q*(3-2*q);
@@ -57,7 +67,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       break;
     }
     case "reunion": cat.x=approach(cat.x,p.x+22,65*dt); cat.walk+=dt*10; p.crouch=Math.abs(cat.x-p.x)<45; if(s.pt>=6) next(s,"alien"); break;
-    case "alien": s.alien.reveal=Math.min(1,s.pt/3); s.alien.x=approach(s.alien.x,s.crashX-75,14*dt); s.alien.stand=Math.max(0,Math.min(1,(s.pt-3)/2)); if(s.pt>=6) next(s,"speech"); break;
+    case "alien": s.alien.reveal=Math.min(1,s.pt/3); s.alien.x=approach(s.alien.x,s.crashX-75,14*dt); s.alien.stand=Math.max(0,Math.min(1,(s.pt-3)/2)); s.alien.riseFrame=Math.min(3,Math.floor(Math.max(0,s.pt-1.5)/1.1)); if(s.pt>=4.8){s.alien.riseFrame=3;next(s,"speech");} break;
     case "speech": if(s.pt>=10) next(s,"attack"); break;
     case "attack": {
       if(s.pt>1 && s.pt<1.6) s.alien.x=approach(s.alien.x,s.allies[0].x,1200*dt);

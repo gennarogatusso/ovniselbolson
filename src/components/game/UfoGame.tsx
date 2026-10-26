@@ -18,7 +18,7 @@ export function UfoGame() {
   const mq=window.matchMedia('(pointer: coarse)');const changed=()=>setTouch(mq.matches);changed();mq.addEventListener('change',changed);
   const readPalette=()=>{if(!host.current)return;const css=getComputedStyle(host.current);const colors={} as Palette;for(const key of ['sky','rose','gold','sunset','light','ice','panel','ink','forest','trunk','wall','roof','leaf','road','curb','lane','shadow','hill','metal','glass','laser','smoke','stone','skin','red','alien'] as const)colors[key]=css.getPropertyValue('--game-'+key).trim();palette.current=colors;};readPalette();
   const load=(url:string)=>new Promise<HTMLImageElement>((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=url;});let active=true;
-  Promise.all([load(mountain.url),load(player.url),load(cat.url),load(alien.url),load(reunion.url)]).then(([mountain,player,cat,alien,reunion])=>{if(!active)return;images.current={mountain,player,cat,alien,reunion};setLoading(false);}).catch(()=>{if(active){setAssetError(true);setLoading(false);}});
+    Promise.all([load(mountain.url),load(player.url),load(cat.url),load(alien.url),load(reunion.url),load('/imagens/imagem-cb85a873.png'),load('/imagens/imagem-4233f6e4.png'),load('/imagens/imagem-3241014a.png'),load('/imagens/imagem-97d3754a.png')]).then(([mountain,player,cat,alien,reunion,alien1,alien2,alien3,alien4])=>{if(!active)return;images.current={mountain,player,cat,alien,reunion,alienFrames:[alien1,alien2,alien3,alien4]};setLoading(false);}).catch(()=>{if(active){setAssetError(true);setLoading(false);}});
   return()=>{active=false;mq.removeEventListener('change',changed);};
  },[]);
  useEffect(()=>{
