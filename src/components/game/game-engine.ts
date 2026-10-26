@@ -35,8 +35,8 @@ function approach(x: number, target: number, speed: number) { return x + Math.si
 function updateCinematic(s: S, dt: number): "continue" | null {
   const {u,p,cat} = s;
   s.shots = []; s.lasers = []; s.fire = false;
-  let cameraTarget = p.x - W * 0.4;
-  if (s.phase !== "help") cameraTarget = (s.phase === "crash" ? u.x : s.crashX - 70) - W * 0.55;
+    let cameraTarget = p.x - W * 0.4;
+  if (["crash","arrive","reunion","alien","speech","attack","fade"].includes(s.phase)) cameraTarget = (s.phase === "crash" ? u.x : s.crashX - 70) - W * 0.55;
   s.cam += (Math.max(0, Math.min(WORLD-W, cameraTarget)) - s.cam) * Math.min(1,dt*3);
   for (const a of s.allies) a.hurt = Math.max(0,a.hurt-dt);
     switch(s.phase) {
