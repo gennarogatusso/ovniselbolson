@@ -67,7 +67,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       break;
     }
     case "reunion": cat.x=approach(cat.x,p.x+22,65*dt); cat.walk+=dt*10; p.crouch=Math.abs(cat.x-p.x)<45; if(s.pt>=6) next(s,"alien"); break;
-    case "alien": s.alien.reveal=Math.min(1,s.pt/3); s.alien.x=approach(s.alien.x,s.crashX-75,14*dt); s.alien.stand=Math.max(0,Math.min(1,(s.pt-3)/2)); if(s.pt>=6) next(s,"speech"); break;
+    case "alien": s.alien.reveal=Math.min(1,s.pt/3); s.alien.x=approach(s.alien.x,s.crashX-75,14*dt); s.alien.stand=Math.max(0,Math.min(1,(s.pt-3)/2)); s.alien.riseFrame=Math.min(3,Math.floor(Math.max(0,s.pt-1.5)/1.1)); if(s.pt>=4.8){s.alien.riseFrame=3;next(s,"speech");} break;
     case "speech": if(s.pt>=10) next(s,"attack"); break;
     case "attack": {
       if(s.pt>1 && s.pt<1.6) s.alien.x=approach(s.alien.x,s.allies[0].x,1200*dt);
