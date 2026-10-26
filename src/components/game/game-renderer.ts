@@ -67,7 +67,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  // Single proportion-preserving panorama; no repeating mountain or text artifacts.
  if(im && ready(im.mountain)){const h=430,w=h*im.mountain.naturalWidth/im.mountain.naturalHeight; c.drawImage(im.mountain,(W-w)/2-s.cam*.015,GROUND-h,w,h);c.globalCompositeOperation='soft-light';box(c,p.sunset,0,0,W,GROUND);c.globalCompositeOperation='source-over';}
   c.globalAlpha=.15;for(let i=0;i<5;i++){const x=(i*243+s.t*2)%1200-100;oval(c,p.light,x,50+i*13,90,9);}c.globalAlpha=1;
- if(['introReveal','introWalk'].includes(s.phase)){const zoom=s.phase==='introReveal'?1+Math.min(.08,s.pt*.035):1.08;c.translate(W/2,H/2);c.scale(zoom,zoom);c.translate(-W/2,-H/2);}
+ 
  // Distant forest, then the town and the playable street.
  c.save();c.translate(-s.cam*.35,0);for(let x=-200;x<WORLD;x+=95){box(c,p.trunk,x,360,5,90);c.fillStyle=p.forest;c.beginPath();c.moveTo(x-27,415);c.lineTo(x+3,320+(x%3)*12);c.lineTo(x+33,415);c.fill();}c.restore();
  c.save();c.translate(-s.cam,0);
