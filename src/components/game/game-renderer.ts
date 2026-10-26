@@ -1,5 +1,5 @@
 import { ALIEN_MESSAGE, GROUND, H, W, WORLD, canAskHelp, type S } from './game-engine';
-export type GameImages = { mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
+export type GameImages = { mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; reunion: HTMLImageElement };
 export type Palette = Record<'sky'|'rose'|'gold'|'sunset'|'light'|'ice'|'panel'|'ink'|'forest'|'trunk'|'wall'|'roof'|'leaf'|'road'|'curb'|'lane'|'shadow'|'hill'|'metal'|'glass'|'laser'|'smoke'|'stone'|'skin'|'red'|'alien',string>;
 const ready = (im?:HTMLImageElement) => Boolean(im?.complete && im.naturalWidth);
 function box(c:CanvasRenderingContext2D,col:string,x:number,y:number,w:number,h:number) {c.fillStyle=col;c.fillRect(x,y,w,h);}
@@ -55,19 +55,18 @@ function pose(c:CanvasRenderingContext2D,im:HTMLImageElement,frame:number,count:
  c.save();c.imageSmoothingEnabled=false;c.globalAlpha=alpha;
  c.drawImage(im,frame*fw,0,fw,im.naturalHeight,x-w/2,y-h,w,h);c.restore();
 }
-function alien(c:CanvasRenderingContext2D,s:S,frames:GameImages['alienFrames']) {
- const frame=s.phase==='alien'?Math.min(3,Math.floor(Math.max(0,s.pt-1.5)/1.1)):3;
- const current=frames[frame];if(!ready(current))return;
- const h=110, w=h*current.naturalWidth/current.naturalHeight;
- c.save();c.imageSmoothingEnabled=false;c.globalAlpha=s.alien.reveal;
- c.drawImage(current,s.alien.x-w/2,GROUND-h,w,h);c.restore();
+function alien(c:CanvasRenderingContext2D,s:S,im:HTMLImageElement) {
+ // Fixed cells share a ground anchor; blend available poses, never scale the anatomy.
+ const progress=s.phase==='alien'?Math.max(0,Math.min(2,(s.pt-1.5)/2)):2;
+ const frame=Math.floor(progress),blend=progress-frame;
+ pose(c,im,frame,3,s.alien.x,GROUND,110,s.alien.reveal*(1-blend));
+ if(frame<2)pose(c,im,frame+1,3,s.alien.x,GROUND,110,s.alien.reveal*blend);
 }
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
  c.clearRect(0,0,W,H);const sky=c.createLinearGradient(0,0,0,GROUND);sky.addColorStop(0,p.sky);sky.addColorStop(.55,p.rose);sky.addColorStop(1,p.gold);c.fillStyle=sky;c.fillRect(0,0,W,H);
  // Single proportion-preserving panorama; no repeating mountain or text artifacts.
  if(im && ready(im.mountain)){const h=430,w=h*im.mountain.naturalWidth/im.mountain.naturalHeight; c.drawImage(im.mountain,(W-w)/2-s.cam*.015,GROUND-h,w,h);c.globalCompositeOperation='soft-light';box(c,p.sunset,0,0,W,GROUND);c.globalCompositeOperation='source-over';}
-  c.globalAlpha=.15;for(let i=0;i<5;i++){const x=(i*243+s.t*2)%1200-100;oval(c,p.light,x,50+i*13,90,9);}c.globalAlpha=1;
- if(['introReveal','introWalk'].includes(s.phase)){const zoom=s.phase==='introReveal'?1+Math.min(.08,s.pt*.035):1.08;c.translate(W/2,H/2);c.scale(zoom,zoom);c.translate(-W/2,-H/2);}
+ c.globalAlpha=.15;for(let i=0;i<5;i++){const x=(i*243+s.t*2)%1200-100;oval(c,p.light,x,50+i*13,90,9);}c.globalAlpha=1;
  // Distant forest, then the town and the playable street.
  c.save();c.translate(-s.cam*.35,0);for(let x=-200;x<WORLD;x+=95){box(c,p.trunk,x,360,5,90);c.fillStyle=p.forest;c.beginPath();c.moveTo(x-27,415);c.lineTo(x+3,320+(x%3)*12);c.lineTo(x+33,415);c.fill();}c.restore();
  c.save();c.translate(-s.cam,0);
@@ -100,7 +99,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  if(player.armed>0 && !['reunion','alien','speech','attack','fade'].includes(s.phase)) {box(c,p.metal,player.x+player.face*18-4,player.y-(player.crouch?35:48),17,6);if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
  if(s.u.vis && !['boom','over'].includes(s.phase))ufo(c,s,p);
  if(['boom','over'].includes(s.phase)){box(c,p.metal,s.u.x-40,GROUND-12,35,12);box(c,p.ink,s.u.x+10,GROUND-9,25,9);}
-  if(im && ['alien','speech','attack','fade'].includes(s.phase))alien(c,s,im.alienFrames);
+  if(im && ['alien','speech','attack','fade'].includes(s.phase))alien(c,s,im.alien);
  for(const b of s.shots) {if(b.kind==='stone'){oval(c,p.stone,b.x,b.y,5,4);box(c,p.light,b.x-2,b.y-2,2,1);}else {c.strokeStyle=p.ice;c.lineWidth=3;c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.012,b.y-b.vy*.012);c.stroke();}}
  c.strokeStyle=p.laser;c.lineWidth=4;for(const b of s.lasers){c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.045,b.y-b.vy*.045);c.stroke();}
  for(const f of s.fx){c.globalAlpha=Math.min(1,f.life);oval(c,p[f.c as keyof Palette]??p.gold,f.x,f.y,4+Math.max(0,1-f.life)*12,4+Math.max(0,1-f.life)*12);}c.globalAlpha=1;c.restore();
@@ -114,7 +113,5 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  if(s.phase==='speech')bubble(c,ALIEN_MESSAGE.slice(0,Math.floor(s.pt*22)),s.alien.x-s.cam,GROUND-112,p,630);
  if(s.phase==='attack' && s.pt<1.6)bubble(c,'¡PARÁ…!',s.allies[0].x-s.cam,GROUND-95,p,180);
  if(s.msgT>0 && !['help','crash','arrive','reunion','alien','speech','attack','fade'].includes(s.phase))bubble(c,s.msg,W/2,155,p,850);
-  if(s.phase==='introReveal'){c.globalAlpha=Math.max(0,1-s.pt/1.5);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
- if(s.phase==='introWalk'){const shade=Math.max(0,.22-s.pt*.08);c.globalAlpha=shade;box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
  if(s.phase==='fade'){c.globalAlpha=Math.min(1,s.pt/3.5);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
 }
