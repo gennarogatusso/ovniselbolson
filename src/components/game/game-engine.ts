@@ -7,7 +7,7 @@ export const ENDINGS = {
 } as const;
 export type Ending = keyof typeof ENDINGS;
 export type Screen = "title" | "play" | "paused" | "win" | "lose";
-export const CINEMATIC = new Set(["introReveal", "introWalk", "help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade"]);
+export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade"]);
 export function shotInterval(hp: number) { return (hp < 40 ? 0.9 : 1.4) / DIFFICULTY.frequency; }
 export function projectileDamage(b: {kind?: string}) { return b.kind === "stone" ? 3 : 4; }
 export type Shot = { x: number; y: number; vx: number; vy: number; life: number; kind?: "stone" };
