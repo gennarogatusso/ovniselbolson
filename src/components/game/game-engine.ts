@@ -97,7 +97,6 @@ function updateCinematic(s: S, dt: number): "continue" | null {
     case "unused-jets-completion": if(s.pt>=5.2){u.vis=false;s.alien.reveal=0;next(s,"over");return "continue";}
       break;
     }
-  }
   s.fx=s.fx.filter(f=>(f.life-=dt)>0);
   return null;
 }
