@@ -67,7 +67,14 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       if(s.pt>=2.6) { const a=s.allies[1]; a.dead=true; a.hp=0; }
       if(s.pt>=5) next(s,"fade"); break;
     }
-    case "fade": if(s.pt>=3.5) { next(s,"over"); return "continue"; } break;
+        case "fade": if(s.pt>=3.5) next(s,"jets"); break;
+    case "jets": {
+      s.alien.x=approach(s.alien.x,s.crashX+185,520*dt);
+      s.alien.reveal=Math.max(0,1-s.pt/4.6);
+      if(s.pt>0.35&&s.pt<2.8&&Math.random()<dt*18)s.fx.push({x:u.x+(Math.random()-.5)*90,y:u.y+(Math.random()-.5)*40,life:.7+Math.random()*.6,c:Math.random()<.55?"gold":"smoke"});
+      if(s.pt>=5.2){u.vis=false;s.alien.reveal=0;next(s,"over");return "continue";}
+      break;
+    }
   }
   s.fx=s.fx.filter(f=>(f.life-=dt)>0);
   return null;
