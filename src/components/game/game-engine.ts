@@ -69,7 +69,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       if(s.pt>=2.6) { const a=s.allies[1]; a.dead=true; a.hp=0; }
       if(s.pt>=5){s.jets[0].x=s.cam-150;s.jets[1].x=s.cam-320;s.jets.forEach(j=>j.fired=[false,false]);s.jetShots=[];s.ufoHits=0;s.alienHit=false;s.alien.y=GROUND;s.alien.reveal=1;next(s,"jets");} break;
     }
-            case "fade": if(s.pt>=3.5) next(s,"jets"); break;
+            
         case "jets": {
       for(const jet of s.jets){
         if(s.pt>=jet.start)jet.x+=900*dt;
