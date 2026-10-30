@@ -11,6 +11,8 @@ export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien",
 export function shotInterval(hp: number) { return (hp < 40 ? 0.9 : 1.4) / DIFFICULTY.frequency; }
 export function projectileDamage(b: {kind?: string}) { return b.kind === "stone" ? 3 : 4; }
 export type Shot = { x: number; y: number; vx: number; vy: number; life: number; kind?: "stone" };
+type Jet = { x: number; y: number; start: number; fired: [boolean, boolean] };
+type JetShot = { x: number; y: number; vx: number; vy: number; life: number; target: "ufo" | "alien" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
 export function newState() {
   return {
@@ -21,7 +23,7 @@ export function newState() {
     u: { x: 600, y: -80, hp: 100, hit: 0, tx: 600, cd: 2, vis: false },
     shots: [] as Shot[], lasers: [] as Shot[], fx: [] as { x: number; y: number; life: number; c: string }[],
     allies: [{ x: 430, y: GROUND, hp: 100, hurt: 0, cd: 0.3, walk: 0, dead: false }, { x: 490, y: GROUND, hp: 100, hurt: 0, cd: 0.8, walk: 0, dead: false }] as [Ally, Ally],
-        recruited: false, pendingHelp: false, jetSoundPlayed: false, crashX: 2820, crashStart: { x: 0, y: 0 }, alien: { x: 2840, reveal: 0, stand: 0, riseFrame: 0 },
+        recruited: false, pendingHelp: false, crashX: 2820, crashStart: { x: 0, y: 0 }, jets: [{ x: 0, y: 125, start: 0.2, fired: [false, false] }, { x: 0, y: 185, start: 0.5, fired: [false, false] }] as Jet[], jetShots: [] as JetShot[], alien: { x: 2840, y: GROUND, reveal: 0, stand: 0, riseFrame: 0 }, alienHit: false, ufoHits: 0,
     msg: "", msgT: 0, keys: {} as { l?: boolean; r?: boolean; j?: boolean; c?: boolean; e?: boolean; [k: string]: boolean | undefined }, fire: false, fireCd: 0,
   };
 }
@@ -36,7 +38,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
   const {u,p,cat} = s;
   s.shots = []; s.lasers = []; s.fire = false;
     let cameraTarget = p.x - W * 0.4;
-  if (["crash","arrive","reunion","alien","speech","attack","fade"].includes(s.phase)) cameraTarget = (s.phase === "crash" ? u.x : s.crashX - 70) - W * 0.55;
+    if (["crash","arrive","reunion","alien","speech","attack","jets","fade"].includes(s.phase)) cameraTarget = (s.phase === "crash" ? u.x : s.crashX - 70) - W * 0.55;
   s.cam += (Math.max(0, Math.min(WORLD-W, cameraTarget)) - s.cam) * Math.min(1,dt*3);
   for (const a of s.allies) a.hurt = Math.max(0,a.hurt-dt);
     switch(s.phase) {
@@ -65,14 +67,34 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       if(s.pt>=1.6) { const a=s.allies[0]; a.dead=true; a.hp=0; }
       if(s.pt>2 && s.pt<2.6) s.alien.x=approach(s.alien.x,s.allies[1].x,1200*dt);
       if(s.pt>=2.6) { const a=s.allies[1]; a.dead=true; a.hp=0; }
-      if(s.pt>=5) next(s,"fade"); break;
+      if(s.pt>=5){s.jets[0].x=s.cam-150;s.jets[1].x=s.cam-320;s.jets.forEach(j=>j.fired=[false,false]);s.jetShots=[];s.ufoHits=0;s.alienHit=false;s.alien.y=GROUND;s.alien.reveal=1;next(s,"jets");} break;
     }
-        case "fade": if(s.pt>=3.5) next(s,"jets"); break;
-    case "jets": {
-      s.alien.x=approach(s.alien.x,s.crashX+185,520*dt);
-      s.alien.reveal=Math.max(0,1-s.pt/4.6);
-      if(s.pt>0.35&&s.pt<2.8&&Math.random()<dt*18)s.fx.push({x:u.x+(Math.random()-.5)*90,y:u.y+(Math.random()-.5)*40,life:.7+Math.random()*.6,c:Math.random()<.55?"gold":"smoke"});
-      if(s.pt>=5.2){u.vis=false;s.alien.reveal=0;next(s,"over");return "continue";}
+            
+        case "jets": {
+      for(const jet of s.jets){
+        if(s.pt>=jet.start)jet.x+=900*dt;
+        if(jet.x>=u.x-260&&!jet.fired[0]){
+          jet.fired[0]=true;
+          for(const [target,tx,ty] of [["ufo",u.x,u.y],["alien",s.alien.x,s.alien.y]] as const){const dx=tx-(jet.x+55),dy=ty-jet.y,L=Math.hypot(dx,dy)||1,sp=1050;s.jetShots.push({x:jet.x+55,y:jet.y,vx:dx/L*sp,vy:dy/L*sp,life:2,target});}
+        }
+      }
+      for(const shot of s.jetShots){
+        if(shot.target==="alien"&&s.alien.reveal>0){const dx=s.alien.x-shot.x,dy=s.alien.y-shot.y,L=Math.hypot(dx,dy)||1;shot.vx=dx/L*1050;shot.vy=dy/L*1050;}
+        shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;shot.life-=dt;
+        const tx=shot.target==="ufo"?u.x:s.alien.x,ty=shot.target==="ufo"?u.y:s.alien.y;
+        if(shot.life>0&&Math.abs(shot.x-tx)<48&&Math.abs(shot.y-ty)<42){
+          shot.life=0;
+          if(shot.target==="ufo"){s.ufoHits++;for(let i=0;i<10;i++)s.fx.push({x:u.x+(Math.random()-.5)*70,y:u.y+(Math.random()-.5)*30,life:.8+Math.random()*.7,c:i%2?"gold":"smoke"});}
+          else if(!s.alienHit){s.alienHit=true;for(let i=0;i<8;i++)s.fx.push({x:s.alien.x+(Math.random()-.5)*36,y:s.alien.y-35+(Math.random()-.5)*30,life:.6+Math.random()*.5,c:i%2?"gold":"smoke"});}
+        }
+      }
+      s.jetShots=s.jetShots.filter(shot=>shot.life>0);
+      if(s.alienHit){s.alien.y-=560*dt;if(s.alien.y< -110)s.alien.reveal=0;}
+      if(s.pt>=5.2&&s.jets.every(jet=>jet.x>WORLD+100)&&s.jetShots.length===0&&s.ufoHits>0&&s.alienHit&&s.alien.reveal===0){u.vis=false;next(s,"fade");}
+      break;
+    }
+    case "fade": if(s.pt>=3.5){next(s,"over");return "continue";} break;
+    case "unused-jets-completion": if(s.pt>=5.2){u.vis=false;s.alien.reveal=0;next(s,"over");return "continue";}
       break;
     }
   }

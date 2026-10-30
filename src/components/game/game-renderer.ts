@@ -62,7 +62,7 @@ function alien(c:CanvasRenderingContext2D,s:S,frames:GameImages['alienFrames']) 
  const current=frames[frame];if(!ready(current))return;
  const h=110, w=h*current.naturalWidth/current.naturalHeight;
  c.save();c.imageSmoothingEnabled=false;c.globalAlpha=s.alien.reveal;
- c.drawImage(current,s.alien.x-w/2,GROUND-h,w,h);c.restore();
+   c.drawImage(current,s.alien.x-w/2,s.alien.y-h,w,h);c.restore();
 }
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
  c.clearRect(0,0,W,H);const sky=c.createLinearGradient(0,0,0,GROUND);sky.addColorStop(0,p.sky);sky.addColorStop(.55,p.rose);sky.addColorStop(1,p.gold);c.fillStyle=sky;c.fillRect(0,0,W,H);
@@ -100,14 +100,18 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
    pose(c,im.reunion,1,2,player.x,player.y,96,stand);
   }else if(im && !(player.hurt>0&&Math.floor(player.hurt*20)%2))sprite(c,im.player,player.x,player.y,86,player.face,player.walk,player.crouch);
   if(player.armed>0 && !['reunion','alien','speech','attack','fade','jets'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im?.gun!,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
- if(s.u.vis && !['boom','over'].includes(s.phase))ufo(c,s,p);
+  if(s.u.vis && !['boom','over'].includes(s.phase))ufo(c,s,p);
+ if(s.phase==='jets'&&s.ufoHits>0){c.save();for(let i=0;i<7;i++){const pulse=(s.t*2+i*.8)%3;c.globalAlpha=.45+(pulse/3)*.35;oval(c,p.smoke,s.u.x+Math.sin(i*2+s.t)*28,s.u.y-18-pulse*22,10+pulse*5,13+pulse*7);oval(c,i%2?p.gold:p.red,s.u.x+Math.sin(i*3+s.t*3)*24,s.u.y+Math.cos(i*4)*8,7+pulse*3,11+pulse*4);}c.restore();}
  if(['boom','over'].includes(s.phase)){box(c,p.metal,s.u.x-40,GROUND-12,35,12);box(c,p.ink,s.u.x+10,GROUND-9,25,9);}
    if(im && ['alien','speech','attack','fade','jets'].includes(s.phase))alien(c,s,im.alienFrames);
- if(s.phase==='jets'&&im){
+  if(s.phase==='jets'&&im){
   c.save();c.translate(-s.cam,0);
-  for(const [i,start] of [0.25,1.05].entries()){const elapsed=s.pt-start;if(elapsed<0||elapsed>1.25)continue;const x=s.cam-180+elapsed*1450,y=112+i*76+Math.sin(s.pt*20+i)*5;const w=150,h=w*im.fighter.naturalHeight/im.fighter.naturalWidth;drawTrimmed(c,im.fighter,x-w/2,y-h/2,w,h);c.globalAlpha=.55;c.strokeStyle='#d9e9ef';c.lineWidth=5;c.beginPath();c.moveTo(x-70,y);c.lineTo(x-210,y+8);c.stroke();c.globalAlpha=1;
-   if(elapsed>.34&&elapsed<.82){c.strokeStyle='#f7d76a';c.lineWidth=3;c.beginPath();c.moveTo(x+55,y+3);c.lineTo(s.u.x,s.u.y);c.stroke();}
+  for(const [index,jet] of s.jets.entries()){
+   const w=150,h=w*im.fighter.naturalHeight/im.fighter.naturalWidth;
+   c.globalAlpha=1;drawTrimmed(c,im.fighter,jet.x-w/2,jet.y-h/2,w,h);
+   c.globalAlpha=.72;c.strokeStyle='#d9e9ef';c.lineWidth=5;c.beginPath();c.moveTo(jet.x-65,jet.y);c.lineTo(jet.x-210,jet.y+8);c.stroke();c.globalAlpha=1;
   }
+  for(const shot of s.jetShots){c.strokeStyle='#ffe27a';c.lineWidth=5;c.beginPath();c.moveTo(shot.x,shot.y);c.lineTo(shot.x-shot.vx*.025,shot.y-shot.vy*.025);c.stroke();oval(c,'#fff1a8',shot.x,shot.y,4,4);}
   c.restore();
  }
  for(const b of s.shots) {if(b.kind==='stone'){oval(c,p.stone,b.x,b.y,5,4);box(c,p.light,b.x-2,b.y-2,2,1);}else {c.strokeStyle=p.ice;c.lineWidth=3;c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.012,b.y-b.vy*.012);c.stroke();}}
