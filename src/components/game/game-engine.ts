@@ -23,7 +23,7 @@ export function newState() {
     u: { x: 600, y: -80, hp: 100, hit: 0, tx: 600, cd: 2, vis: false },
     shots: [] as Shot[], lasers: [] as Shot[], fx: [] as { x: number; y: number; life: number; c: string }[],
     allies: [{ x: 430, y: GROUND, hp: 100, hurt: 0, cd: 0.3, walk: 0, dead: false }, { x: 490, y: GROUND, hp: 100, hurt: 0, cd: 0.8, walk: 0, dead: false }] as [Ally, Ally],
-        recruited: false, pendingHelp: false, crashX: 2820, crashStart: { x: 0, y: 0 }, jets: [{ x: 0, y: 125, start: 0.2, fired: [false, false] }, { x: 0, y: 185, start: 0.5, fired: [false, false] }] as Jet[], jetShots: [] as JetShot[], alien: { x: 2840, y: GROUND, reveal: 0, stand: 0, riseFrame: 0 }, alienHit: false,
+        recruited: false, pendingHelp: false, crashX: 2820, crashStart: { x: 0, y: 0 }, jets: [{ x: 0, y: 125, start: 0.2, fired: [false, false] }, { x: 0, y: 185, start: 0.5, fired: [false, false] }] as Jet[], jetShots: [] as JetShot[], alien: { x: 2840, y: GROUND, reveal: 0, stand: 0, riseFrame: 0 }, alienHit: false, ufoHits: 0,
     msg: "", msgT: 0, keys: {} as { l?: boolean; r?: boolean; j?: boolean; c?: boolean; e?: boolean; [k: string]: boolean | undefined }, fire: false, fireCd: 0,
   };
 }
