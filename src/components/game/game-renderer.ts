@@ -99,7 +99,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
    pose(c,im.reunion,0,2,player.x,player.y,96,1-stand);
    pose(c,im.reunion,1,2,player.x,player.y,96,stand);
   }else if(im && !(player.hurt>0&&Math.floor(player.hurt*20)%2))sprite(c,im.player,player.x,player.y,86,player.face,player.walk,player.crouch);
- if(player.armed>0 && !['reunion','alien','speech','attack','fade'].includes(s.phase)) {box(c,p.metal,player.x+player.face*18-4,player.y-(player.crouch?35:48),17,6);if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
+  if(player.armed>0 && !['reunion','alien','speech','attack','fade','jets'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im?.gun!,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
  if(s.u.vis && !['boom','over'].includes(s.phase))ufo(c,s,p);
  if(['boom','over'].includes(s.phase)){box(c,p.metal,s.u.x-40,GROUND-12,35,12);box(c,p.ink,s.u.x+10,GROUND-9,25,9);}
   if(im && ['alien','speech','attack','fade'].includes(s.phase))alien(c,s,im.alienFrames);
