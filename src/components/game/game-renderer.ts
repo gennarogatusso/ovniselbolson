@@ -102,7 +102,14 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
   if(player.armed>0 && !['reunion','alien','speech','attack','fade','jets'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im?.gun!,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
  if(s.u.vis && !['boom','over'].includes(s.phase))ufo(c,s,p);
  if(['boom','over'].includes(s.phase)){box(c,p.metal,s.u.x-40,GROUND-12,35,12);box(c,p.ink,s.u.x+10,GROUND-9,25,9);}
-  if(im && ['alien','speech','attack','fade'].includes(s.phase))alien(c,s,im.alienFrames);
+   if(im && ['alien','speech','attack','fade','jets'].includes(s.phase))alien(c,s,im.alienFrames);
+ if(s.phase==='jets'&&im){
+  c.save();c.translate(-s.cam,0);
+  for(const [i,start] of [0.25,1.05].entries()){const elapsed=s.pt-start;if(elapsed<0||elapsed>1.25)continue;const x=s.cam-180+elapsed*1450,y=112+i*76+Math.sin(s.pt*20+i)*5;const w=150,h=w*im.fighter.naturalHeight/im.fighter.naturalWidth;drawTrimmed(c,im.fighter,x-w/2,y-h/2,w,h);c.globalAlpha=.55;c.strokeStyle='#d9e9ef';c.lineWidth=5;c.beginPath();c.moveTo(x-70,y);c.lineTo(x-210,y+8);c.stroke();c.globalAlpha=1;
+   if(elapsed>.34&&elapsed<.82){c.strokeStyle='#f7d76a';c.lineWidth=3;c.beginPath();c.moveTo(x+55,y+3);c.lineTo(s.u.x,s.u.y);c.stroke();}
+  }
+  c.restore();
+ }
  for(const b of s.shots) {if(b.kind==='stone'){oval(c,p.stone,b.x,b.y,5,4);box(c,p.light,b.x-2,b.y-2,2,1);}else {c.strokeStyle=p.ice;c.lineWidth=3;c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.012,b.y-b.vy*.012);c.stroke();}}
  c.strokeStyle=p.laser;c.lineWidth=4;for(const b of s.lasers){c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.045,b.y-b.vy*.045);c.stroke();}
  for(const f of s.fx){c.globalAlpha=Math.min(1,f.life);oval(c,p[f.c as keyof Palette]??p.gold,f.x,f.y,4+Math.max(0,1-f.life)*12,4+Math.max(0,1-f.life)*12);}c.globalAlpha=1;c.restore();
