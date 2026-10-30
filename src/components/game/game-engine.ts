@@ -69,7 +69,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       if(s.pt>=2.6) { const a=s.allies[1]; a.dead=true; a.hp=0; }
       if(s.pt>=5) next(s,"fade"); break;
     }
-        case "fade": if(s.pt>=3.5) next(s,"jets"); break;
+            case "fade": if(s.pt>=3.5) next(s,"jets"); break;
     case "jets": {
       s.alien.x=approach(s.alien.x,s.crashX+185,520*dt);
       s.alien.reveal=Math.max(0,1-s.pt/4.6);
