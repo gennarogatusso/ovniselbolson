@@ -7,21 +7,21 @@ export const ENDINGS = {
 } as const;
 export type Ending = keyof typeof ENDINGS;
 export type Screen = "title" | "play" | "paused" | "win" | "lose";
-export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade"]);
+export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade", "jets"]);
 export function shotInterval(hp: number) { return (hp < 40 ? 0.9 : 1.4) / DIFFICULTY.frequency; }
 export function projectileDamage(b: {kind?: string}) { return b.kind === "stone" ? 3 : 4; }
 export type Shot = { x: number; y: number; vx: number; vy: number; life: number; kind?: "stone" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
 export function newState() {
   return {
-                t: 0, phase: "walk" as "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade",
+                t: 0, phase: "walk" as "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets",
     pt: 0, cam: 0,
     p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0 },
     cat: { x: 150, y: GROUND, gone: false, walk: 0 },
     u: { x: 600, y: -80, hp: 100, hit: 0, tx: 600, cd: 2, vis: false },
     shots: [] as Shot[], lasers: [] as Shot[], fx: [] as { x: number; y: number; life: number; c: string }[],
     allies: [{ x: 430, y: GROUND, hp: 100, hurt: 0, cd: 0.3, walk: 0, dead: false }, { x: 490, y: GROUND, hp: 100, hurt: 0, cd: 0.8, walk: 0, dead: false }] as [Ally, Ally],
-    recruited: false, pendingHelp: false, crashX: 2820, crashStart: { x: 0, y: 0 }, alien: { x: 2840, reveal: 0, stand: 0, riseFrame: 0 },
+        recruited: false, pendingHelp: false, jetSoundPlayed: false, crashX: 2820, crashStart: { x: 0, y: 0 }, alien: { x: 2840, reveal: 0, stand: 0, riseFrame: 0 },
     msg: "", msgT: 0, keys: {} as { l?: boolean; r?: boolean; j?: boolean; c?: boolean; e?: boolean; [k: string]: boolean | undefined }, fire: false, fireCd: 0,
   };
 }
@@ -67,7 +67,14 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       if(s.pt>=2.6) { const a=s.allies[1]; a.dead=true; a.hp=0; }
       if(s.pt>=5) next(s,"fade"); break;
     }
-    case "fade": if(s.pt>=3.5) { next(s,"over"); return "continue"; } break;
+        case "fade": if(s.pt>=3.5) next(s,"jets"); break;
+    case "jets": {
+      s.alien.x=approach(s.alien.x,s.crashX+185,520*dt);
+      s.alien.reveal=Math.max(0,1-s.pt/4.6);
+      if(s.pt>0.35&&s.pt<2.8&&Math.random()<dt*18)s.fx.push({x:u.x+(Math.random()-.5)*90,y:u.y+(Math.random()-.5)*40,life:.7+Math.random()*.6,c:Math.random()<.55?"gold":"smoke"});
+      if(s.pt>=5.2){u.vis=false;s.alien.reveal=0;next(s,"over");return "continue";}
+      break;
+    }
   }
   s.fx=s.fx.filter(f=>(f.life-=dt)>0);
   return null;
