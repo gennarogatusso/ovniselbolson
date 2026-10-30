@@ -15,7 +15,7 @@ describe('OVNI difficulty and narrative', () => {
     const s=newState();s.phase='fight';s.recruited=true;s.u.hp=3;s.u.x=500;s.u.tx=500;s.shots.push({x:500,y:120,vx:0,vy:0,life:1,kind:'stone'});update(s,.001);expect(s.phase).toBe('crash');
     const phases:string[]=[];let result:string|null=null;
     for(let i=0;i<2000&&!result;i++){if(phases.at(-1)!==s.phase)phases.push(s.phase);result=update(s,.05);if(String(s.phase)==='reunion'){expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);}expect(s.shots).toHaveLength(0);expect(s.lasers).toHaveLength(0);}
-        expect(phases).toEqual(['crash','arrive','reunion','alien','speech','attack','fade','jets']);expect(result).toBe('continue');expect(s.allies.every(a=>a.dead&&a.hp===0)).toBe(true);expect(s.cat.gone).toBe(false);
+        expect(phases).toEqual(['crash','arrive','reunion','alien','speech','attack','jets','fade']);expect(result).toBe('continue');expect(s.allies.every(a=>a.dead&&a.hp===0)).toBe(true);expect(s.cat.gone).toBe(false);
   });
   it('restart resets allies, cat, cinematic and recruitment',()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
 });
