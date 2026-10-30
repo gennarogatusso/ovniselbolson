@@ -67,7 +67,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       if(s.pt>=1.6) { const a=s.allies[0]; a.dead=true; a.hp=0; }
       if(s.pt>2 && s.pt<2.6) s.alien.x=approach(s.alien.x,s.allies[1].x,1200*dt);
       if(s.pt>=2.6) { const a=s.allies[1]; a.dead=true; a.hp=0; }
-      if(s.pt>=5) next(s,"fade"); break;
+      if(s.pt>=5) next(s,"jets"); break;
     }
             case "fade": if(s.pt>=3.5) next(s,"jets"); break;
     case "jets": {
