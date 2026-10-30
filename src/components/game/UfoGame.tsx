@@ -37,8 +37,12 @@ export function UfoGame() {
   const colors=palette.current;
   ctx.imageSmoothingEnabled=true;let raf=0,last=performance.now(),acc=0;
   const loop=(now:number)=>{const dt=Math.min(.05,(now-last)/1000);last=now;
-   try{
-    if(screen==='play'){
+      try{
+    if(st.current.phase==='jets'&&!st.current.jetSoundPlayed){
+     st.current.jetSoundPlayed=true;
+     try{const audio=new AudioContext();void audio.resume();const start=audio.currentTime;const engine=audio.createOscillator(),gain=audio.createGain();engine.type='sawtooth';engine.frequency.setValueAtTime(58,start);engine.frequency.exponentialRampToValueAtTime(125,start+1.4);gain.gain.setValueAtTime(.001,start);gain.gain.linearRampToValueAtTime(.12,start+.35);gain.gain.exponentialRampToValueAtTime(.001,start+4.5);engine.connect(gain);gain.connect(audio.destination);engine.start(start);engine.stop(start+4.6);for(const t of [1.05,1.75,2.2]){const shot=audio.createOscillator(),volume=audio.createGain();shot.type='square';shot.frequency.setValueAtTime(720,t+start);shot.frequency.exponentialRampToValueAtTime(110,t+start+.16);volume.gain.setValueAtTime(.09,t+start);volume.gain.exponentialRampToValueAtTime(.001,t+start+.18);shot.connect(volume);volume.connect(audio.destination);shot.start(t+start);shot.stop(t+start+.2);}}catch{}
+    }
+    if(screen==='play'){ 
      const result=update(st.current,dt);acc+=dt;
      if(acc>.12){acc=0;setContext(canAskHelp(st.current));setCombat(st.current.phase==='fight');}
      if(result){setEnding(result==='win'?'revenge':result==='continue'?'continuation':null);setScreen(result==='lose'?'lose':'win');}
