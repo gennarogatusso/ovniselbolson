@@ -11,6 +11,8 @@ export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien",
 export function shotInterval(hp: number) { return (hp < 40 ? 0.9 : 1.4) / DIFFICULTY.frequency; }
 export function projectileDamage(b: {kind?: string}) { return b.kind === "stone" ? 3 : 4; }
 export type Shot = { x: number; y: number; vx: number; vy: number; life: number; kind?: "stone" };
+type Jet = { x: number; y: number; start: number; fired: [boolean, boolean] };
+type JetShot = { x: number; y: number; vx: number; vy: number; life: number; target: "ufo" | "alien" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
 export function newState() {
   return {
