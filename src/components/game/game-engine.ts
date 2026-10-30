@@ -70,11 +70,27 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       if(s.pt>=5) next(s,"jets"); break;
     }
             case "fade": if(s.pt>=3.5) next(s,"jets"); break;
-    case "jets": {
-      s.alien.x=approach(s.alien.x,s.crashX+185,520*dt);
-      s.alien.reveal=Math.max(0,1-s.pt/4.6);
-      if(s.pt>0.35&&s.pt<2.8&&Math.random()<dt*18)s.fx.push({x:u.x+(Math.random()-.5)*90,y:u.y+(Math.random()-.5)*40,life:.7+Math.random()*.6,c:Math.random()<.55?"gold":"smoke"});
-      if(s.pt>=5.2 && s.jets.every(jet=>jet.x>WORLD+100) && s.jetShots.length===0 && s.alien.reveal===0){u.vis=false;next(s,"fade");}
+        case "jets": {
+      for(const jet of s.jets){
+        if(s.pt>=jet.start)jet.x+=900*dt;
+        if(jet.x>=u.x-260&&!jet.fired[0]){
+          jet.fired[0]=true;
+          for(const [target,tx,ty] of [["ufo",u.x,u.y],["alien",s.alien.x,s.alien.y]] as const){const dx=tx-(jet.x+55),dy=ty-jet.y,L=Math.hypot(dx,dy)||1,sp=1050;s.jetShots.push({x:jet.x+55,y:jet.y,vx:dx/L*sp,vy:dy/L*sp,life:2,target});}
+        }
+      }
+      for(const shot of s.jetShots){
+        if(shot.target==="alien"&&s.alien.reveal>0){const dx=s.alien.x-shot.x,dy=s.alien.y-shot.y,L=Math.hypot(dx,dy)||1;shot.vx=dx/L*1050;shot.vy=dy/L*1050;}
+        shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;shot.life-=dt;
+        const tx=shot.target==="ufo"?u.x:s.alien.x,ty=shot.target==="ufo"?u.y:s.alien.y;
+        if(shot.life>0&&Math.abs(shot.x-tx)<48&&Math.abs(shot.y-ty)<42){
+          shot.life=0;
+          if(shot.target==="ufo"){s.ufoHits++;for(let i=0;i<10;i++)s.fx.push({x:u.x+(Math.random()-.5)*70,y:u.y+(Math.random()-.5)*30,life:.8+Math.random()*.7,c:i%2?"gold":"smoke"});}
+          else if(!s.alienHit){s.alienHit=true;for(let i=0;i<8;i++)s.fx.push({x:s.alien.x+(Math.random()-.5)*36,y:s.alien.y-35+(Math.random()-.5)*30,life:.6+Math.random()*.5,c:i%2?"gold":"smoke"});}
+        }
+      }
+      s.jetShots=s.jetShots.filter(shot=>shot.life>0);
+      if(s.alienHit){s.alien.y-=560*dt;if(s.alien.y< -110)s.alien.reveal=0;}
+      if(s.pt>=5.2&&s.jets.every(jet=>jet.x>WORLD+100)&&s.jetShots.length===0&&s.ufoHits>0&&s.alienHit&&s.alien.reveal===0){u.vis=false;next(s,"fade");}
       break;
     }
     case "fade": if(s.pt>=3.5){next(s,"over");return "continue";} break;
