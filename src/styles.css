@@ -165,7 +165,10 @@
   .game-overlay { gap: 8px; }
   .game-overlay p { font-size: 11px; }
   .game-overlay a { font-size: 10px; height: 26px; }
-  .game-control { width: 42px; height: 42px; padding: 0; }
+    .game-control { width: clamp(52px, 14vw, 68px); height: clamp(52px, 14vw, 68px); padding: 0; }
+  .game-control svg { width: 27px; height: 27px; }
+  .game-touch > div { gap: clamp(8px, 2.5vw, 16px); }
+  .game-touch { padding-inline: max(12px, env(safe-area-inset-left)); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
 }
 @media(max-height:450px) {
   .game-title { font-size: 32px; }
