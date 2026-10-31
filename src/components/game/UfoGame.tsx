@@ -56,7 +56,10 @@ export function UfoGame() {
  const start=()=>{st.current=newState();setEnding(null);setContext(false);setCombat(false);setScreen('play');};
  const pause=()=>{st.current.keys={};st.current.fire=false;setScreen('paused');};
  const fullscreen=async()=>{const el=host.current;if(!el)return;if(document.fullscreenElement){await document.exitFullscreen();return;}if(expanded){setExpanded(false);return;}try{if(el.requestFullscreen){await el.requestFullscreen();setExpanded(true);}else setExpanded(true);}catch{setExpanded(true);}};
- const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});
+  const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});
+ const joystickMove=(e:PointerEvent<HTMLDivElement>)=>{const r=e.currentTarget.getBoundingClientRect(),dx=(e.clientX-(r.left+r.width/2))/(r.width*.34);st.current.keys.l=dx<-.18;st.current.keys.r=dx>.18;};
+ const joystickStart=(e:PointerEvent<HTMLDivElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);joystickMove(e);};
+ const joystickStop=()=>{st.current.keys.l=false;st.current.keys.r=false;};
  const fire=(e:PointerEvent)=>{if(screen!=='play'||CINEMATIC.has(st.current.phase))return;e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.fire=true;};
  const controlClass='game-control rounded-full border border-silver/50 bg-background/70 text-foreground touch-none';
  return <div ref={host} className={`ufo-game ${expanded?'game-expanded':''}`} data-screen={screen}>
@@ -66,9 +69,9 @@ export function UfoGame() {
     {screen==='play'&&<Button size="icon" variant="outline" title="Pausar" aria-label="Pausar" onClick={pause}><Pause/></Button>}
     <Button size="icon" variant="outline" title={expanded?'Salir de pantalla completa':'Pantalla completa'} aria-label={expanded?'Salir de pantalla completa':'Pantalla completa'} onClick={fullscreen}>{expanded?<Minimize/>:<Maximize/>}</Button>
    </div>
-   {screen==='play'&&touch&&!CINEMATIC.has(st.current.phase)&&<div className="game-touch pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-between px-3">
-    <div className="pointer-events-auto flex items-end gap-2"><Button className={controlClass} aria-label="Mover izquierda" {...hold('l')}><ArrowLeft/></Button><Button className={controlClass} aria-label="Mover derecha" {...hold('r')}><ArrowRight/></Button><Button className={controlClass} aria-label="Agacharse" {...hold('c')}><ArrowDown/></Button></div>
-    <div className="pointer-events-auto flex items-end gap-2">{context&&<Button className={controlClass} aria-label="Pedir ayuda a los pibes" {...hold('e')}><Hand/></Button>}<Button className={controlClass} aria-label="Saltar" {...hold('j')}><ArrowUp/></Button>{combat&&<Button className={controlClass} aria-label="Disparar" onPointerDown={fire} onPointerUp={()=>{st.current.fire=false;}} onPointerCancel={()=>{st.current.fire=false;}}><Crosshair/></Button>}</div>
+      {screen==='play'&&touch&&!CINEMATIC.has(st.current.phase)&&<div className="game-touch pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-between px-3">
+        <div className="pointer-events-auto flex items-end gap-2"><div className="game-joystick" role="group" aria-label="Joystick de movimiento" onPointerDown={joystickStart} onPointerMove={joystickMove} onPointerUp={joystickStop} onPointerCancel={joystickStop}><span className="game-joystick-thumb"/><ArrowLeft className="game-joystick-left"/><ArrowRight className="game-joystick-right"/></div><Button className={`${controlClass} game-move-control`} aria-label="Agacharse" {...hold('c')}><ArrowDown/></Button></div>
+    <div className="pointer-events-auto flex items-end gap-2">{context&&<Button className={controlClass} aria-label="Pedir ayuda a los pibes" {...hold('e')}><Hand/></Button>}<Button className={controlClass} aria-label="Saltar" {...hold('j')}><ArrowUp/></Button>{combat&&<Button className={`${controlClass} game-fire-control`} aria-label="Disparar" onPointerDown={fire} onPointerUp={()=>{st.current.fire=false;}} onPointerCancel={()=>{st.current.fire=false;}}><Crosshair/></Button>}</div>
    </div>}
    {screen==='play'&&!touch&&context&&<Button className="absolute bottom-4 left-1/2 -translate-x-1/2" onClick={()=>{st.current.keys.e=true;}}><Hand/> PEDIR AYUDA A LOS PIBES · E</Button>}
    {screen!=='play'&&<div className="game-overlay absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/65 px-5 text-center">

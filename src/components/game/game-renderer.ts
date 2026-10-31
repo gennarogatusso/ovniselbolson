@@ -34,7 +34,7 @@ function catSprite(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:num
 }
 function person(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,t:number,i:number,dead=false) {
  c.save();c.translate(x,y);if(dead){c.rotate(-Math.PI/2);c.translate(15,0);}const b=dead?0:Math.sin(t*2+i)*1.5;
- drawNpc(c,im,0,-66+b,66);c.restore();
+   drawNpc(c,im,0,b,86);c.restore();
 }
 const npcSprites=new WeakMap<HTMLImageElement,HTMLCanvasElement>();
 function drawNpc(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,h:number) {
