@@ -89,7 +89,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
         }
       }
       s.jetShots=s.jetShots.filter(shot=>shot.life>0);
-      if(s.alienHit){s.alien.y-=560*dt;if(s.alien.y< -110)s.alien.reveal=0;}
+      if(s.alienHit)s.alien.reveal=Math.max(0,s.alien.reveal-dt);
       if(s.pt>=5.2&&s.jets.every(jet=>jet.x>WORLD+100)&&s.jetShots.length===0&&s.ufoHits>0&&s.alienHit&&s.alien.reveal===0){u.vis=false;next(s,"fade");}
       break;
     }
