@@ -36,6 +36,21 @@ function person(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number
  c.save();c.translate(x,y);if(dead){c.rotate(-Math.PI/2);c.translate(15,0);}const b=dead?0:Math.sin(t*2+i)*1.5;
  drawNpc(c,im,0,-66+b,66);c.restore();
 }
+const npcSprites=new WeakMap<HTMLImageElement,HTMLCanvasElement>();
+function drawNpc(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,h:number) {
+ if(!ready(im))return;
+ let sprite=npcSprites.get(im);
+ if(!sprite){
+  sprite=document.createElement('canvas');sprite.width=im.naturalWidth;sprite.height=im.naturalHeight;
+  const q=sprite.getContext('2d');if(!q)return;q.drawImage(im,0,0);
+  const image=q.getImageData(0,0,sprite.width,sprite.height),data=image.data,w=sprite.width,hh=sprite.height,seen=new Uint8Array(w*hh),stack=new Int32Array(w*hh);let count=0;
+  const add=(n:number)=>{if(!seen[n]){const k=n*4;if(Math.max(data[k],data[k+1],data[k+2])<28){seen[n]=1;stack[count++]=n;}}};
+  for(let xx=0;xx<w;xx++){add(xx);add((hh-1)*w+xx);}for(let yy=0;yy<hh;yy++){add(yy*w);add(yy*w+w-1);}
+  while(count){const n=stack[--count],xx=n%w,yy=Math.floor(n/w);data[n*4+3]=0;if(xx)add(n-1);if(xx<w-1)add(n+1);if(yy)add(n-w);if(yy<hh-1)add(n+w);}
+  q.putImageData(image,0,0);npcSprites.set(im,sprite);
+ }
+ const width=h*sprite.width/sprite.height;c.save();c.imageSmoothingEnabled=false;c.drawImage(sprite,x-width/2,y-h,width,h);c.restore();
+}
 function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
  const {u}=s; c.save();c.translate(u.x,u.y);if(s.phase==='crash')c.rotate(Math.sin(s.pt*13)*.25+s.pt*.08);
  if(['arrive','reunion','alien','speech','attack','fade'].includes(s.phase)) c.rotate(.25);
