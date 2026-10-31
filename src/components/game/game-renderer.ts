@@ -85,7 +85,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  c.globalAlpha=.35;for(let i=0;i<10;i++){const x=2800+i*31,y=GROUND-24-Math.sin(i*.6)*32;box(c,p.gold,x,y,2,7);}c.globalAlpha=1;
  for(let i=0;i<25;i++){const x=(i*139+s.t*12)%WORLD;c.globalAlpha=.35;oval(c,p.gold,x,400+Math.sin(i+s.t)*25,2,1);}c.globalAlpha=1;
  if(s.u.vis && s.phase==='beam'){c.globalAlpha=.35;c.fillStyle=p.ice;c.beginPath();c.moveTo(s.u.x-20,s.u.y+14);c.lineTo(s.u.x+20,s.u.y+14);c.lineTo(s.u.x+55,GROUND);c.lineTo(s.u.x-55,GROUND);c.fill();c.globalAlpha=1;}
- for(const [i,a] of s.allies.entries()) { if(a.hurt>0 && Math.floor(a.hurt*15)%2)continue;person(c,a.x,a.y,s.recruited?a.walk:s.t,i,p,a.dead||a.hp<=0);if(s.recruited && s.phase==='fight'){box(c,p.panel,a.x-18,a.y-83,36,4);box(c,p.ice,a.x-18,a.y-83,36*a.hp/100,4);}}
+ for(const [i,a] of s.allies.entries()) { if(a.hurt>0 && Math.floor(a.hurt*15)%2)continue;if(im)person(c,im.allies[i],a.x,a.y,s.recruited?a.walk:s.t,i,a.dead||a.hp<=0);if(s.recruited && s.phase==='fight'){box(c,p.panel,a.x-18,a.y-83,36,4);box(c,p.ice,a.x-18,a.y-83,36*a.hp/100,4);}}
   const hugging=!s.cat.gone && ((s.phase==='reunion'&&Math.abs(s.cat.x-s.p.x)<45)||['alien','speech','attack','fade'].includes(s.phase));
   if(im && !s.cat.gone && !hugging)catSprite(c,im.cat,s.cat.x,s.cat.y,s.cat.walk,s.cat.x>s.p.x?-1:1);
   const player=s.p;
