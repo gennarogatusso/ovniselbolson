@@ -32,12 +32,9 @@ function catSprite(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:num
  if(!ready(im)) return; const h=40,w=h*im.naturalWidth/im.naturalHeight;
  c.save();c.translate(x,y+6+Math.sin(walk)*1);c.scale(face,1);c.drawImage(im,-w/2,-h,w,h);c.restore();
 }
-function person(c:CanvasRenderingContext2D,x:number,y:number,t:number,i:number,p:Palette,dead=false) {
+function person(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,t:number,i:number,dead=false) {
  c.save();c.translate(x,y);if(dead){c.rotate(-Math.PI/2);c.translate(15,0);}const b=dead?0:Math.sin(t*2+i)*1.5;
- box(c,p.ink,-11,-45+b,22,30);box(c,i?p.red:p.ice,-11,-44+b,22,24);
- box(c,p.ink,-9,-22,8,21);box(c,p.ink,2,-22,8,21);box(c,p.light,-12,-3,13,4);box(c,p.light,0,-3,13,4);
- oval(c,p.skin,0,-55+b,10,12);box(c,p.ink,-10,-66+b,20,7);box(c,p.ink,3,-56+b,2,3);
- box(c,p.skin,-16,-42+b,5,22);box(c,p.skin,11,-42+b,5,22);c.restore();
+ drawNpc(c,im,0,-66+b,66);c.restore();
 }
 function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
  const {u}=s; c.save();c.translate(u.x,u.y);if(s.phase==='crash')c.rotate(Math.sin(s.pt*13)*.25+s.pt*.08);
