@@ -1,5 +1,5 @@
 import { ALIEN_MESSAGE, GROUND, H, W, WORLD, canAskHelp, type S } from './game-engine';
-export type GameImages = { mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
+export type GameImages = { mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
 function drawTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,w:number,h:number){if(!ready(im))return;let b=trims.get(im);if(!b){const t=document.createElement('canvas');t.width=im.naturalWidth;t.height=im.naturalHeight;const q=t.getContext('2d');if(!q)return;q.drawImage(im,0,0);const d=q.getImageData(0,0,t.width,t.height).data;let l=t.width,r=0,top=t.height,bot=0;for(let yy=0;yy<t.height;yy++)for(let xx=0;xx<t.width;xx++){const i=(yy*t.width+xx)*4;if(d[i+3]>16&&(d[i]<245||d[i+1]<245||d[i+2]<245)){l=Math.min(l,xx);r=Math.max(r,xx);top=Math.min(top,yy);bot=Math.max(bot,yy);}}b=l<=r&&top<=bot?[l,top,r-l+1,bot-top+1]:[0,0,t.width,t.height];trims.set(im,b);}c.drawImage(im,b[0],b[1],b[2],b[3],x,y,w,h);}
 export type Palette = Record<'sky'|'rose'|'gold'|'sunset'|'light'|'ice'|'panel'|'ink'|'forest'|'trunk'|'wall'|'roof'|'leaf'|'road'|'curb'|'lane'|'shadow'|'hill'|'metal'|'glass'|'laser'|'smoke'|'stone'|'skin'|'red'|'alien',string>;
@@ -32,12 +32,24 @@ function catSprite(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:num
  if(!ready(im)) return; const h=40,w=h*im.naturalWidth/im.naturalHeight;
  c.save();c.translate(x,y+6+Math.sin(walk)*1);c.scale(face,1);c.drawImage(im,-w/2,-h,w,h);c.restore();
 }
-function person(c:CanvasRenderingContext2D,x:number,y:number,t:number,i:number,p:Palette,dead=false) {
+function person(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,t:number,i:number,dead=false) {
  c.save();c.translate(x,y);if(dead){c.rotate(-Math.PI/2);c.translate(15,0);}const b=dead?0:Math.sin(t*2+i)*1.5;
- box(c,p.ink,-11,-45+b,22,30);box(c,i?p.red:p.ice,-11,-44+b,22,24);
- box(c,p.ink,-9,-22,8,21);box(c,p.ink,2,-22,8,21);box(c,p.light,-12,-3,13,4);box(c,p.light,0,-3,13,4);
- oval(c,p.skin,0,-55+b,10,12);box(c,p.ink,-10,-66+b,20,7);box(c,p.ink,3,-56+b,2,3);
- box(c,p.skin,-16,-42+b,5,22);box(c,p.skin,11,-42+b,5,22);c.restore();
+ drawNpc(c,im,0,-66+b,66);c.restore();
+}
+const npcSprites=new WeakMap<HTMLImageElement,HTMLCanvasElement>();
+function drawNpc(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,h:number) {
+ if(!ready(im))return;
+ let sprite=npcSprites.get(im);
+ if(!sprite){
+  sprite=document.createElement('canvas');sprite.width=im.naturalWidth;sprite.height=im.naturalHeight;
+  const q=sprite.getContext('2d');if(!q)return;q.drawImage(im,0,0);
+  const image=q.getImageData(0,0,sprite.width,sprite.height),data=image.data,w=sprite.width,hh=sprite.height,seen=new Uint8Array(w*hh),stack=new Int32Array(w*hh);let count=0;
+  const add=(n:number)=>{if(!seen[n]){const k=n*4;if(Math.max(data[k],data[k+1],data[k+2])<28){seen[n]=1;stack[count++]=n;}}};
+  for(let xx=0;xx<w;xx++){add(xx);add((hh-1)*w+xx);}for(let yy=0;yy<hh;yy++){add(yy*w);add(yy*w+w-1);}
+  while(count){const n=stack[--count],xx=n%w,yy=Math.floor(n/w);data[n*4+3]=0;if(xx)add(n-1);if(xx<w-1)add(n+1);if(yy)add(n-w);if(yy<hh-1)add(n+w);}
+  q.putImageData(image,0,0);npcSprites.set(im,sprite);
+ }
+ const width=h*sprite.width/sprite.height;c.save();c.imageSmoothingEnabled=false;c.drawImage(sprite,x-width/2,y-h,width,h);c.restore();
 }
 function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
  const {u}=s; c.save();c.translate(u.x,u.y);if(s.phase==='crash')c.rotate(Math.sin(s.pt*13)*.25+s.pt*.08);
@@ -74,9 +86,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  c.save();c.translate(-s.cam*.35,0);for(let x=-200;x<WORLD;x+=95){box(c,p.trunk,x,360,5,90);c.fillStyle=p.forest;c.beginPath();c.moveTo(x-27,415);c.lineTo(x+3,320+(x%3)*12);c.lineTo(x+33,415);c.fill();}c.restore();
  c.save();c.translate(-s.cam,0);
  for(let x=40;x<WORLD-500;x+=300){const special=x===340, width=special?205:145;
-  oval(c,p.shadow,x+width/2,GROUND+6,width*.65,9);box(c,p.wall,x,GROUND-90,width,90);
-  c.fillStyle=p.roof;c.beginPath();c.moveTo(x-12,GROUND-87);c.lineTo(x+width/2,GROUND-137);c.lineTo(x+width+12,GROUND-87);c.fill();
-  box(c,p.trunk,x+width-35,GROUND-133,14,37);box(c,p.gold,x+20,GROUND-65,27,30);box(c,p.gold,x+width-48,GROUND-65,27,30);box(c,p.ink,x+width/2-12,GROUND-55,24,55);box(c,p.light,x+width/2+5,GROUND-30,2,2);
+    oval(c,p.shadow,x+width/2,GROUND+6,width*.65,9);if(im)drawTrimmed(c,im.house,x-10,GROUND-137,width+20,137);
   for(let j=0;j<3;j++)box(c,p.trunk,x+width+18+j*15,GROUND-22,3,23);box(c,p.trunk,x+width+14,GROUND-15,52,3);
   const tx=x+width+72;box(c,p.trunk,tx,GROUND-85,9,85);const wind=Math.sin(s.t*1.5+x)*3;
   for(let j=0;j<3;j++){c.fillStyle=p.leaf;c.beginPath();c.moveTo(tx-25+j*4,GROUND-50-j*24);c.lineTo(tx+4+wind,GROUND-115-j*18);c.lineTo(tx+35-j*4,GROUND-50-j*24);c.fill();}
@@ -90,7 +100,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  c.globalAlpha=.35;for(let i=0;i<10;i++){const x=2800+i*31,y=GROUND-24-Math.sin(i*.6)*32;box(c,p.gold,x,y,2,7);}c.globalAlpha=1;
  for(let i=0;i<25;i++){const x=(i*139+s.t*12)%WORLD;c.globalAlpha=.35;oval(c,p.gold,x,400+Math.sin(i+s.t)*25,2,1);}c.globalAlpha=1;
  if(s.u.vis && s.phase==='beam'){c.globalAlpha=.35;c.fillStyle=p.ice;c.beginPath();c.moveTo(s.u.x-20,s.u.y+14);c.lineTo(s.u.x+20,s.u.y+14);c.lineTo(s.u.x+55,GROUND);c.lineTo(s.u.x-55,GROUND);c.fill();c.globalAlpha=1;}
- for(const [i,a] of s.allies.entries()) { if(a.hurt>0 && Math.floor(a.hurt*15)%2)continue;person(c,a.x,a.y,s.recruited?a.walk:s.t,i,p,a.dead||a.hp<=0);if(s.recruited && s.phase==='fight'){box(c,p.panel,a.x-18,a.y-83,36,4);box(c,p.ice,a.x-18,a.y-83,36*a.hp/100,4);}}
+ for(const [i,a] of s.allies.entries()) { if(a.hurt>0 && Math.floor(a.hurt*15)%2)continue;if(im)person(c,im.allies[i],a.x,a.y,s.recruited?a.walk:s.t,i,a.dead||a.hp<=0);if(s.recruited && s.phase==='fight'){box(c,p.panel,a.x-18,a.y-83,36,4);box(c,p.ice,a.x-18,a.y-83,36*a.hp/100,4);}}
   const hugging=!s.cat.gone && ((s.phase==='reunion'&&Math.abs(s.cat.x-s.p.x)<45)||['alien','speech','attack','fade'].includes(s.phase));
   if(im && !s.cat.gone && !hugging)catSprite(c,im.cat,s.cat.x,s.cat.y,s.cat.walk,s.cat.x>s.p.x?-1:1);
   const player=s.p;
