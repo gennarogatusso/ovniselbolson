@@ -165,10 +165,12 @@
   .game-overlay { gap: 8px; }
   .game-overlay p { font-size: 11px; }
   .game-overlay a { font-size: 10px; height: 26px; }
-    .game-control { width: clamp(52px, 14vw, 68px); height: clamp(52px, 14vw, 68px); padding: 0; }
-  .game-control svg { width: 27px; height: 27px; }
-  .game-touch > div { gap: clamp(8px, 2.5vw, 16px); }
-  .game-touch { padding-inline: max(12px, env(safe-area-inset-left)); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+        .game-control { width: clamp(64px, 17vw, 82px); height: clamp(64px, 17vw, 82px); padding: 0; }
+  .game-control svg { width: 31px; height: 31px; }
+  .game-move-control { width: clamp(58px, 15vw, 74px); height: clamp(58px, 15vw, 74px); }
+  .game-fire-control { width: clamp(72px, 19vw, 92px); height: clamp(72px, 19vw, 92px); background-color: rgb(121 239 158 / 40%); }
+  .game-touch > div { gap: clamp(8px, 2vw, 14px); }
+  .game-touch { padding-inline: max(18px, env(safe-area-inset-left)); padding-bottom: max(16px, env(safe-area-inset-bottom)); }
 }
 @media(max-height:450px) {
   .game-title { font-size: 32px; }
