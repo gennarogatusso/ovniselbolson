@@ -71,9 +71,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  c.save();c.translate(-s.cam*.35,0);for(let x=-200;x<WORLD;x+=95){box(c,p.trunk,x,360,5,90);c.fillStyle=p.forest;c.beginPath();c.moveTo(x-27,415);c.lineTo(x+3,320+(x%3)*12);c.lineTo(x+33,415);c.fill();}c.restore();
  c.save();c.translate(-s.cam,0);
  for(let x=40;x<WORLD-500;x+=300){const special=x===340, width=special?205:145;
-  oval(c,p.shadow,x+width/2,GROUND+6,width*.65,9);box(c,p.wall,x,GROUND-90,width,90);
-  c.fillStyle=p.roof;c.beginPath();c.moveTo(x-12,GROUND-87);c.lineTo(x+width/2,GROUND-137);c.lineTo(x+width+12,GROUND-87);c.fill();
-  box(c,p.trunk,x+width-35,GROUND-133,14,37);box(c,p.gold,x+20,GROUND-65,27,30);box(c,p.gold,x+width-48,GROUND-65,27,30);box(c,p.ink,x+width/2-12,GROUND-55,24,55);box(c,p.light,x+width/2+5,GROUND-30,2,2);
+    oval(c,p.shadow,x+width/2,GROUND+6,width*.65,9);if(im)drawTrimmed(c,im.house,x-10,GROUND-137,width+20,137);
   for(let j=0;j<3;j++)box(c,p.trunk,x+width+18+j*15,GROUND-22,3,23);box(c,p.trunk,x+width+14,GROUND-15,52,3);
   const tx=x+width+72;box(c,p.trunk,tx,GROUND-85,9,85);const wind=Math.sin(s.t*1.5+x)*3;
   for(let j=0;j<3;j++){c.fillStyle=p.leaf;c.beginPath();c.moveTo(tx-25+j*4,GROUND-50-j*24);c.lineTo(tx+4+wind,GROUND-115-j*18);c.lineTo(tx+35-j*4,GROUND-50-j*24);c.fill();}
