@@ -56,7 +56,10 @@ export function UfoGame() {
  const start=()=>{st.current=newState();setEnding(null);setContext(false);setCombat(false);setScreen('play');};
  const pause=()=>{st.current.keys={};st.current.fire=false;setScreen('paused');};
  const fullscreen=async()=>{const el=host.current;if(!el)return;if(document.fullscreenElement){await document.exitFullscreen();return;}if(expanded){setExpanded(false);return;}try{if(el.requestFullscreen){await el.requestFullscreen();setExpanded(true);}else setExpanded(true);}catch{setExpanded(true);}};
- const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});
+  const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});
+ const joystickMove=(e:PointerEvent<HTMLDivElement>)=>{const r=e.currentTarget.getBoundingClientRect(),dx=(e.clientX-(r.left+r.width/2))/(r.width*.34);st.current.keys.l=dx<-.18;st.current.keys.r=dx>.18;};
+ const joystickStart=(e:PointerEvent<HTMLDivElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);joystickMove(e);};
+ const joystickStop=()=>{st.current.keys.l=false;st.current.keys.r=false;};
  const fire=(e:PointerEvent)=>{if(screen!=='play'||CINEMATIC.has(st.current.phase))return;e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.fire=true;};
  const controlClass='game-control rounded-full border border-silver/50 bg-background/70 text-foreground touch-none';
  return <div ref={host} className={`ufo-game ${expanded?'game-expanded':''}`} data-screen={screen}>
