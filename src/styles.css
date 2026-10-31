@@ -155,8 +155,8 @@
 .game-title-card button { min-width: 150px; }
 @media(max-width:767px) { .game-title-card { width: min(68%, 390px); padding: 18px; gap: 12px; } .game-title-card p:nth-child(2) { font-size: 14px; } }
 .game-ending { font-size: 40px; line-height: 1.1; max-width: 820px; }
-.game-control { width: 54px; height: 54px; flex-shrink: 0; }
-.game-control svg { width: 22px; height: 22px; }
+.game-control { width: 68px; height: 68px; flex-shrink: 0; border-color: rgb(210 230 245 / 55%); background-color: rgb(18 29 40 / 58%); box-shadow: 0 3px 12px rgb(0 0 0 / 28%); }
+.game-control svg { width: 25px; height: 25px; }
 .game-touch { padding-bottom: env(safe-area-inset-bottom, 0); }
 @media(max-width:767px) {
   .game-stage { width: min(100%, calc((100svh - 4rem) * 16 / 9)); }
