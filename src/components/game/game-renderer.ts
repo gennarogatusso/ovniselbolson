@@ -61,7 +61,7 @@ function alien(c:CanvasRenderingContext2D,s:S,frames:GameImages['alienFrames']) 
  const frame=s.phase==='alien'?Math.min(3,Math.floor(Math.max(0,s.pt-1.5)/1.1)):3;
  const current=frames[frame];if(!ready(current))return;
  const h=110, w=h*current.naturalWidth/current.naturalHeight;
- c.save();c.imageSmoothingEnabled=false;c.globalAlpha=s.alien.reveal;
+   c.save();c.imageSmoothingEnabled=false;c.globalAlpha=s.alien.reveal;
    c.drawImage(current,s.alien.x-w/2,s.alien.y-h,w,h);c.restore();
 }
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
