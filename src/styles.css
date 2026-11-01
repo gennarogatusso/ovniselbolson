@@ -164,6 +164,7 @@
 .game-joystick-left, .game-joystick-right { pointer-events: none; }
 .game-touch { padding-bottom: env(safe-area-inset-bottom, 0); }
 @media(max-width:767px) {
+  .game-intro-action { bottom: 5px; height: 34px; min-height: 34px; font-size: 12px; }
   .game-stage { width: min(100%, calc((100svh - 4rem) * 16 / 9)); }
   .game-title { font-size: 30px; }
   .game-ending { font-size: 23px; }
