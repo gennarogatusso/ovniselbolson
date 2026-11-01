@@ -12,3 +12,4 @@
 - Keep game simulation in game-engine.ts, Canvas drawing in game-renderer.ts, and React input/screens in UfoGame.tsx; this extends the existing engine while keeping both endings testable independently of rendering.
 - Resolve Canvas colors from game-scoped CSS tokens and load uploaded art via asset pointers; this preserves theming and keeps uploaded binaries outside the repository.
 - Store cinematic sprite sequences in fixed-size transparent atlas cells sharing a ground anchor, and blend poses in the renderer only; this preserves original proportions without changing simulation timing.
+- Initialize the playable AWKA prologue through newIntroState while retaining newState as the original adventure baseline; negative-world placement and the existing camera join both scenes without changing combat or ending coordinates.
