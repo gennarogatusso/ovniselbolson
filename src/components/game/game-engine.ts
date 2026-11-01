@@ -16,7 +16,8 @@ type JetShot = { x: number; y: number; vx: number; vy: number; life: number; tar
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
 export function newState() {
   return {
-                t: 0, phase: "walk" as "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets",
+                t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets",
+     intro: { stage: 'opening' as 'opening' | 'beer' | 'drinking' | 'approach' | 'offer' | 'smoking' | 'warning' | 'rising' | 'leave' | 'depart' | 'done', time: 0, drinks: 0, npcX: -285, eHeld: false },
     pt: 0, cam: 0,
     p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0 },
     cat: { x: 150, y: GROUND, gone: false, walk: 0 },
@@ -67,7 +68,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       if(s.pt>=1.6) { const a=s.allies[0]; a.dead=true; a.hp=0; }
       if(s.pt>2 && s.pt<2.6) s.alien.x=approach(s.alien.x,s.allies[1].x,1200*dt);
       if(s.pt>=2.6) { const a=s.allies[1]; a.dead=true; a.hp=0; }
-      if(s.pt>=5){s.jets[0].x=s.cam-150;s.jets[1].x=s.cam-320;s.jets.forEach(j=>j.fired=[false,false]);s.jetShots=[];s.ufoHits=0;s.alienHit=false;s.alien.y=GROUND;s.alien.reveal=1;next(s,"jets");} break;
+      if(s.pt>=5){s.jets.forEach((j,i)=>{j.x=s.cam-150-i*170;j.fired=[false,false];});s.jetShots=[];s.ufoHits=0;s.alienHit=false;s.alien.y=GROUND;s.alien.reveal=1;next(s,"jets");} break;
     }
             
         case "jets": {
@@ -94,17 +95,51 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       break;
     }
     case "fade": if(s.pt>=3.5){next(s,"over");return "continue";} break;
-    case "unused-jets-completion": if(s.pt>=5.2){u.vis=false;s.alien.reveal=0;next(s,"over");return "continue";}
-      break;
     }
   s.fx=s.fx.filter(f=>(f.life-=dt)>0);
   return null;
 }
 function say(s: S, m: string, d = 2.2) { s.msg = m; s.msgT = d; }
 
+// AWKA occupies the street left of the original world; combat coordinates stay unchanged.
+export function newIntroState(): S {
+  const s = newState(); s.phase = 'awka'; s.p.x = -650; s.cat.x = -585; s.cam = -1080; return s;
+}
+export function introAction(s: S): string | null {
+  if (s.phase !== 'awka') return null;
+  return s.intro.stage === 'beer' ? 'Beber cerveza' : s.intro.stage === 'offer' ? 'Aceptar' : s.intro.stage === 'leave' ? 'Irse de la cervecería' : null;
+}
+export function interactIntro(s: S) {
+  if (!introAction(s)) return;
+  s.intro.stage = s.intro.stage === 'beer' ? 'drinking' : s.intro.stage === 'offer' ? 'smoking' : 'depart';
+  s.intro.time = 0;
+}
+function updateIntro(s: S, dt: number) {
+  const a = s.intro; a.time += dt;
+  if (s.keys.e && !a.eHeld) interactIntro(s);
+  a.eHeld = Boolean(s.keys.e);
+  s.fire = false;
+  const advance = (stage: typeof a.stage) => { a.stage = stage; a.time = 0; };
+  switch (a.stage) {
+    case 'opening': if (a.time >= 1.6) advance('beer'); break;
+    case 'drinking': if (a.time >= 1.5) { a.drinks++; advance(a.drinks === 2 ? 'approach' : 'beer'); } break;
+    case 'approach': a.npcX = approach(a.npcX, s.p.x + 95, 95 * dt); if (a.time >= 3.1) advance('offer'); break;
+    case 'smoking': if (a.time >= 4.8) advance('warning'); break;
+    case 'warning': if (a.time >= 3) advance('rising'); break;
+    case 'rising': if (a.time >= 1.2) advance('leave'); break;
+    case 'depart':
+      s.p.x = approach(s.p.x, 200, 150 * dt); s.p.walk += dt * 10; s.p.face = 1;
+      s.cat.x = approach(s.cat.x, s.p.x - 50, 200 * dt); s.cat.walk += dt * 12;
+      s.cam += (Math.min(0, s.p.x - W * .4) - s.cam) * Math.min(1, dt * 5);
+      if (s.p.x >= 200) { advance('done'); next(s, 'walk'); s.keys = {}; }
+      break;
+  }
+}
+
 export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
   const { p, cat, u, keys } = s;
   s.t += dt; s.pt += dt; s.msgT -= dt;
+  if (s.phase === 'awka') { updateIntro(s, dt); return null; }
   const canMove = s.phase === "walk" || s.phase === "fight" || s.phase === "descend";
   if (CINEMATIC.has(s.phase)) return updateCinematic(s, dt);
   if (s.phase === "fight" && canAskHelp(s) && keys.e) { recruit(s); }
