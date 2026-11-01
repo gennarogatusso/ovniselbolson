@@ -77,11 +77,21 @@ function alien(c:CanvasRenderingContext2D,s:S,frames:GameImages['alienFrames']) 
    c.save();c.imageSmoothingEnabled=false;c.globalAlpha=s.alien.reveal;
    c.drawImage(current,s.alien.x-w/2,s.alien.y-h,w,h);c.restore();
 }
+function breeze(c:CanvasRenderingContext2D,s:S,p:Palette) {
+ c.save();c.globalAlpha=.32;
+ for(let i=0;i<6;i++){
+  const x=((i*179+s.t*9)% (W+40))-20+s.cam;
+  const y=(i%2?GROUND-35:245)+Math.sin(s.t*.7+i*2)*7;
+  box(c,i%3===0?p.gold:p.leaf,Math.round(x),Math.round(y),4,2);
+  box(c,p.leaf,Math.round(x)+2,Math.round(y)-1,2,1);
+ }
+ c.restore();
+}
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
  c.clearRect(0,0,W,H);const sky=c.createLinearGradient(0,0,0,GROUND);sky.addColorStop(0,p.sky);sky.addColorStop(.55,p.rose);sky.addColorStop(1,p.gold);c.fillStyle=sky;c.fillRect(0,0,W,H);
  // Single proportion-preserving panorama; no repeating mountain or text artifacts.
  const mountain=im&&(s.phase==='awka'?im.intro.mountain:im.mountain);
- if(mountain && ready(mountain)){const h=430,w=h*mountain.naturalWidth/mountain.naturalHeight; c.drawImage(mountain,(W-w)/2-s.cam*.015,GROUND-h,w,h);c.globalCompositeOperation='soft-light';box(c,p.sunset,0,0,W,GROUND);c.globalCompositeOperation='source-over';}
+ if(mountain && ready(mountain)){const ratio=mountain.naturalWidth/mountain.naturalHeight,h=Math.max(GROUND,(W+WORLD*.03)/ratio),w=h*ratio; c.drawImage(mountain,(W-w)/2-s.cam*.015,GROUND-h,w,h);c.globalCompositeOperation='soft-light';box(c,p.sunset,0,0,W,GROUND);c.globalCompositeOperation='source-over';}
   c.globalAlpha=.15;for(let i=0;i<5;i++){const x=(i*243+s.t*2)%1200-100;oval(c,p.light,x,50+i*13,90,9);}c.globalAlpha=1;
  
  // Distant forest, then the town and the playable street.
@@ -96,11 +106,13 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  box(c,p.road,-1200,GROUND,WORLD+1200,H-GROUND);box(c,p.curb,-1200,GROUND,WORLD+1200,7);for(let x=0;x<WORLD;x+=100)box(c,p.lane,x,GROUND+51,45,3);
  if(im && s.cam < 0){
   const art=im.intro, width=1050, height=width*art.building.naturalHeight/art.building.naturalWidth;
-  if(ready(art.building))c.drawImage(art.building,-1050,GROUND-height,width,height);
+  if(ready(art.building))c.drawImage(art.building,-1050,GROUND-height+6,width,height);
+  breeze(c,s,p);
   person(c,im.allies[0],s.intro.npcX,GROUND,s.intro.stage==='approach'?s.t*5:0,0);
   person(c,im.allies[1],-950,GROUND,0,1);
   if(['offer','smoking','warning'].includes(s.intro.stage))box(c,p.laser,s.intro.npcX-18,GROUND-44,11,3);
  }
+ if(s.cam>=0)breeze(c,s,p);
  if(s.phase==='awka' && im){
   const a=s.intro, art=im.intro;
   if(a.stage==='depart'){
