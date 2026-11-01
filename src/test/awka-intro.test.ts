@@ -26,7 +26,9 @@ describe('AWKA introduction', () => {
     const s = newIntroState(), player = s.p, cat = s.cat;
     s.intro.stage = 'leave'; interactIntro(s); advance(s, 5.7);
     expect(s.phase).toBe('walk'); expect(s.p).toBe(player); expect(s.cat).toBe(cat);
-    expect(s.p.x).toBe(200); expect(s.cat.x).toBeCloseTo(150); expect(s.cam).toBeCloseTo(0, 1);
+    expect(s.p.x).toBe(200); expect(s.cat.x).toBeCloseTo(150);
+    // Camera keeps easing into the original view instead of snapping at the boundary.
+    expect(s.cam).toBeLessThan(0); expect(s.cam).toBeGreaterThan(-200);
     expect(s.u.vis).toBe(false); expect(s.p.hp).toBe(100); expect(s.p.armed).toBe(0);
     advance(s, 3.6); expect(s.phase).toBe('descend'); expect(s.u.vis).toBe(true);
   });
