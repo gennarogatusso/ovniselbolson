@@ -113,7 +113,7 @@ function bedroom(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  if(ready(art.bedroom)){const scale=Math.min(W/art.bedroom.naturalWidth,H/art.bedroom.naturalHeight),w=art.bedroom.naturalWidth*scale,h=art.bedroom.naturalHeight*scale;c.drawImage(art.bedroom,(W-w)/2,(H-h)/2,w,h);}
  const sleeping=['quiet','light','wakeChoice'].includes(a.stage),sitting=['settle','waking','missing','search','complete'].includes(a.stage);
  if(sleeping)still(c,art.sleeping,524,287,57);
- else if(sitting){const q=a.stage==='settle'?Math.min(1,a.time/1.6):a.stage==='waking'?Math.min(1,a.time/1.1):1;still(c,art.waking,524,295,100,a.stage==='settle'?1-q:q);still(c,art.sleeping,524,287,57,a.stage==='settle'?q:1-q);}
+ else if(sitting){const q=a.stage==='settle'?Math.min(1,a.time/1.6):a.stage==='waking'?Math.min(1,a.time/1.1):1;still(c,art.waking,524,295,70,a.stage==='settle'?1-q:q);still(c,art.sleeping,524,287,57,a.stage==='settle'?q:1-q);}
  else sprite(c,im.player,a.roomX,a.roomY,86,a.stage==='toBed'?-1:1,['feed','toBed'].includes(a.stage)?s.t*8:0);
  if(!a.catGone){
   if(['roomFade','feed'].includes(a.stage))still(c,im.intro.cat,744,448,33);
@@ -135,6 +135,10 @@ function bedroom(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  if(a.stage==='search'||a.stage==='complete'){c.globalAlpha=a.stage==='complete'?1:Math.min(1,a.time/2.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
 }
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
+ if(im&&s.phase==='bedroom'&&s.chapter.stage==='roomFade'&&s.chapter.time<1.2){
+  draw(c,{...s,phase:'aftermath',chapter:{...s.chapter,stage:'leave'}},im,p);
+  c.globalAlpha=Math.min(1,s.chapter.time/1.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;return;
+ }
  if(im&&(s.phase==='bedroom'||s.chapter.stage==='complete')){bedroom(c,s,im,p);return;}
  c.clearRect(0,0,W,H);const sky=c.createLinearGradient(0,0,0,GROUND);sky.addColorStop(0,p.sky);sky.addColorStop(.55,p.rose);sky.addColorStop(1,p.gold);c.fillStyle=sky;c.fillRect(0,0,W,H);
  // Single proportion-preserving panorama; no repeating mountain or text artifacts.
