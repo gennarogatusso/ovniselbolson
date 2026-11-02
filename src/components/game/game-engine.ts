@@ -7,7 +7,7 @@ export const ENDINGS = {
 } as const;
 export type Ending = keyof typeof ENDINGS;
 export type Screen = "title" | "play" | "paused" | "win" | "lose";
-export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade", "jets"]);
+export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade", "jets", "aftermath", "bedroom"]);
 export function shotInterval(hp: number) { return (hp < 40 ? 0.9 : 1.4) / DIFFICULTY.frequency; }
 export function projectileDamage(b: {kind?: string}) { return b.kind === "stone" ? 3 : 4; }
 export type Shot = { x: number; y: number; vx: number; vy: number; life: number; kind?: "stone" };
@@ -16,7 +16,8 @@ type JetShot = { x: number; y: number; vx: number; vy: number; life: number; tar
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
 export function newState() {
   return {
-                t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets",
+                t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom",
+     chapter: { enabled: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'complete', time: 0, truckX: 0, roomX: 335, roomY: 390, catGone: false, eHeld: false },
      intro: { stage: 'opening' as 'opening' | 'beer' | 'drinking' | 'approach' | 'offer' | 'smoking' | 'warning' | 'rising' | 'leave' | 'depart' | 'done', time: 0, drinks: 0, npcX: -285, eHeld: false },
     pt: 0, cam: 0,
     p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0 },
@@ -91,7 +92,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       }
       s.jetShots=s.jetShots.filter(shot=>shot.life>0);
       if(s.alienHit)s.alien.reveal=Math.max(0,s.alien.reveal-dt);
-      if(s.pt>=5.2&&s.jets.every(jet=>jet.x>WORLD+100)&&s.jetShots.length===0&&s.ufoHits>0&&s.alienHit&&s.alien.reveal===0){u.vis=false;next(s,"fade");}
+       if(s.pt>=5.2&&s.jets.every(jet=>jet.x>WORLD+100)&&s.jetShots.length===0&&s.ufoHits>0&&s.alienHit&&s.alien.reveal===0){u.vis=false;if(s.chapter.enabled){s.chapter.truckX=s.cam-190;next(s,"aftermath");}else next(s,"fade");}
       break;
     }
     case "fade": if(s.pt>=3.5){next(s,"over");return "continue";} break;
@@ -103,7 +104,42 @@ function say(s: S, m: string, d = 2.2) { s.msg = m; s.msgT = d; }
 
 // AWKA occupies the street left of the original world; combat coordinates stay unchanged.
 export function newIntroState(): S {
-  const s = newState(); s.phase = 'awka'; s.p.x = -650; s.cat.x = -585; s.cam = -1080; return s;
+  const s = newState(); s.phase = 'awka'; s.p.x = -650; s.cat.x = -585; s.cam = -1080; s.chapter.enabled = true; return s;
+}
+export function chapterAction(s: S): string | null {
+  if(s.phase!=='aftermath' && s.phase!=='bedroom')return null;
+  switch(s.chapter.stage){case 'leave':return 'IRSE';case 'sleepChoice':return 'DORMIR';case 'wakeChoice':return 'LEVANTARSE';case 'missing':return 'IR A BUSCAR AL GATO';default:return null;}
+}
+export function interactChapter(s:S){
+  if(!chapterAction(s))return;
+  const a=s.chapter;
+  if(a.stage==='leave'){s.phase='bedroom';s.pt=0;a.stage='roomFade';}
+  else if(a.stage==='sleepChoice')a.stage='toBed';
+  else if(a.stage==='wakeChoice'){a.stage='waking';a.catGone=true;s.cat.gone=true;}
+  else if(a.stage==='missing')a.stage='search';
+  a.time=0;s.keys={};s.fire=false;
+}
+function updateChapter(s:S,dt:number): 'continue'|null {
+  const a=s.chapter;a.time+=dt;s.fire=false;s.shots=[];s.lasers=[];
+  if(s.keys.e&&!a.eHeld)interactChapter(s);a.eHeld=Boolean(s.keys.e);
+  const advance=(stage:typeof a.stage)=>{a.stage=stage;a.time=0;};
+  switch(a.stage){
+    case 'truck': a.truckX=approach(a.truckX,s.crashX-440,145*dt);if(a.time>=4)advance('unload');break;
+    case 'unload': if(a.time>=4.2)advance('trump');break;
+    case 'trump': if(a.time>=4.8)advance('approach');break;
+    case 'approach': if(a.time>=2.2)advance('milei');break;
+    case 'milei': if(a.time>=4)advance('leave');break;
+    case 'roomFade': if(a.time>=2.4)advance('feed');break;
+    case 'feed': a.roomX=approach(a.roomX,717,100*dt);a.roomY=approach(a.roomY,434,20*dt);if(a.roomX===717)advance('meal');break;
+    case 'meal': if(a.time>=3.5)advance('sleepChoice');break;
+    case 'toBed': a.roomX=approach(a.roomX,533,95*dt);a.roomY=approach(a.roomY,311,63.5*dt);if(a.roomX===533&&a.roomY===311)advance('settle');break;
+    case 'settle': if(a.time>=1.6)advance('quiet');break;
+    case 'quiet': if(a.time>=3)advance('light');break;
+    case 'light': if(a.time>=8)advance('wakeChoice');break;
+    case 'waking': if(a.time>=2)advance('missing');break;
+    case 'search': if(a.time>=2.2){advance('complete');s.phase='over';return 'continue';}break;
+  }
+  return null;
 }
 export function introAction(s: S): string | null {
   if (s.phase !== 'awka') return null;
@@ -139,6 +175,7 @@ function updateIntro(s: S, dt: number) {
 export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
   const { p, cat, u, keys } = s;
   s.t += dt; s.pt += dt; s.msgT -= dt;
+  if(s.phase==='aftermath'||s.phase==='bedroom')return updateChapter(s,dt);
   if (s.phase === 'awka') { updateIntro(s, dt); return null; }
   const canMove = s.phase === "walk" || s.phase === "fight" || s.phase === "descend";
   if (CINEMATIC.has(s.phase)) return updateCinematic(s, dt);
