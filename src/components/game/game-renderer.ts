@@ -1,9 +1,10 @@
 import { ALIEN_MESSAGE, GROUND, H, W, WORLD, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
-export type GameImages = { intro: IntroImages; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
+export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement };
+export type GameImages = { chapter: ChapterImages; intro: IntroImages; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
 function drawTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,w:number,h:number){if(!ready(im))return;let b=trims.get(im);if(!b){const t=document.createElement('canvas');t.width=im.naturalWidth;t.height=im.naturalHeight;const q=t.getContext('2d');if(!q)return;q.drawImage(im,0,0);const d=q.getImageData(0,0,t.width,t.height).data;let l=t.width,r=0,top=t.height,bot=0;for(let yy=0;yy<t.height;yy++)for(let xx=0;xx<t.width;xx++){const i=(yy*t.width+xx)*4;if((d[i+3]??0)>16&&((d[i]??255)<245||(d[i+1]??255)<245||(d[i+2]??255)<245)){l=Math.min(l,xx);r=Math.max(r,xx);top=Math.min(top,yy);bot=Math.max(bot,yy);}}b=l<=r&&top<=bot?[l,top,r-l+1,bot-top+1]:[0,0,t.width,t.height];trims.set(im,b);}c.drawImage(im,b[0],b[1],b[2],b[3],x,y,w,h);}
-export type Palette = Record<'sky'|'rose'|'gold'|'sunset'|'light'|'ice'|'panel'|'ink'|'forest'|'trunk'|'wall'|'roof'|'leaf'|'road'|'curb'|'lane'|'shadow'|'hill'|'metal'|'glass'|'laser'|'smoke'|'stone'|'skin'|'red'|'alien',string>;
+export type Palette = Record<'turquoise'|'sky'|'rose'|'gold'|'sunset'|'light'|'ice'|'panel'|'ink'|'forest'|'trunk'|'wall'|'roof'|'leaf'|'road'|'curb'|'lane'|'shadow'|'hill'|'metal'|'glass'|'laser'|'smoke'|'stone'|'skin'|'red'|'alien',string>;
 const ready = (im?:HTMLImageElement) => Boolean(im?.complete && im.naturalWidth);
 function box(c:CanvasRenderingContext2D,col:string,x:number,y:number,w:number,h:number) {c.fillStyle=col;c.fillRect(x,y,w,h);}
 function oval(c:CanvasRenderingContext2D,col:string,x:number,y:number,rx:number,ry:number) { if(!(rx>0&&ry>0))return; c.fillStyle=col;c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fill(); }
@@ -87,7 +88,54 @@ function breeze(c:CanvasRenderingContext2D,s:S,p:Palette) {
  }
  c.restore();
 }
+function still(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,h:number,alpha=1){
+ if(!ready(im))return;const w=h*im.naturalWidth/im.naturalHeight;
+ c.save();c.globalAlpha=alpha;c.drawImage(im,x-w/2,y-h,w,h);c.restore();
+}
+function military(c:CanvasRenderingContext2D,s:S,im:ChapterImages){
+ const a=s.chapter;still(c,im.truck,a.truckX,GROUND,137);
+ if(a.stage==='truck')return;
+ const q=a.stage==='unload'?Math.min(1,a.time/4.2):1;
+ for(let i=0;i<4;i++){
+  const delay=i*.12,r=Math.max(0,Math.min(1,(q-delay)/(1-delay))),start=a.truckX+50;
+  const x=start+(s.crashX-130-i*43-start)*r,y=GROUND-18*(1-r);
+  still(c,i<2?im.arg:im.usa,x,y,86,Math.min(1,r*5));
+ }
+ const leaderQ=Math.max(0,Math.min(1,(q-.45)/.55));
+ still(c,im.trump,a.truckX+50+(s.crashX-350-a.truckX-50)*leaderQ,GROUND,88,leaderQ);
+ const walk=['approach','milei','leave'].includes(a.stage)?a.stage==='approach'?Math.min(1,a.time/2.2):1:0;
+ const start=a.truckX+85+(s.crashX-310-a.truckX-85)*leaderQ;
+ still(c,im.milei,start+(s.p.x-57-start)*walk,GROUND,86,leaderQ);
+}
+function bedroom(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
+ const a=s.chapter,art=im.chapter;
+ box(c,p.ink,0,0,W,H);
+ if(ready(art.bedroom)){const scale=Math.min(W/art.bedroom.naturalWidth,H/art.bedroom.naturalHeight),w=art.bedroom.naturalWidth*scale,h=art.bedroom.naturalHeight*scale;c.drawImage(art.bedroom,(W-w)/2,(H-h)/2,w,h);}
+ const sleeping=['quiet','light','wakeChoice'].includes(a.stage),sitting=['settle','waking','missing','search','complete'].includes(a.stage);
+ if(sleeping)still(c,art.sleeping,524,287,57);
+ else if(sitting){const q=a.stage==='settle'?Math.min(1,a.time/1.6):a.stage==='waking'?Math.min(1,a.time/1.1):1;still(c,art.waking,524,295,100,a.stage==='settle'?1-q:q);still(c,art.sleeping,524,287,57,a.stage==='settle'?q:1-q);}
+ else sprite(c,im.player,a.roomX,a.roomY,86,a.stage==='toBed'?-1:1,['feed','toBed'].includes(a.stage)?s.t*8:0);
+ if(!a.catGone){
+  if(['roomFade','feed'].includes(a.stage))still(c,im.intro.cat,744,448,33);
+  else if(a.stage==='meal'){const blend=Math.min(1,a.time/.7);still(c,im.intro.cat,744,448,33,1-blend);still(c,art.eating,751,450,35,blend);}
+  else still(c,art.eating,751,450,35);
+ }
+ // An offscreen source sweeps through the existing windows, never revealing an object.
+ if(a.stage==='light'){
+  const intensity=Math.sin(Math.PI*Math.min(1,a.time/8))*.82;
+  c.save();c.globalCompositeOperation='screen';c.globalAlpha=intensity;
+  const x=650-a.time*26,glow=c.createRadialGradient(x,220,20,x,260,720);glow.addColorStop(0,p.turquoise);glow.addColorStop(1,'transparent');c.fillStyle=glow;c.fillRect(0,0,W,H);
+  c.globalAlpha=intensity*.6;c.fillStyle=p.turquoise;
+  for(let i=0;i<2;i++){c.beginPath();c.moveTo(638+i*65,80+i*24);c.lineTo(694+i*65,102+i*24);c.lineTo(790-a.time*21+i*35,510);c.lineTo(195-a.time*12+i*60,405);c.closePath();c.fill();}
+  c.restore();
+ }
+ if(a.stage==='sleepChoice')bubble(c,'Ha sido un largo día',a.roomX,a.roomY-110,p,500);
+ if(['missing','search'].includes(a.stage))bubble(c,'¿DÓNDE ESTÁ EL GATO?',524,165,p,600);
+ if(a.stage==='roomFade'){const alpha=a.time<1.2?1:1-(a.time-1.2)/1.2;c.globalAlpha=Math.max(0,alpha);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+ if(a.stage==='search'||a.stage==='complete'){c.globalAlpha=a.stage==='complete'?1:Math.min(1,a.time/2.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+}
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
+ if(im&&(s.phase==='bedroom'||s.chapter.stage==='complete')){bedroom(c,s,im,p);return;}
  c.clearRect(0,0,W,H);const sky=c.createLinearGradient(0,0,0,GROUND);sky.addColorStop(0,p.sky);sky.addColorStop(.55,p.rose);sky.addColorStop(1,p.gold);c.fillStyle=sky;c.fillRect(0,0,W,H);
  // Single proportion-preserving panorama; no repeating mountain or text artifacts.
  const mountain=im&&(s.phase==='awka'?im.intro.mountain:im.mountain);
@@ -140,7 +188,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  for(let i=0;i<25;i++){const x=(i*139+s.t*12)%WORLD;c.globalAlpha=.35;oval(c,p.gold,x,400+Math.sin(i+s.t)*25,2,1);}c.globalAlpha=1;
  if(s.u.vis && s.phase==='beam'){c.globalAlpha=.35;c.fillStyle=p.ice;c.beginPath();c.moveTo(s.u.x-20,s.u.y+14);c.lineTo(s.u.x+20,s.u.y+14);c.lineTo(s.u.x+55,GROUND);c.lineTo(s.u.x-55,GROUND);c.fill();c.globalAlpha=1;}
  for(const [i,a] of s.allies.entries()) { if(a.hurt>0 && Math.floor(a.hurt*15)%2)continue;if(im?.allies[i])person(c,im.allies[i]??im.allies[0],a.x,a.y,s.recruited?a.walk:s.t,i,a.dead||a.hp<=0);if(s.recruited && s.phase==='fight'){box(c,p.panel,a.x-18,a.y-83,36,4);box(c,p.ice,a.x-18,a.y-83,36*a.hp/100,4);}}
-  const hugging=!s.cat.gone && ((s.phase==='reunion'&&Math.abs(s.cat.x-s.p.x)<45)||['alien','speech','attack','fade'].includes(s.phase));
+  const hugging=!s.cat.gone && ((s.phase==='reunion'&&Math.abs(s.cat.x-s.p.x)<45)||['alien','speech','attack','fade','aftermath'].includes(s.phase));
   if(im && !s.cat.gone && !hugging)catSprite(c,im.cat,s.cat.x,s.cat.y,s.cat.walk,s.cat.x>s.p.x?-1:1);
   const player=s.p;
   if(im && hugging){
@@ -148,7 +196,8 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
    pose(c,im.reunion,0,2,player.x,player.y,96,1-stand);
    pose(c,im.reunion,1,2,player.x,player.y,96,stand);
   }else if(im && !(player.hurt>0&&Math.floor(player.hurt*20)%2))sprite(c,im.player,player.x,player.y,86,player.face,player.walk,player.crouch);
-  if(im && player.armed>0 && !['reunion','alien','speech','attack','fade','jets'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im.gun,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
+  if(im && player.armed>0 && !['reunion','alien','speech','attack','fade','jets','aftermath'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im.gun,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
+  if(s.phase==='aftermath'&&im){ufo(c,{...s,phase:'arrive'},p);military(c,s,im.chapter);}
   if(s.u.vis && !['boom','over'].includes(s.phase))ufo(c,s,p);
  if(s.phase==='jets'&&s.ufoHits>0){c.save();for(let i=0;i<7;i++){const pulse=(s.t*2+i*.8)%3;c.globalAlpha=.45+(pulse/3)*.35;oval(c,p.smoke,s.u.x+Math.sin(i*2+s.t)*28,s.u.y-18-pulse*22,10+pulse*5,13+pulse*7);oval(c,i%2?p.gold:p.red,s.u.x+Math.sin(i*3+s.t*3)*24,s.u.y+Math.cos(i*4)*8,7+pulse*3,11+pulse*4);}c.restore();}
  if(['boom','over'].includes(s.phase)){box(c,p.metal,s.u.x-40,GROUND-12,35,12);box(c,p.ink,s.u.x+10,GROUND-9,25,9);}
@@ -167,7 +216,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  c.strokeStyle=p.laser;c.lineWidth=4;for(const b of s.lasers){c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.045,b.y-b.vy*.045);c.stroke();}
  for(const f of s.fx){c.globalAlpha=Math.min(1,f.life);oval(c,p[f.c as keyof Palette]??p.gold,f.x,f.y,4+Math.max(0,1-f.life)*12,4+Math.max(0,1-f.life)*12);}c.globalAlpha=1;c.restore();
  c.font='13px "IBM Plex Mono", monospace';c.textBaseline='top';c.fillStyle=p.light;
- if(!['crash','arrive','reunion','alien','speech','attack','fade'].includes(s.phase)){
+ if(!['crash','arrive','reunion','alien','speech','attack','fade','aftermath'].includes(s.phase)){
  box(c,p.panel,14,14,240,55);c.fillStyle=p.light;c.fillText('SALUD',24,24);box(c,p.ink,85,26,155,10);box(c,player.hp>30?p.ice:p.red,85,26,1.55*player.hp,10);
  if(s.phase==='fight'||s.phase==='help'){box(c,p.panel,310,14,330,39);c.fillStyle=p.light;c.fillText('OVNI',321,25);box(c,p.ink,367,26,257,10);box(c,p.laser,367,26,2.57*s.u.hp,10);}
  }
@@ -175,7 +224,11 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  if(s.phase==='help')bubble(c,'EH LOCO, DEVOLVELE EL GATO AL PIBE',s.allies[0].x-s.cam,GROUND-100,p,470);
  if(s.phase==='speech')bubble(c,ALIEN_MESSAGE.slice(0,Math.floor(s.pt*22)),s.alien.x-s.cam,GROUND-112,p,630);
  if(s.phase==='attack' && s.pt<1.6)bubble(c,'¡PARÁ…!',s.allies[0].x-s.cam,GROUND-95,p,180);
- if(s.msgT>0 && !['help','crash','arrive','reunion','alien','speech','attack','fade'].includes(s.phase))bubble(c,s.msg,W/2,155,p,850);
+ if(s.msgT>0 && !['help','crash','arrive','reunion','alien','speech','attack','fade','aftermath'].includes(s.phase))bubble(c,s.msg,W/2,155,p,850);
+ if(s.phase==='aftermath'){
+  if(s.chapter.stage==='trump')bubble(c,'TRUMP: Limpien todo el lugar, y llévense la nave',s.crashX-350-s.cam,GROUND-112,p,580);
+  if(s.chapter.stage==='milei')bubble(c,'MILEI: Largate si no querés tener problemas',s.p.x-57-s.cam,GROUND-112,p,540);
+ }
   
  if(s.phase==='fade'){c.globalAlpha=Math.min(1,s.pt/3.5);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
 }

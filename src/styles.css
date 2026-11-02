@@ -139,6 +139,7 @@
   --game-metal: #a8bbc3; --game-glass: #d3edff; --game-laser: #79ef9e;
   --game-smoke: #75777f; --game-stone: #a5a8ad; --game-skin: #dfb090;
   --game-red: #ef8484; --game-alien: #a2aaa8;
+  --game-turquoise: #23f3ec;
   position: relative; width: 100%; height: 100%; display: grid; place-items: center;
   background: var(--background); overscroll-behavior: none; touch-action: none;
 }
