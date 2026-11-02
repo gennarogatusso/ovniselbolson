@@ -7,7 +7,7 @@ import player from '@/assets/personaje-juego.png.asset.json';
 import cat from '@/assets/gato-juego.png.asset.json';
 import alien from '@/assets/alien-rise.png.asset.json';
 import reunion from '@/assets/cat-reunion.png.asset.json';
-import { W, H, ENDINGS, CINEMATIC, canAskHelp, newState, newIntroState, introAction, interactIntro, update, type Ending, type Screen } from './game-engine';
+import { W, H, ENDINGS, CINEMATIC, canAskHelp, newState, newIntroState, introAction, interactIntro, chapterAction, interactChapter, update, type Ending, type Screen } from './game-engine';
 import { draw, type GameImages, type Palette } from './game-renderer';
 
 import awkaBuilding from '@/assets/awka-building.png.asset.json';
@@ -19,6 +19,15 @@ import awkaSmokeIn from '@/assets/awka-smoke-in.png.asset.json';
 import awkaSmokeOut from '@/assets/awka-smoke-out.png.asset.json';
 import awkaRise from '@/assets/awka-rise.png.asset.json';
 import awkaCat from '@/assets/awka-cat.png.asset.json';
+import truckArt from '@/assets/military-truck.png.asset.json';
+import trumpArt from '@/assets/trump.png.asset.json';
+import mileiArt from '@/assets/milei.png.asset.json';
+import argArt from '@/assets/soldier-arg.png.asset.json';
+import usaArt from '@/assets/soldier-usa.png.asset.json';
+import roomArt from '@/assets/bedroom.png.asset.json';
+import eatingArt from '@/assets/cat-eating.png.asset.json';
+import sleepingArt from '@/assets/player-sleeping.png.asset.json';
+import wakingArt from '@/assets/player-waking.png.asset.json';
 
 export function UfoGame() {
  const cv=useRef<HTMLCanvasElement>(null), host=useRef<HTMLDivElement>(null), st=useRef(newState()), images=useRef<GameImages|null>(null), palette=useRef<Palette|null>(null);
@@ -27,9 +36,9 @@ export function UfoGame() {
  const screenRef=useRef(screen);screenRef.current=screen;
  useEffect(()=>{
   const mq=window.matchMedia('(pointer: coarse)');const changed=()=>setTouch(mq.matches);changed();mq.addEventListener('change',changed);
-  const readPalette=()=>{if(!host.current)return;const css=getComputedStyle(host.current);const colors={} as Palette;for(const key of ['sky','rose','gold','sunset','light','ice','panel','ink','forest','trunk','wall','roof','leaf','road','curb','lane','shadow','hill','metal','glass','laser','smoke','stone','skin','red','alien'] as const)colors[key]=css.getPropertyValue('--game-'+key).trim();palette.current=colors;};readPalette();
+  const readPalette=()=>{if(!host.current)return;const css=getComputedStyle(host.current);const colors={} as Palette;for(const key of ['turquoise','sky','rose','gold','sunset','light','ice','panel','ink','forest','trunk','wall','roof','leaf','road','curb','lane','shadow','hill','metal','glass','laser','smoke','stone','skin','red','alien'] as const)colors[key]=css.getPropertyValue('--game-'+key).trim();palette.current=colors;};readPalette();
   const load=(url:string)=>new Promise<HTMLImageElement>((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=url;});let active=true;
-    Promise.all([load(mountain.url),load(player.url),load(cat.url),load(alien.url),load(reunion.url),load('/imagens/imagem-cb85a873.png'),load('/imagens/imagem-4233f6e4.png'),load('/imagens/imagem-3241014a.png'),load('/imagens/imagem-97d3754a.png'),load('/imagens/imagem-2fed5c3b.webp'),load('/imagens/imagem-499d0608.png'),load('/imagens/imagem-28e06bb0.webp'),load('/imagens/imagem-debb83e3.webp'),load('/imagens/imagem-63fa9a4e.webp'),load(awkaBuilding.url),load(awkaMountain.url),load(awkaSeated.url),load(awkaBeer.url),load(awkaDrink.url),load(awkaSmokeIn.url),load(awkaSmokeOut.url),load(awkaRise.url),load(awkaCat.url)] as const).then(([mountain,player,cat,alien,reunion,alien1,alien2,alien3,alien4,fighter,gun,ally1,ally2,house,building,introMountain,seated,beer,drink,smokeIn,smokeOut,rise,introCat])=>{if(!active)return;images.current={mountain,player,cat,alien,reunion,fighter,gun,allies:[ally1,ally2],house,alienFrames:[alien1,alien2,alien3,alien4],intro:{building,mountain:introMountain,seated,beer,drink,smokeIn,smokeOut,rise,cat:introCat}};setLoading(false);}).catch(()=>{if(active){setAssetError(true);setLoading(false);}});
+    Promise.all([load(mountain.url),load(player.url),load(cat.url),load(alien.url),load(reunion.url),load('/imagens/imagem-cb85a873.png'),load('/imagens/imagem-4233f6e4.png'),load('/imagens/imagem-3241014a.png'),load('/imagens/imagem-97d3754a.png'),load('/imagens/imagem-2fed5c3b.webp'),load('/imagens/imagem-499d0608.png'),load('/imagens/imagem-28e06bb0.webp'),load('/imagens/imagem-debb83e3.webp'),load('/imagens/imagem-63fa9a4e.webp'),load(awkaBuilding.url),load(awkaMountain.url),load(awkaSeated.url),load(awkaBeer.url),load(awkaDrink.url),load(awkaSmokeIn.url),load(awkaSmokeOut.url),load(awkaRise.url),load(awkaCat.url),load(truckArt.url),load(trumpArt.url),load(mileiArt.url),load(argArt.url),load(usaArt.url),load(roomArt.url),load(eatingArt.url),load(sleepingArt.url),load(wakingArt.url)] as const).then(([mountain,player,cat,alien,reunion,alien1,alien2,alien3,alien4,fighter,gun,ally1,ally2,house,building,introMountain,seated,beer,drink,smokeIn,smokeOut,rise,introCat,truck,trump,milei,arg,usa,bedroom,eating,sleeping,waking])=>{if(!active)return;images.current={chapter:{truck,trump,milei,arg,usa,bedroom,eating,sleeping,waking},mountain,player,cat,alien,reunion,fighter,gun,allies:[ally1,ally2],house,alienFrames:[alien1,alien2,alien3,alien4],intro:{building,mountain:introMountain,seated,beer,drink,smokeIn,smokeOut,rise,cat:introCat}};setLoading(false);}).catch(()=>{if(active){setAssetError(true);setLoading(false);}});
   return()=>{active=false;mq.removeEventListener('change',changed);};
  },[]);
  useEffect(()=>{
@@ -52,14 +61,14 @@ export function UfoGame() {
     
     if(screen==='play'){ 
      const result=update(st.current,dt);acc+=dt;
-     if(acc>.12){acc=0;setContext(canAskHelp(st.current));setCombat(st.current.phase==='fight');setAction(introAction(st.current));setIntro(st.current.phase==='awka');}
+     if(acc>.12){acc=0;setContext(canAskHelp(st.current));setCombat(st.current.phase==='fight');setAction(introAction(st.current)??chapterAction(st.current));setIntro(st.current.phase==='awka'||CINEMATIC.has(st.current.phase));}
      if(result){setEnding(result==='win'?'revenge':result==='continue'?'continuation':null);setScreen(result==='lose'?'lose':'win');}
     }else if(screen!=='paused'){
      // Mantener vivos humo y chispas detrás de las pantallas finales.
      const s=st.current;s.t+=dt;s.fx=s.fx.filter(f=>(f.life-=dt)>0);
      if(s.phase==='over'&&Math.random()<dt*6)s.fx.push({x:s.u.x+(Math.random()-.5)*60,y:st.current.p.y-20,life:1.2,c:'smoke'});
     }
-    draw(ctx,st.current,images.current,colors);host.current?.setAttribute('data-phase',st.current.phase);host.current?.setAttribute('data-ufo-health',String(st.current.u.hp));host.current?.setAttribute('data-intro-stage',st.current.intro.stage);
+    draw(ctx,st.current,images.current,colors);host.current?.setAttribute('data-phase',st.current.phase);host.current?.setAttribute('data-ufo-health',String(st.current.u.hp));host.current?.setAttribute('data-intro-stage',st.current.intro.stage);host.current?.setAttribute('data-chapter-stage',st.current.chapter.stage);
    }catch(err){console.error('Error en el juego',err);}
    raf=requestAnimationFrame(loop);
   };raf=requestAnimationFrame(loop);return()=>cancelAnimationFrame(raf);
@@ -85,7 +94,7 @@ export function UfoGame() {
         <div className="pointer-events-auto flex items-end gap-2"><div className="game-joystick" role="group" aria-label="Joystick de movimiento" onPointerDown={joystickStart} onPointerMove={joystickMove} onPointerUp={joystickStop} onPointerCancel={joystickStop}><span className="game-joystick-thumb"/><ArrowLeft className="game-joystick-left"/><ArrowRight className="game-joystick-right"/></div><Button className={`${controlClass} game-move-control`} aria-label="Agacharse" {...hold('c')}><ArrowDown/></Button></div>
     <div className="pointer-events-auto flex items-end gap-2">{context&&<Button className={controlClass} aria-label="Pedir ayuda a los pibes" {...hold('e')}><Hand/></Button>}<Button className={controlClass} aria-label="Saltar" {...hold('j')}><ArrowUp/></Button>{combat&&<Button className={`${controlClass} game-fire-control`} aria-label="Disparar" onPointerDown={fire} onPointerUp={()=>{st.current.fire=false;}} onPointerCancel={()=>{st.current.fire=false;}}><Crosshair/></Button>}</div>
    </div>}
-   {screen==='play'&&action&&<Button className="game-intro-action absolute bottom-3 left-1/2 z-20 -translate-x-1/2" onClick={()=>{interactIntro(st.current);setAction(null);}}><Hand/>{action}</Button>}
+   {screen==='play'&&action&&<Button className="game-intro-action absolute bottom-3 left-1/2 z-20 -translate-x-1/2" onClick={()=>{if(st.current.phase==='awka')interactIntro(st.current);else interactChapter(st.current);setAction(null);}}><Hand/>{action}</Button>}
    {screen==='play'&&!touch&&context&&<Button className="absolute bottom-4 left-1/2 -translate-x-1/2" onClick={()=>{st.current.keys.e=true;}}><Hand/> PEDIR AYUDA A LOS PIBES · E</Button>}
    {screen!=='play'&&<div className="game-overlay absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/65 px-5 text-center">
         {screen==='title'&&<div className="game-title-card"><p className="font-mono text-xs text-celeste">UFOCAT Test 1.1</p><p className="font-serif text-lg italic text-foreground/90">Vos y tu gato pasan un momento de terror en las afueras de El Bolsón</p><Button size="lg" onClick={start} disabled={loading||assetError}><Play/>{loading?'CARGANDO…':'JUGAR'}</Button>{assetError&&<p role="alert">No se pudieron cargar las imágenes. Recargá la página para reintentar.</p>}</div>}
