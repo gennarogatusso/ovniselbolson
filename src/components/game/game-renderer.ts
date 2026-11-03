@@ -1,6 +1,6 @@
 import { ALIEN_MESSAGE, GROUND, H, W, WORLD, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
-export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement };
+export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement };
 export type GameImages = { chapter: ChapterImages; intro: IntroImages; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
 function drawTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,w:number,h:number){if(!ready(im))return;let b=trims.get(im);if(!b){const t=document.createElement('canvas');t.width=im.naturalWidth;t.height=im.naturalHeight;const q=t.getContext('2d');if(!q)return;q.drawImage(im,0,0);const d=q.getImageData(0,0,t.width,t.height).data;let l=t.width,r=0,top=t.height,bot=0;for(let yy=0;yy<t.height;yy++)for(let xx=0;xx<t.width;xx++){const i=(yy*t.width+xx)*4;if((d[i+3]??0)>16&&((d[i]??255)<245||(d[i+1]??255)<245||(d[i+2]??255)<245)){l=Math.min(l,xx);r=Math.max(r,xx);top=Math.min(top,yy);bot=Math.max(bot,yy);}}b=l<=r&&top<=bot?[l,top,r-l+1,bot-top+1]:[0,0,t.width,t.height];trims.set(im,b);}c.drawImage(im,b[0],b[1],b[2],b[3],x,y,w,h);}
@@ -107,39 +107,97 @@ function military(c:CanvasRenderingContext2D,s:S,im:ChapterImages){
  const start=a.truckX+85+(s.crashX-310-a.truckX-85)*leaderQ;
  still(c,im.milei,start+(s.p.x-57-start)*walk,GROUND,86,leaderQ);
 }
+function roomBackground(c:CanvasRenderingContext2D,im:HTMLImageElement,alpha=1){
+ if(!ready(im))return;const scale=Math.min(W/im.naturalWidth,H/im.naturalHeight),w=im.naturalWidth*scale,h=im.naturalHeight*scale;
+ c.save();c.globalAlpha=alpha;c.drawImage(im,(W-w)/2,(H-h)/2,w,h);c.restore();
+}
+function roomActor(c:CanvasRenderingContext2D,s:S,im:ChapterImages){
+ const a=s.chapter,art=a.roomDirection==='up'?im.up:a.roomDirection==='down'?im.down:im.walk;
+ c.save();c.translate(a.roomX,a.roomY);if(a.roomDirection==='left')c.scale(-1,1);
+ pose(c,art,a.moving?Math.floor(a.roomWalk)%4:0,4,0,0,110);c.restore();
+}
+function bedPose(c:CanvasRenderingContext2D,im:HTMLImageElement,alpha=1){
+ if(!ready(im))return;
+ // The original lying silhouette follows the mattress's down-right diagonal.
+ const width=143,height=width*im.naturalHeight/im.naturalWidth;
+ c.save();c.globalAlpha=alpha;c.translate(519,228);c.rotate(.36);c.drawImage(im,-width/2,-height/2,width,height);c.restore();
+}
 function bedroom(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
- const a=s.chapter,art=im.chapter;
- box(c,p.ink,0,0,W,H);
- if(ready(art.bedroom)){const scale=Math.min(W/art.bedroom.naturalWidth,H/art.bedroom.naturalHeight),w=art.bedroom.naturalWidth*scale,h=art.bedroom.naturalHeight*scale;c.drawImage(art.bedroom,(W-w)/2,(H-h)/2,w,h);}
- const sleeping=['quiet','light','wakeChoice'].includes(a.stage),sitting=['settle','waking','missing','search','complete'].includes(a.stage);
- if(sleeping)still(c,art.sleeping,524,287,57);
- else if(sitting){const q=a.stage==='settle'?Math.min(1,a.time/1.6):a.stage==='waking'?Math.min(1,a.time/1.1):1;still(c,art.waking,524,295,70,a.stage==='settle'?1-q:q);still(c,art.sleeping,524,287,57,a.stage==='settle'?q:1-q);}
- else sprite(c,im.player,a.roomX,a.roomY,86,a.stage==='toBed'?-1:1,['feed','toBed'].includes(a.stage)?s.t*8:0);
+ const a=s.chapter,art=im.chapter;box(c,p.ink,0,0,W,H);
+ if(!a.night)roomBackground(c,art.bedroom);
+ else if(a.stage==='quiet'){roomBackground(c,art.bedroom);roomBackground(c,art.dark,Math.min(1,a.time/2));}
+ else roomBackground(c,art.dark);
+ const sleeping=['quiet','light','wakeChoice','settle'].includes(a.stage);
+ if(sleeping)bedPose(c,art.sleeping);
+ else if(a.stage==='toBed'){
+  const q=Math.min(1,a.time/1.6);roomActor(c,s,art);bedPose(c,art.sleeping,q);
+ }else if(a.stage==='waking'){
+  const q=Math.min(1,a.time/2);bedPose(c,art.sleeping,1-q);
+  still(c,art.waking,510,283,100,q);
+ }else roomActor(c,s,art);
  if(!a.catGone){
-  if(['roomFade','feed'].includes(a.stage))still(c,im.intro.cat,744,448,33);
-  else if(a.stage==='meal'){const blend=Math.min(1,a.time/.7);still(c,im.intro.cat,744,448,33,1-blend);still(c,art.eating,751,450,35,blend);}
-  else still(c,art.eating,751,450,35);
+  if(a.fed&&['meal','sleepChoice','toBed'].includes(a.stage))still(c,art.eating,775,452,37);
+  else pose(c,art.restingCat,Math.floor(s.t*1.4)%3,3,829,433,34);
  }
- // An offscreen source sweeps through the existing windows, never revealing an object.
  if(a.stage==='light'){
-  const intensity=Math.sin(Math.PI*Math.min(1,a.time/8))*.82;
+  const intensity=Math.sin(Math.PI*Math.min(1,a.time/8))*.72;
   c.save();c.globalCompositeOperation='screen';c.globalAlpha=intensity;
-  const x=650-a.time*26,glow=c.createRadialGradient(x,220,20,x,260,720);glow.addColorStop(0,p.turquoise);glow.addColorStop(1,'transparent');c.fillStyle=glow;c.fillRect(0,0,W,H);
-  c.globalAlpha=intensity*.6;c.fillStyle=p.turquoise;
-  for(let i=0;i<2;i++){c.beginPath();c.moveTo(638+i*65,80+i*24);c.lineTo(694+i*65,102+i*24);c.lineTo(790-a.time*21+i*35,510);c.lineTo(195-a.time*12+i*60,405);c.closePath();c.fill();}
+  const glow=c.createRadialGradient(715-a.time*15,220,20,680,260,600);glow.addColorStop(0,p.turquoise);glow.addColorStop(1,'transparent');c.fillStyle=glow;c.fillRect(0,0,W,H);c.restore();
+ }
+ if(a.stage==='sleepChoice'&&a.time<4)bubble(c,'Ha sido un largo día',a.roomX,a.roomY-120,p,500);
+ if(a.stage==='missing')bubble(c,'¿DÓNDE ESTÁ EL GATO?',520,155,p,600);
+ if(a.stage==='roomFade'){c.globalAlpha=Math.max(0,1-(a.time-1.2)/1.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+ if(a.stage==='exit'){c.globalAlpha=Math.max(0,(a.time-.8)/1.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+}
+function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
+ const a=s.chapter,art=im.chapter;box(c,p.ink,0,0,W,H);
+ if(ready(art.forest)){
+  // Two mirrored, proportion-preserving copies meet at identical edge pixels.
+  const h=H,w=h*art.forest.naturalWidth/art.forest.naturalHeight,offset=a.forestX%w,tile=Math.floor(a.forestX/w);
+  for(let i=0;i<2;i++){
+   const x=i*w-offset;c.save();c.translate(x,0);
+   if((tile+i)%2){c.translate(w,0);c.scale(-1,1);}
+   c.drawImage(art.forest,0,0,w,h);c.restore();
+  }
+ }
+ const later=['ship','beam','lift','vanished','complete'].includes(a.stage),burn=a.stage==='burned'?Math.min(1,a.time/7):later?1:0;
+ if(burn>0){
+  c.save();c.globalAlpha=burn;
+  for(let i=0;i<10;i++){
+   const x=((i*211-a.forestX*.85)%(W+230)+W+230)%(W+230)-100;
+   box(c,p.ink,x,GROUND-175,13,177);c.strokeStyle=p.ink;c.lineWidth=8;c.beginPath();c.moveTo(x+6,GROUND-90);c.lineTo(x-39,GROUND-140);c.moveTo(x+6,GROUND-120);c.lineTo(x+39,GROUND-169);c.stroke();
+   oval(c,p.smoke,x+30,GROUND+12,36,3);
+  }
   c.restore();
  }
- if(a.stage==='sleepChoice')bubble(c,'Ha sido un largo día',a.roomX,a.roomY-110,p,500);
- if(['missing','search'].includes(a.stage))bubble(c,'¿DÓNDE ESTÁ EL GATO?',524,165,p,600);
- if(a.stage==='roomFade'){const alpha=a.time<1.2?1:1-(a.time-1.2)/1.2;c.globalAlpha=Math.max(0,alpha);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
- if(a.stage==='search'||a.stage==='complete'){c.globalAlpha=a.stage==='complete'?1:Math.min(1,a.time/2.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+ const deerX=330+7*260+160-a.forestX;
+ if(deerX>-200&&deerX<W+200)still(c,art.deer,deerX,GROUND+3,94);
+ if(later){
+  const q=a.stage==='ship'?Math.min(1,a.time/4.5):1;
+  const width=340+q*440,height=width*art.ship.naturalHeight/art.ship.naturalWidth;
+  c.save();c.globalAlpha=q;c.drawImage(art.ship,440-width/2,148-height/2,width,height);c.restore();
+ }
+ const beam=['beam','lift','vanished','complete'].includes(a.stage);
+ if(beam){
+  const q=a.stage==='beam'?Math.min(1,a.time/3):1;c.save();c.globalCompositeOperation='screen';c.globalAlpha=q*.6;
+  const glow=c.createLinearGradient(0,155,0,GROUND);glow.addColorStop(0,p.turquoise);glow.addColorStop(1,'transparent');c.fillStyle=glow;
+  c.beginPath();c.moveTo(407,155);c.lineTo(469,155);c.lineTo(570,GROUND+25);c.lineTo(225,GROUND+25);c.closePath();c.fill();oval(c,p.turquoise,397,GROUND,177,14);
+  for(let i=0;i<14;i++){const y=GROUND-((s.t*35+i*23)%285);oval(c,p.light,330+Math.sin(i*2+s.t)*70,y,2,2);}c.restore();
+ }
+ if(!['vanished','complete'].includes(a.stage)){
+  const running=['forestRun','burned','forestFade'].includes(a.stage),x=a.stage==='lift'?330+110*Math.min(1,a.time/6):330;
+  pose(c,art.run,running?Math.floor(s.t*10)%4:0,4,x,a.forestY,100);
+ }
+ if(a.stage==='deer')bubble(c,'¿Qué carajo está pasando?',330,GROUND-120,p,520);
+ if(a.stage==='forestFade'){c.globalAlpha=1-Math.min(1,a.time/1.4);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
 }
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
  if(im&&s.phase==='bedroom'&&s.chapter.stage==='roomFade'&&s.chapter.time<1.2){
   draw(c,{...s,phase:'aftermath',chapter:{...s.chapter,stage:'leave'}},im,p);
   c.globalAlpha=Math.min(1,s.chapter.time/1.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;return;
  }
- if(im&&(s.phase==='bedroom'||s.chapter.stage==='complete')){bedroom(c,s,im,p);return;}
+ if(im&&['forestFade','forestRun','deer','burned','ship','beam','lift','vanished','complete'].includes(s.chapter.stage)){forest(c,s,im,p);return;}
+ if(im&&s.phase==='bedroom'){bedroom(c,s,im,p);return;}
  c.clearRect(0,0,W,H);const sky=c.createLinearGradient(0,0,0,GROUND);sky.addColorStop(0,p.sky);sky.addColorStop(.55,p.rose);sky.addColorStop(1,p.gold);c.fillStyle=sky;c.fillRect(0,0,W,H);
  // Single proportion-preserving panorama; no repeating mountain or text artifacts.
  const mountain=im&&(s.phase==='awka'?im.intro.mountain:im.mountain);
