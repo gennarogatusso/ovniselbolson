@@ -142,7 +142,7 @@ export function roomCanStand(x:number,y:number){
     const [xi=0,yi=0]=v,[xj=0,yj=0]=u;
     if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)inside=!inside;
   }
-  return inside&&!(x>365&&x<655&&y<342)&&!(x<340&&y<402)&&!(x<440&&y>480)&&!(x>505&&x<725&&y>478);
+  return inside&&!(x>365&&x<655&&y<342)&&!(x<340&&y<402)&&!(x<440&&y>480)&&!(x>505&&x<725&&y>478)&&!(x>808&&y<465);
 }
 export function roomIsFree(s:S){return s.phase==='bedroom'&&['feed','meal','sleepChoice','search'].includes(s.chapter.stage);}
 function moveRoom(s:S,dt:number){
@@ -173,7 +173,7 @@ function updateChapter(s:S,dt:number): 'continue'|null {
     case 'light': if(a.time>=8)advance('wakeChoice');break;
     case 'waking': if(a.time>=2){a.roomX=520;a.roomY=360;advance('missing');}break;
     case 'search':break;
-    case 'exit':a.roomX=approach(a.roomX,55,70*dt);a.roomY=approach(a.roomY,435,70*dt);if(a.time>=2)advance('forestFade');break;
+    case 'exit':a.roomX=approach(a.roomX,55,70*dt);a.roomY=approach(a.roomY,435,70*dt);a.moving=true;a.roomDirection='left';a.roomWalk+=dt*9;if(a.time>=2)advance('forestFade');break;
     case 'forestFade':if(a.time>=1.4)advance('forestRun');break;
     case 'forestRun':a.forestRunTime+=dt;a.forestX+=260*dt;if(a.forestRunTime>=7)advance('deer');break;
     case 'deer':if(a.time>=3.6)advance('burned');break;

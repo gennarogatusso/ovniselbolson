@@ -130,7 +130,7 @@ function bedroom(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const sleeping=['quiet','light','wakeChoice','settle'].includes(a.stage);
  if(sleeping)bedPose(c,art.sleeping);
  else if(a.stage==='toBed'){
-  const q=Math.min(1,a.time/1.6);roomActor(c,s,art);bedPose(c,art.sleeping,q);
+  const q=Math.min(1,a.time/1.6);c.save();c.globalAlpha=1-q;roomActor(c,s,art);c.restore();bedPose(c,art.sleeping,q);
  }else if(a.stage==='waking'){
   const q=Math.min(1,a.time/2);bedPose(c,art.sleeping,1-q);
   still(c,art.waking,510,283,100,q);
@@ -153,11 +153,11 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.chapter,art=im.chapter;box(c,p.ink,0,0,W,H);
  if(ready(art.forest)){
   // Two mirrored, proportion-preserving copies meet at identical edge pixels.
-  const h=H,w=h*art.forest.naturalWidth/art.forest.naturalHeight,offset=a.forestX%w,tile=Math.floor(a.forestX/w);
+  const h=Math.max(H,W*art.forest.naturalHeight/art.forest.naturalWidth),w=h*art.forest.naturalWidth/art.forest.naturalHeight,offset=a.forestX%w,tile=Math.floor(a.forestX/w);
   for(let i=0;i<2;i++){
    const x=i*w-offset;c.save();c.translate(x,0);
    if((tile+i)%2){c.translate(w,0);c.scale(-1,1);}
-   c.drawImage(art.forest,0,0,w,h);c.restore();
+   c.drawImage(art.forest,0,H-h,w,h);c.restore();
   }
  }
  const later=['ship','beam','lift','vanished','complete'].includes(a.stage),burn=a.stage==='burned'?Math.min(1,a.time/7):later?1:0;
@@ -174,8 +174,8 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  if(deerX>-200&&deerX<W+200)still(c,art.deer,deerX,GROUND+3,94);
  if(later){
   const q=a.stage==='ship'?Math.min(1,a.time/4.5):1;
-  const width=340+q*440,height=width*art.ship.naturalHeight/art.ship.naturalWidth;
-  c.save();c.globalAlpha=q;c.drawImage(art.ship,440-width/2,148-height/2,width,height);c.restore();
+  const width=340+q*390,height=width*art.ship.naturalHeight/art.ship.naturalWidth;
+  c.save();c.globalAlpha=q;c.drawImage(art.ship,440-width/2,155-height,width,height);c.restore();
  }
  const beam=['beam','lift','vanished','complete'].includes(a.stage);
  if(beam){
@@ -186,7 +186,8 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  }
  if(!['vanished','complete'].includes(a.stage)){
   const running=['forestRun','burned','forestFade'].includes(a.stage),x=a.stage==='lift'?330+110*Math.min(1,a.time/6):330;
-  pose(c,art.run,running?Math.floor(s.t*10)%4:0,4,x,a.forestY,100);
+  if(running)pose(c,art.run,Math.floor(s.t*10)%4,4,x,a.forestY,100);
+  else still(c,im.player,x,a.forestY,100);
  }
  if(a.stage==='deer')bubble(c,'¿Qué carajo está pasando?',330,GROUND-120,p,520);
  if(a.stage==='forestFade'){c.globalAlpha=1-Math.min(1,a.time/1.4);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
