@@ -7,7 +7,7 @@ import player from '@/assets/personaje-juego.png.asset.json';
 import cat from '@/assets/gato-juego.png.asset.json';
 import alien from '@/assets/alien-rise.png.asset.json';
 import reunion from '@/assets/cat-reunion.png.asset.json';
-import { W, H, ENDINGS, CINEMATIC, canAskHelp, newState, newIntroState, introAction, interactIntro, chapterAction, interactChapter, update, type Ending, type Screen } from './game-engine';
+import { W, H, ENDINGS, CINEMATIC, canAskHelp, newState, newIntroState, introAction, interactIntro, chapterAction, interactChapter, roomIsFree, update, type Ending, type Screen } from './game-engine';
 import { draw, type GameImages, type Palette } from './game-renderer';
 
 import awkaBuilding from '@/assets/awka-building.png.asset.json';
@@ -28,11 +28,20 @@ import roomArt from '@/assets/bedroom.png.asset.json';
 import eatingArt from '@/assets/cat-eating.png.asset.json';
 import sleepingArt from '@/assets/player-sleeping.png.asset.json';
 import wakingArt from '@/assets/player-waking.png.asset.json';
+import darkArt from '@/assets/bedroom-dark.jpg.asset.json';
+import walkArt from '@/assets/room-walk.png.asset.json';
+import upArt from '@/assets/room-up.png.asset.json';
+import downArt from '@/assets/room-down.png.asset.json';
+import runArt from '@/assets/forest-run.png.asset.json';
+import restArt from '@/assets/cat-rest.png.asset.json';
+import forestArt from '@/assets/forest-background.jpg.asset.json';
+import deerArt from '@/assets/forest-deer.png.asset.json';
+import shipArt from '@/assets/forest-ufo.png.asset.json';
 
 export function UfoGame() {
  const cv=useRef<HTMLCanvasElement>(null), host=useRef<HTMLDivElement>(null), st=useRef(newState()), images=useRef<GameImages|null>(null), palette=useRef<Palette|null>(null);
  const [screen,setScreen]=useState<Screen>('title'), [ending,setEnding]=useState<Ending|null>(null), [touch,setTouch]=useState(false),[expanded,setExpanded]=useState(false),[loading,setLoading]=useState(true),[assetError,setAssetError]=useState(false),[context,setContext]=useState(false),[combat,setCombat]=useState(false);
- const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false);
+ const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false), [freeRoom,setFreeRoom]=useState(false);
  const screenRef=useRef(screen);screenRef.current=screen;
  useEffect(()=>{
   const mq=window.matchMedia('(pointer: coarse)');const changed=()=>setTouch(mq.matches);changed();mq.addEventListener('change',changed);
