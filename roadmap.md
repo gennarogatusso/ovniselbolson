@@ -13,3 +13,9 @@
 - [x] Conectar llegada militar, diálogos e IRSE al cierre de los jets.
 - [x] Integrar dormitorio, alimentación, sueño, luz, despertar y búsqueda.
 - [x] Probar el recorrido conectado en PC y móvil y conservar ambos finales y AWKA; búsqueda preparada, capítulo posterior no implementado.
+
+# Actualización narrativa completa
+- [ ] Preparar e integrar los nueve recursos nuevos preservando proporciones y fotogramas.
+- [ ] Corregir movimiento, colisiones, interacciones y cama; mantener la habitación oscura hasta salir.
+- [ ] Conectar bosque lateral, ciervo, quemado gradual y abducción final.
+- [ ] Probar visualmente PC y móvil y ejecutar regresiones del juego anterior.
