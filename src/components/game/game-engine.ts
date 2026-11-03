@@ -4,6 +4,7 @@ export const ALIEN_MESSAGE = "#%3# indescifrable.... GATO....#%3 ME PERTENECE ..
 export const ENDINGS = {
   revenge: { title: "¡FELICIDADES! MATASTE AL OVNI PERO NO RECUPERASTE TU GATO", sub: "FINAL N.º 1 — BAD ENDING" },
   continuation: { title: "CONTINUARÁ", sub: "FINAL N.º 2 — ALGO SALIÓ DE LA NAVE" },
+  abduction: { title: "CONTINUARÁ", sub: "UFOCAT — ABDUCCIÓN EN EL BOSQUE" },
 } as const;
 export type Ending = keyof typeof ENDINGS;
 export type Screen = "title" | "play" | "paused" | "win" | "lose";
@@ -17,7 +18,7 @@ type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:
 export function newState() {
   return {
                 t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom",
-     chapter: { enabled: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'complete', time: 0, truckX: 0, roomX: 335, roomY: 390, catGone: false, eHeld: false },
+      chapter: { enabled: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'exit' | 'forestFade' | 'forestRun' | 'deer' | 'burned' | 'ship' | 'beam' | 'lift' | 'vanished' | 'complete', time: 0, truckX: 0, roomX: 115, roomY: 435, roomWalk: 0, roomDirection: 'right' as 'right'|'left'|'up'|'down', moving: false, night: false, fed: false, searching: false, forestX: 0, forestY: GROUND, forestRunTime: 0, catGone: false, eHeld: false },
      intro: { stage: 'opening' as 'opening' | 'beer' | 'drinking' | 'approach' | 'offer' | 'smoking' | 'warning' | 'rising' | 'leave' | 'depart' | 'done', time: 0, drinks: 0, npcX: -285, eHeld: false },
     pt: 0, cam: 0,
     p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0 },
@@ -108,19 +109,54 @@ export function newIntroState(): S {
 }
 export function chapterAction(s: S): string | null {
   if(s.phase!=='aftermath' && s.phase!=='bedroom')return null;
-  switch(s.chapter.stage){case 'leave':return 'IRSE';case 'sleepChoice':return 'DORMIR';case 'wakeChoice':return 'LEVANTARSE';case 'missing':return 'IR A BUSCAR AL GATO';default:return null;}
+  const a=s.chapter;
+  switch(a.stage){
+    case 'leave':return 'IRSE';
+    case 'feed':return Math.hypot(a.roomX-775,a.roomY-451)<90?'ALIMENTAR AL GATO':null;
+    case 'sleepChoice':return Math.hypot(a.roomX-520,a.roomY-360)<70?'ACOSTARSE':null;
+    case 'settle':return 'DORMIR';
+    case 'wakeChoice':return 'LEVANTARSE';
+    case 'missing':return 'IR A BUSCAR AL GATO';
+    case 'search':return a.roomX<150&&Math.abs(a.roomY-435)<65?'SALIR DE LA CASA':null;
+    default:return null;
+  }
 }
 export function interactChapter(s:S){
   if(!chapterAction(s))return;
   const a=s.chapter;
   if(a.stage==='leave'){s.phase='bedroom';s.pt=0;a.stage='roomFade';}
+  else if(a.stage==='feed'){a.stage='meal';a.fed=true;}
   else if(a.stage==='sleepChoice')a.stage='toBed';
+  else if(a.stage==='settle'){a.stage='quiet';a.night=true;}
   else if(a.stage==='wakeChoice'){a.stage='waking';a.catGone=true;s.cat.gone=true;}
-  else if(a.stage==='missing')a.stage='search';
+  else if(a.stage==='missing'){a.stage='search';a.searching=true;}
+  else if(a.stage==='search')a.stage='exit';
   a.time=0;s.keys={};s.fire=false;
+}
+export function roomCanStand(x:number,y:number){
+  // Feet inside the drawn floor polygon; furniture footprints remain solid.
+  const polygon=[[45,435],[390,275],[665,320],[905,430],[600,535],[220,515]];
+  let inside=false;
+  for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
+    const v=polygon[i],u=polygon[j];if(!v||!u)continue;
+    const [xi=0,yi=0]=v,[xj=0,yj=0]=u;
+    if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)inside=!inside;
+  }
+  return inside&&!(x>365&&x<655&&y<342)&&!(x<340&&y<402)&&!(x<440&&y>480)&&!(x>505&&x<725&&y>478);
+}
+export function roomIsFree(s:S){return s.phase==='bedroom'&&['feed','meal','sleepChoice','search'].includes(s.chapter.stage);}
+function moveRoom(s:S,dt:number){
+  const a=s.chapter,k=s.keys;let dx=Number(Boolean(k.r))-Number(Boolean(k.l)),dy=Number(Boolean(k.c))-Number(Boolean(k.j));
+  a.moving=Boolean(dx||dy);if(!a.moving)return;
+  a.roomDirection=Math.abs(dy)>0?(dy>0?'down':'up'):(dx>0?'right':'left');
+  const length=Math.hypot(dx,dy)||1;dx=dx/length*145*dt;dy=dy/length*145*dt;
+  if(roomCanStand(a.roomX+dx,a.roomY))a.roomX+=dx;
+  if(roomCanStand(a.roomX,a.roomY+dy))a.roomY+=dy;
+  a.roomWalk+=dt*9;
 }
 function updateChapter(s:S,dt:number): 'continue'|null {
   const a=s.chapter;a.time+=dt;s.fire=false;s.shots=[];s.lasers=[];
+  a.moving=false;if(roomIsFree(s))moveRoom(s,dt);
   if(s.keys.e&&!a.eHeld)interactChapter(s);a.eHeld=Boolean(s.keys.e);
   const advance=(stage:typeof a.stage)=>{a.stage=stage;a.time=0;};
   switch(a.stage){
@@ -130,14 +166,22 @@ function updateChapter(s:S,dt:number): 'continue'|null {
     case 'approach': if(a.time>=2.2)advance('milei');break;
     case 'milei': if(a.time>=4)advance('leave');break;
     case 'roomFade': if(a.time>=2.4)advance('feed');break;
-    case 'feed': a.roomX=approach(a.roomX,717,100*dt);a.roomY=approach(a.roomY,434,20*dt);if(a.roomX===717)advance('meal');break;
+    case 'feed': break;
     case 'meal': if(a.time>=3.5)advance('sleepChoice');break;
-    case 'toBed': a.roomX=approach(a.roomX,533,95*dt);a.roomY=approach(a.roomY,311,63.5*dt);if(a.roomX===533&&a.roomY===311)advance('settle');break;
-    case 'settle': if(a.time>=1.6)advance('quiet');break;
+    case 'toBed': if(a.time>=1.6)advance('settle');break;
     case 'quiet': if(a.time>=3)advance('light');break;
     case 'light': if(a.time>=8)advance('wakeChoice');break;
-    case 'waking': if(a.time>=2)advance('missing');break;
-    case 'search': if(a.time>=2.2){advance('complete');s.phase='over';return 'continue';}break;
+    case 'waking': if(a.time>=2){a.roomX=520;a.roomY=360;advance('missing');}break;
+    case 'search':break;
+    case 'exit':a.roomX=approach(a.roomX,55,70*dt);a.roomY=approach(a.roomY,435,70*dt);if(a.time>=2)advance('forestFade');break;
+    case 'forestFade':if(a.time>=1.4)advance('forestRun');break;
+    case 'forestRun':a.forestRunTime+=dt;a.forestX+=260*dt;if(a.forestRunTime>=7)advance('deer');break;
+    case 'deer':if(a.time>=3.6)advance('burned');break;
+    case 'burned':a.forestX+=260*dt;if(a.time>=7)advance('ship');break;
+    case 'ship':if(a.time>=4.5)advance('beam');break;
+    case 'beam':if(a.time>=3)advance('lift');break;
+    case 'lift':{const q=Math.min(1,a.time/6),ease=q*q*(3-2*q);a.forestY=GROUND-(GROUND-155)*ease;if(q===1)advance('vanished');break;}
+    case 'vanished':if(a.time>=1.8){advance('complete');s.phase='over';return 'continue';}break;
   }
   return null;
 }
