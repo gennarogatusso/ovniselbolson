@@ -5,6 +5,7 @@ export const ENDINGS = {
   revenge: { title: "¡FELICIDADES! MATASTE AL OVNI PERO NO RECUPERASTE TU GATO", sub: "FINAL N.º 1 — BAD ENDING" },
   continuation: { title: "CONTINUARÁ", sub: "FINAL N.º 2 — ALGO SALIÓ DE LA NAVE" },
   abduction: { title: "CONTINUARÁ", sub: "UFOCAT — ABDUCCIÓN EN EL BOSQUE" },
+  cross: { title: "CONTINUARÁ...", sub: "UFOCAT — CERRO DE LA CRUZ · EL BOLSÓN" },
 } as const;
 export type Ending = keyof typeof ENDINGS;
 export type Screen = "title" | "play" | "paused" | "win" | "lose";
@@ -15,9 +16,14 @@ export type Shot = { x: number; y: number; vx: number; vy: number; life: number;
 type Jet = { x: number; y: number; start: number; fired: [boolean, boolean] };
 type JetShot = { x: number; y: number; vx: number; vy: number; life: number; target: "ufo" | "alien" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
+export const SHIP = { floor: 452, left: 48, right: 910, boxX: 480, boxY: 185, boxHits: 4, reactorX: 847, reactorY: 282, chargeTime: 1.8, rollTime: .52, rollCooldown: 1.1 } as const;
+export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'end';
+type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
+function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],sounds:[] as string[],labDead:0};}
 export function newState() {
   return {
-                t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom",
+                t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom" | "spaceship",
+    ship: newShip(),
       chapter: { enabled: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'exit' | 'forestFade' | 'forestRun' | 'deer' | 'burned' | 'ship' | 'beam' | 'lift' | 'vanished' | 'complete', time: 0, truckX: 0, roomX: 115, roomY: 435, roomWalk: 0, roomDirection: 'right' as 'right'|'left'|'up'|'down', moving: false, night: false, fed: false, searching: false, forestX: 0, forestY: GROUND, forestRunTime: 0, catGone: false, eHeld: false },
      intro: { stage: 'opening' as 'opening' | 'beer' | 'drinking' | 'approach' | 'offer' | 'smoking' | 'warning' | 'rising' | 'leave' | 'depart' | 'done', time: 0, drinks: 0, npcX: -285, eHeld: false },
     pt: 0, cam: 0,
@@ -108,6 +114,7 @@ export function newIntroState(): S {
   const s = newState(); s.phase = 'awka'; s.p.x = -650; s.cat.x = -585; s.cam = -1080; s.chapter.enabled = true; return s;
 }
 export function chapterAction(s: S): string | null {
+  if(s.phase==='spaceship')return shipAction(s);
   if(s.phase!=='aftermath' && s.phase!=='bedroom')return null;
   const a=s.chapter;
   switch(a.stage){
@@ -122,6 +129,7 @@ export function chapterAction(s: S): string | null {
   }
 }
 export function interactChapter(s:S){
+  if(s.phase==='spaceship'){interactShip(s);return;}
   if(!chapterAction(s))return;
   const a=s.chapter;
   if(a.stage==='leave'){s.phase='bedroom';s.pt=0;a.stage='roomFade';}
@@ -145,13 +153,13 @@ export function roomCanStand(x:number,y:number){
   return inside&&!(x>365&&x<655&&y<342)&&!(x<340&&y<402)&&!(x<440&&y>480)&&!(x>505&&x<725&&y>478)&&!(x>808&&y<465);
 }
 export function roomIsFree(s:S){return s.phase==='bedroom'&&['feed','meal','sleepChoice','search'].includes(s.chapter.stage);}
-function moveRoom(s:S,dt:number){
+function moveRoom(s:S,dt:number,canStand=roomCanStand){
   const a=s.chapter,k=s.keys;let dx=Number(Boolean(k.r))-Number(Boolean(k.l)),dy=Number(Boolean(k.c))-Number(Boolean(k.j));
   a.moving=Boolean(dx||dy);if(!a.moving)return;
   a.roomDirection=Math.abs(dy)>0?(dy>0?'down':'up'):(dx>0?'right':'left');
   const length=Math.hypot(dx,dy)||1;dx=dx/length*145*dt;dy=dy/length*145*dt;
-  if(roomCanStand(a.roomX+dx,a.roomY))a.roomX+=dx;
-  if(roomCanStand(a.roomX,a.roomY+dy))a.roomY+=dy;
+  if(canStand(a.roomX+dx,a.roomY))a.roomX+=dx;
+  if(canStand(a.roomX,a.roomY+dy))a.roomY+=dy;
   a.roomWalk+=dt*9;
 }
 function updateChapter(s:S,dt:number): 'continue'|null {
@@ -181,13 +189,109 @@ function updateChapter(s:S,dt:number): 'continue'|null {
     case 'ship':if(a.time>=4.5)advance('beam');break;
     case 'beam':if(a.time>=3)advance('lift');break;
     case 'lift':{const q=Math.min(1,a.time/6),ease=q*q*(3-2*q);a.forestY=GROUND-(GROUND-155)*ease;if(q===1)advance('vanished');break;}
-    case 'vanished':if(a.time>=1.8){advance('complete');s.phase='over';return 'continue';}break;
+    case 'vanished':if(a.time>=1.8){advance('complete');if(a.enabled)enterShip(s);else{s.phase='over';return 'continue';}}break;
   }
   return null;
 }
 export function introAction(s: S): string | null {
   if (s.phase !== 'awka') return null;
   return s.intro.stage === 'beer' ? 'Beber cerveza' : s.intro.stage === 'offer' ? 'Aceptar' : s.intro.stage === 'leave' ? 'Irse de la cervecería' : null;
+}
+export function enterShip(s:S){s.phase='spaceship';s.ship=newShip();s.ship.stage='awakening';s.keys={};s.fire=false;s.shots=[];s.lasers=[];s.cam=0;}
+export function shipIsCombat(s:S){return s.phase==='spaceship'&&s.ship.stage==='combat';}
+export function shipIsFree(s:S){return s.phase==='spaceship'&&['labFree','crossFree'].includes(s.ship.stage);}
+export function crossCanStand(x:number,y:number){
+  const path=y>=443&&y<=516&&x>=85&&x<=860;
+  const stairs=x>=143&&x<=290&&y>=333&&y<=478;
+  const deck=x>=119&&x<=467&&y>=317&&y<=346;
+  return (path||stairs||deck)&&!(x>=139&&x<=190&&y<328);
+}
+export function shipAction(s:S):string|null{
+  const a=s.ship;
+  if(a.stage==='labFree')return a.x<155?'SALIR DEL LABORATORIO':null;
+  if(a.stage==='combat'&&a.boxBroken&&!a.armed&&a.weaponY>=SHIP.floor&&Math.abs(a.x-SHIP.boxX)<75)return 'RECOGER SUPERARMA';
+  if(a.stage==='crossFree'&&s.chapter.roomX<430&&s.chapter.roomY<347)return 'CONTEMPLAR LA CRUZ';
+  return null;
+}
+export function interactShip(s:S){
+  if(!shipAction(s))return;
+  const a=s.ship;
+  if(a.stage==='labFree')a.stage='door';
+  else if(a.stage==='combat'){a.stage='pickup';a.x=SHIP.boxX;a.charge=0;}
+  else if(a.stage==='crossFree'){a.stage='contemplate';s.chapter.roomX=305;s.chapter.roomY=334;}
+  a.time=0;s.keys={};s.fire=false;
+}
+function shipAdvance(s:S,stage:ShipStage){s.ship.stage=stage;s.ship.time=0;s.fire=false;}
+function shipSound(s:S,event:string){s.ship.sounds.push(event);}
+function shipHit(s:S,damage:number){const a=s.ship;if(a.hurt>0||a.roll>0)return;a.hp=Math.max(0,a.hp-damage);a.hurt=.8;a.shake=.3;shipSound(s,'impact');}
+function defeat(s:S,e:ShipEnemy){e.hp=0;e.deadTime=.001;shipSound(s,'impact');}
+function startShipCombat(s:S){const a=s.ship;shipAdvance(s,'combat');a.x=145;a.y=SHIP.floor;a.enemies=[340,550,700,790].map((x,i)=>({x,y:SHIP.floor,hp:32,kind:i===2?'psychic':'direct',cd:3+i*1.4,windup:0,hurt:0,deadTime:0,face:-1}));shipSound(s,'door');}
+function superShot(s:S){
+  const a=s.ship;a.beam=.65;a.beamCd=1;a.charge=0;a.shake=.65;
+  a.beamX=a.x+a.face*50;a.beamY=a.y-64;
+  const alive=a.enemies.filter(e=>e.hp>0);const target=alive.sort((l,r)=>Math.abs(l.x-a.x)-Math.abs(r.x-a.x))[0];
+  a.beamTx=target?target.x:SHIP.reactorX;a.beamTy=target?target.y-48:SHIP.reactorY;
+  if(a.aimActive){a.beamTx=a.aimX;a.beamTy=a.aimY;}
+  const dx=a.beamTx-a.beamX,dy=a.beamTy-a.beamY,L=Math.hypot(dx,dy)||1;
+  for(const e of a.enemies){const ex=e.x-a.beamX,ey=e.y-48-a.beamY,along=(ex*dx+ey*dy)/L,dist=Math.abs(ex*dy-ey*dx)/L;if(e.hp>0&&along>0&&dist<62)defeat(s,e);}
+  const rx=SHIP.reactorX-a.beamX,ry=SHIP.reactorY-a.beamY;
+  if((rx*dx+ry*dy)>0&&Math.abs(rx*dy-ry*dx)/L<82){shipAdvance(s,'overload');a.enemies.forEach(e=>{if(e.hp>0)defeat(s,e);});}
+  shipSound(s,'super');
+}
+function updateShip(s:S,dt:number):'continue'|'lose'|null{
+  const a=s.ship;a.time+=dt;a.hurt=Math.max(0,a.hurt-dt);a.shake=Math.max(0,a.shake-dt);a.beam=Math.max(0,a.beam-dt);a.beamCd=Math.max(0,a.beamCd-dt);a.flash=Math.max(0,a.flash-dt);a.rollCd=Math.max(0,a.rollCd-dt);
+  if(s.keys.e&&!a.eHeld)interactShip(s);a.eHeld=Boolean(s.keys.e);
+  for(const e of a.enemies){e.hurt=Math.max(0,e.hurt-dt);if(e.hp<=0)e.deadTime+=dt;}
+  const timed=(seconds:number,stage:ShipStage)=>{if(a.time>=seconds)shipAdvance(s,stage);};
+  switch(a.stage){
+    case 'awakening':timed(2.2,'verdict');break;
+    case 'verdict':timed(6,'catEntry');break;
+    case 'catEntry':a.catX=approach(a.catX,280,90*dt);timed(2.4,'eyeCharge');break;
+    case 'eyeCharge':if(a.time>=2){shipAdvance(s,'rescue');shipSound(s,'laser');}break;
+    case 'rescue':a.labDead=Math.min(1,a.time/1.8);if(a.time>=.2&&a.time-dt<.2)shipSound(s,'impact');timed(2.8,'rise');break;
+    case 'rise':if(a.time>=2.3){a.x=480;a.y=SHIP.floor;shipAdvance(s,'labFree');}break;
+    case 'labFree':{const move=(s.keys.r?1:0)-(s.keys.l?1:0);a.x=Math.max(90,Math.min(870,a.x+move*180*dt));if(move){a.face=move;a.walk+=dt*9;}a.catX=approach(a.catX,a.x+55,170*dt);break;}
+    case 'door':if(a.time>=1.2)startShipCombat(s);break;
+    case 'combat':{
+      const move=(s.keys.r?1:0)-(s.keys.l?1:0),rollKey=Boolean(s.keys.roll);
+      if(rollKey&&!a.rollHeld&&a.rollCd===0&&a.push==='none'&&a.y===SHIP.floor){a.roll=SHIP.rollTime;a.rollCd=SHIP.rollTime+SHIP.rollCooldown;a.rollFace=move||a.face;shipSound(s,'roll');}
+      a.rollHeld=rollKey;
+      if(a.push!=='none'){
+        a.pushTime+=dt;
+        if(a.push==='lean'&&a.pushTime>=.45){a.push='flight';a.pushTime=0;a.pushVx=Math.sign(a.x-a.pushFrom||-1)*190;a.pushVy=-220;}
+        else if(a.push==='flight'){a.pushVx+=Math.sign(a.pushVx)*1200*dt;a.x+=a.pushVx*dt;a.y+=a.pushVy*dt;a.pushVy+=210*dt;if(a.x<=SHIP.left||a.x>=SHIP.right){a.x=Math.max(SHIP.left,Math.min(SHIP.right,a.x));a.push='wall';a.pushTime=0;a.shake=.55;shipHit(s,12);}}
+        else if(a.push==='wall'&&a.pushTime>=.18){a.push='fall';a.pushTime=0;a.pushVy=60;}
+        else if(a.push==='fall'){a.pushVy+=900*dt;a.y=Math.min(SHIP.floor,a.y+a.pushVy*dt);if(a.y===SHIP.floor){a.push='none';a.hurt=1;}}
+      }else if(a.roll>0){a.roll=Math.max(0,a.roll-dt);a.x=Math.max(SHIP.left,Math.min(SHIP.right,a.x+a.rollFace*420*dt));a.y=SHIP.floor;a.face=a.rollFace;}
+      else{a.x=Math.max(SHIP.left,Math.min(SHIP.right,a.x+move*210*dt));if(move){a.face=move;a.walk+=dt*10;}}
+      if(a.boxBroken&&!a.armed){a.weaponVy+=650*dt;a.weaponY=Math.min(SHIP.floor,a.weaponY+a.weaponVy*dt);}
+      for(const e of a.enemies){
+        if(e.hp<=0)continue;e.face=a.x>e.x?1:-1;e.cd-=dt;
+        if(e.kind==='direct'){e.x=Math.max(230,Math.min(850,e.x+Math.sin(s.t+e.x*.001)*32*dt));if(e.cd<=0){const dx=a.x-e.x,dy=a.y-45-(e.y-52),L=Math.hypot(dx,dy)||1;a.bolts.push({x:e.x,y:e.y-52,vx:dx/L*270,vy:dy/L*270,life:4});e.cd=2.8;shipSound(s,'laser');}}
+        else if(e.cd<=0){e.windup+=dt;if(e.windup>=1){if(a.roll===0&&a.push==='none'){a.push='lean';a.pushTime=0;a.pushFrom=e.x;shipSound(s,'psychic');}e.windup=0;e.cd=7;}}
+      }
+      a.fireCd-=dt;
+      if(s.fire&&a.push==='none'&&a.roll===0){
+        if(a.armed){a.charge=Math.min(SHIP.chargeTime,a.charge+dt);if(a.charge>=SHIP.chargeTime&&a.beamCd===0)superShot(s);}
+        else if(a.fireCd<=0){const target=a.enemies.filter(e=>e.hp>0).sort((l,r)=>Math.abs(l.x-a.x)-Math.abs(r.x-a.x))[0];const tx=a.aimActive&&!a.boxBroken?a.aimX:target?.x??SHIP.boxX,ty=a.aimActive&&!a.boxBroken?a.aimY:target?target.y-48:SHIP.boxY;const dx=tx-a.x,dy=ty-(a.y-58),L=Math.hypot(dx,dy)||1;a.face=dx>=0?1:-1;a.shots.push({x:a.x,y:a.y-58,vx:dx/L*700,vy:dy/L*700,life:1.5});a.fireCd=.22;a.flash=.08;shipSound(s,'pistol');}
+      }else a.charge=Math.max(0,a.charge-dt*2);
+      for(const b of a.shots){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
+        if(!a.boxBroken&&Math.abs(b.x-SHIP.boxX)<32&&Math.abs(b.y-SHIP.boxY)<30){b.life=0;a.boxHp--;shipSound(s,'impact');if(a.boxHp<=0){a.boxBroken=true;a.aimActive=false;shipSound(s,'break');a.shake=.25;}}
+        for(const e of a.enemies)if(b.life>0&&e.hp>0&&Math.abs(b.x-e.x)<25&&Math.abs(b.y-(e.y-48))<50){b.life=0;e.hp-=4;e.hurt=.2;if(e.hp<=0)defeat(s,e);}
+      }
+      for(const b of a.bolts){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(Math.abs(b.x-a.x)<23&&Math.abs(b.y-(a.y-50))<48){b.life=0;shipHit(s,7);}}
+      a.shots=a.shots.filter(b=>b.life>0);a.bolts=a.bolts.filter(b=>b.life>0);
+      if(a.hp===0)return 'lose';break;
+    }
+    case 'pickup':if(a.time>=2.4){a.armed=true;shipAdvance(s,'combat');shipSound(s,'pickup');}break;
+    case 'overload':a.shake=.18+a.time*.06;if(a.time>=4){shipAdvance(s,'emergency');shipSound(s,'explosion');a.bolts=[];a.shots=[];}break;
+    case 'emergency':a.shake=.2+a.time*.045;if(a.time>=9){shipAdvance(s,'impact');shipSound(s,'explosion');}break;
+    case 'impact':if(a.time>=1.8){shipAdvance(s,'crossRise');s.chapter.roomX=730;s.chapter.roomY=463;s.chapter.roomDirection='left';a.catX=790;a.catY=470;}break;
+    case 'crossRise':timed(2.4,'crossFree');break;
+    case 'crossFree':s.chapter.moving=false;moveRoom(s,dt,crossCanStand);a.catX=approach(a.catX,s.chapter.roomX+52,170*dt);a.catY=approach(a.catY,s.chapter.roomY+5,170*dt);break;
+    case 'contemplate':a.catX=approach(a.catX,359,95*dt);a.catY=approach(a.catY,338,95*dt);if(a.time>=6){shipAdvance(s,'end');return 'continue';}break;
+  }
+  return null;
 }
 export function interactIntro(s: S) {
   if (!introAction(s)) return;
@@ -219,6 +323,7 @@ function updateIntro(s: S, dt: number) {
 export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
   const { p, cat, u, keys } = s;
   s.t += dt; s.pt += dt; s.msgT -= dt;
+  if(s.phase==='spaceship')return updateShip(s,dt);
   if(s.phase==='aftermath'||s.phase==='bedroom')return updateChapter(s,dt);
   if (s.phase === 'awka') { updateIntro(s, dt); return null; }
   const canMove = s.phase === "walk" || s.phase === "fight" || s.phase === "descend";

@@ -19,3 +19,10 @@
 - [ ] Corregir movimiento, colisiones, interacciones y cama; mantener la habitación oscura hasta salir.
 - [ ] Conectar bosque lateral, ciervo, quemado gradual y abducción final.
 - [ ] Probar visualmente PC y móvil y ejecutar regresiones del juego anterior.
+
+# Capítulo de la nave y Cerro de la Cruz
+- [ ] Preparar los diez recursos originales, transparencias y atlas.
+- [ ] Conectar laboratorio, rescate del gato y salida a sala principal.
+- [ ] Integrar combate, telequinesis, rodar, caja y superarma.
+- [ ] Conectar reactor, caída, accidente y mirador con movimiento en cuatro direcciones.
+- [ ] Probar recorrido, controles PC/móvil y regresiones.
