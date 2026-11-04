@@ -5,6 +5,7 @@ export const ENDINGS = {
   revenge: { title: "¡FELICIDADES! MATASTE AL OVNI PERO NO RECUPERASTE TU GATO", sub: "FINAL N.º 1 — BAD ENDING" },
   continuation: { title: "CONTINUARÁ", sub: "FINAL N.º 2 — ALGO SALIÓ DE LA NAVE" },
   abduction: { title: "CONTINUARÁ", sub: "UFOCAT — ABDUCCIÓN EN EL BOSQUE" },
+  cross: { title: "CONTINUARÁ...", sub: "UFOCAT — CERRO DE LA CRUZ · EL BOLSÓN" },
 } as const;
 export type Ending = keyof typeof ENDINGS;
 export type Screen = "title" | "play" | "paused" | "win" | "lose";
@@ -15,9 +16,14 @@ export type Shot = { x: number; y: number; vx: number; vy: number; life: number;
 type Jet = { x: number; y: number; start: number; fired: [boolean, boolean] };
 type JetShot = { x: number; y: number; vx: number; vy: number; life: number; target: "ufo" | "alien" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
+export const SHIP = { floor: 452, left: 48, right: 910, boxX: 480, boxY: 185, boxHits: 4, reactorX: 847, reactorY: 282, chargeTime: 1.8, rollTime: .52, rollCooldown: 1.1 } as const;
+export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'end';
+type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
+function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],sounds:[] as string[],labDead:0};}
 export function newState() {
   return {
-                t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom",
+                t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom" | "spaceship",
+    ship: newShip(),
       chapter: { enabled: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'exit' | 'forestFade' | 'forestRun' | 'deer' | 'burned' | 'ship' | 'beam' | 'lift' | 'vanished' | 'complete', time: 0, truckX: 0, roomX: 115, roomY: 435, roomWalk: 0, roomDirection: 'right' as 'right'|'left'|'up'|'down', moving: false, night: false, fed: false, searching: false, forestX: 0, forestY: GROUND, forestRunTime: 0, catGone: false, eHeld: false },
      intro: { stage: 'opening' as 'opening' | 'beer' | 'drinking' | 'approach' | 'offer' | 'smoking' | 'warning' | 'rising' | 'leave' | 'depart' | 'done', time: 0, drinks: 0, npcX: -285, eHeld: false },
     pt: 0, cam: 0,
@@ -108,6 +114,7 @@ export function newIntroState(): S {
   const s = newState(); s.phase = 'awka'; s.p.x = -650; s.cat.x = -585; s.cam = -1080; s.chapter.enabled = true; return s;
 }
 export function chapterAction(s: S): string | null {
+  if(s.phase==='spaceship')return shipAction(s);
   if(s.phase!=='aftermath' && s.phase!=='bedroom')return null;
   const a=s.chapter;
   switch(a.stage){
@@ -122,6 +129,7 @@ export function chapterAction(s: S): string | null {
   }
 }
 export function interactChapter(s:S){
+  if(s.phase==='spaceship'){interactShip(s);return;}
   if(!chapterAction(s))return;
   const a=s.chapter;
   if(a.stage==='leave'){s.phase='bedroom';s.pt=0;a.stage='roomFade';}
@@ -145,13 +153,13 @@ export function roomCanStand(x:number,y:number){
   return inside&&!(x>365&&x<655&&y<342)&&!(x<340&&y<402)&&!(x<440&&y>480)&&!(x>505&&x<725&&y>478)&&!(x>808&&y<465);
 }
 export function roomIsFree(s:S){return s.phase==='bedroom'&&['feed','meal','sleepChoice','search'].includes(s.chapter.stage);}
-function moveRoom(s:S,dt:number){
+function moveRoom(s:S,dt:number,canStand=roomCanStand){
   const a=s.chapter,k=s.keys;let dx=Number(Boolean(k.r))-Number(Boolean(k.l)),dy=Number(Boolean(k.c))-Number(Boolean(k.j));
   a.moving=Boolean(dx||dy);if(!a.moving)return;
   a.roomDirection=Math.abs(dy)>0?(dy>0?'down':'up'):(dx>0?'right':'left');
   const length=Math.hypot(dx,dy)||1;dx=dx/length*145*dt;dy=dy/length*145*dt;
-  if(roomCanStand(a.roomX+dx,a.roomY))a.roomX+=dx;
-  if(roomCanStand(a.roomX,a.roomY+dy))a.roomY+=dy;
+  if(canStand(a.roomX+dx,a.roomY))a.roomX+=dx;
+  if(canStand(a.roomX,a.roomY+dy))a.roomY+=dy;
   a.roomWalk+=dt*9;
 }
 function updateChapter(s:S,dt:number): 'continue'|null {
@@ -181,7 +189,7 @@ function updateChapter(s:S,dt:number): 'continue'|null {
     case 'ship':if(a.time>=4.5)advance('beam');break;
     case 'beam':if(a.time>=3)advance('lift');break;
     case 'lift':{const q=Math.min(1,a.time/6),ease=q*q*(3-2*q);a.forestY=GROUND-(GROUND-155)*ease;if(q===1)advance('vanished');break;}
-    case 'vanished':if(a.time>=1.8){advance('complete');s.phase='over';return 'continue';}break;
+    case 'vanished':if(a.time>=1.8){advance('complete');if(a.enabled)enterShip(s);else{s.phase='over';return 'continue';}}break;
   }
   return null;
 }
@@ -219,6 +227,7 @@ function updateIntro(s: S, dt: number) {
 export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
   const { p, cat, u, keys } = s;
   s.t += dt; s.pt += dt; s.msgT -= dt;
+  if(s.phase==='spaceship')return updateShip(s,dt);
   if(s.phase==='aftermath'||s.phase==='bedroom')return updateChapter(s,dt);
   if (s.phase === 'awka') { updateIntro(s, dt); return null; }
   const canMove = s.phase === "walk" || s.phase === "fight" || s.phase === "descend";
