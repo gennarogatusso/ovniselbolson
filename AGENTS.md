@@ -15,3 +15,4 @@
 - Initialize the playable AWKA prologue through newIntroState while retaining newState as the original adventure baseline; negative-world placement and the existing camera join both scenes without changing combat or ending coordinates.
 - Gate the post-jets chapter on the playable state's chapter flag and retain the baseline ending for isolated regression tests; chapter timing and interactions remain in the engine, with military/world and bedroom/screen drawing in the renderer.
 - Keep bedroom collision geometry and proximity interactions in the engine and the night-background latch active until exit; forest continuation uses chapter stages so the original phases, combat and endings stay unchanged.
+- Dispatch spaceship rendering before chapter-background selection and preload every ship asset before play; completed forest stages must never override the active ship scene.

@@ -253,7 +253,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     case 'labFree':{const move=(s.keys.r?1:0)-(s.keys.l?1:0);a.x=Math.max(90,Math.min(870,a.x+move*180*dt));if(move){a.face=move;a.walk+=dt*9;}a.catX=approach(a.catX,a.x+55,170*dt);break;}
     case 'door':if(a.time>=1.2)startShipCombat(s);break;
     case 'combat':{
-      const move=(s.keys.r?1:0)-(s.keys.l?1:0),rollKey=Boolean(s.keys.roll);
+      const move=(s.keys.r?1:0)-(s.keys.l?1:0),rollKey=Boolean(s.keys['roll']);
       if(rollKey&&!a.rollHeld&&a.rollCd===0&&a.push==='none'&&a.y===SHIP.floor){a.roll=SHIP.rollTime;a.rollCd=SHIP.rollTime+SHIP.rollCooldown;a.rollFace=move||a.face;shipSound(s,'roll');}
       a.rollHeld=rollKey;
       if(a.push!=='none'){

@@ -26,3 +26,8 @@
 - [ ] Integrar combate, telequinesis, rodar, caja y superarma.
 - [ ] Conectar reactor, caída, accidente y mirador con movimiento en cuatro direcciones.
 - [ ] Probar recorrido, controles PC/móvil y regresiones.
+
+# Estabilización UFOCAT Test 1.1
+- [x] Auditar motor, escenas, controles y recursos; confirmar causas del bloqueo.
+- [ ] Reparar la conexión visual y los controles del capítulo existente hasta La Cruz.
+- [ ] Comprobar recursos, pruebas y recorrido completo en PC y móvil.

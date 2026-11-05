@@ -1,10 +1,11 @@
-import { ALIEN_MESSAGE, GROUND, H, W, WORLD, canAskHelp, type S } from './game-engine';
+import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement };
-export type GameImages = { chapter: ChapterImages; intro: IntroImages; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
+export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement };
+export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
 function drawTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,w:number,h:number){if(!ready(im))return;let b=trims.get(im);if(!b){const t=document.createElement('canvas');t.width=im.naturalWidth;t.height=im.naturalHeight;const q=t.getContext('2d');if(!q)return;q.drawImage(im,0,0);const d=q.getImageData(0,0,t.width,t.height).data;let l=t.width,r=0,top=t.height,bot=0;for(let yy=0;yy<t.height;yy++)for(let xx=0;xx<t.width;xx++){const i=(yy*t.width+xx)*4;if((d[i+3]??0)>16&&((d[i]??255)<245||(d[i+1]??255)<245||(d[i+2]??255)<245)){l=Math.min(l,xx);r=Math.max(r,xx);top=Math.min(top,yy);bot=Math.max(bot,yy);}}b=l<=r&&top<=bot?[l,top,r-l+1,bot-top+1]:[0,0,t.width,t.height];trims.set(im,b);}c.drawImage(im,b[0],b[1],b[2],b[3],x,y,w,h);}
-export type Palette = Record<'turquoise'|'sky'|'rose'|'gold'|'sunset'|'light'|'ice'|'panel'|'ink'|'forest'|'trunk'|'wall'|'roof'|'leaf'|'road'|'curb'|'lane'|'shadow'|'hill'|'metal'|'glass'|'laser'|'smoke'|'stone'|'skin'|'red'|'alien',string>;
+export type Palette = Record<'turquoise'|'sky'|'rose'|'gold'|'sunset'|'light'|'ice'|'panel'|'ink'|'forest'|'trunk'|'wall'|'roof'|'leaf'|'road'|'curb'|'lane'|'shadow'|'hill'|'metal'|'glass'|'laser'|'smoke'|'stone'|'skin'|'red'|'alien'|'energy',string>;
 const ready = (im?:HTMLImageElement) => Boolean(im?.complete && im.naturalWidth);
 function box(c:CanvasRenderingContext2D,col:string,x:number,y:number,w:number,h:number) {c.fillStyle=col;c.fillRect(x,y,w,h);}
 function oval(c:CanvasRenderingContext2D,col:string,x:number,y:number,rx:number,ry:number) { if(!(rx>0&&ry>0))return; c.fillStyle=col;c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fill(); }
@@ -192,12 +193,72 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  if(a.stage==='deer')bubble(c,'¿Qué carajo está pasando?',330,GROUND-120,p,520);
  if(a.stage==='forestFade'){c.globalAlpha=1-Math.min(1,a.time/1.4);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
 }
+function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
+ const a=s.ship,art=im.ship;
+ const cross=['impact','crossRise','crossFree','contemplate','end'].includes(a.stage);
+ const lab=['awakening','verdict','catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage);
+ c.save();box(c,p.ink,0,0,W,H);
+ if(a.shake>0)c.translate(Math.sin(s.t*61)*a.shake*8,Math.cos(s.t*49)*a.shake*5);
+ const background=cross?art.cross:lab?art.laboratory:art.main;
+ const scale=Math.max(W/background.naturalWidth,H/background.naturalHeight),bw=background.naturalWidth*scale,bh=background.naturalHeight*scale;
+ c.drawImage(background,(W-bw)/2,(H-bh)/2,bw,bh);
+ const actor=(x:number,y:number,h=112)=>{
+  c.save();c.translate(x,y);c.scale(a.face,1);
+  if(a.roll>0)pose(c,art.roll,Math.min(5,Math.floor((1-a.roll/SHIP.rollTime)*6)),6,0,0,h);
+  else if(a.push!=='none')pose(c,art.push,a.push==='lean'?0:a.push==='flight'?1:2,3,0,0,h);
+  else if(a.stage==='pickup'||a.armed)pose(c,art.pickup,a.stage==='pickup'?Math.min(3,Math.floor(a.time/2.4*4)):3,4,0,0,h);
+  else pose(c,im.chapter.walk,Math.floor(a.walk)%4,4,0,0,h);
+  if(!a.armed&&a.stage==='combat'){drawTrimmed(c,im.gun,12,-64,27,10);if(a.flash>0)oval(c,p.gold,40,-60,9,5);}
+  c.restore();
+ };
+ const line=(col:string,x:number,y:number,tx:number,ty:number,width:number)=>{c.strokeStyle=col;c.lineWidth=width;c.beginPath();c.moveTo(x,y);c.lineTo(tx,ty);c.stroke();};
+ if(cross){
+  if(a.stage==='contemplate'||a.stage==='end')pose(c,art.contemplate,0,2,305,334,118);
+  else if(a.stage==='crossRise')pose(c,art.push,2,3,s.chapter.roomX,s.chapter.roomY,118);
+  else roomActor(c,s,im.chapter);
+  still(c,art.cat,a.catX,a.catY,70);
+  if(a.stage==='impact'){c.globalAlpha=Math.max(0,1-a.time/1.8);box(c,p.light,0,0,W,H);c.globalAlpha=1;}
+ }else if(lab){
+  const dead=['rescue','rise','labFree','door'].includes(a.stage);
+  for(const x of [610,735])pose(c,art.grey,dead?Math.min(8,3+Math.floor(a.labDead*5)):0,9,x,SHIP.floor,115);
+  if(['awakening','verdict','catEntry','eyeCharge','rescue'].includes(a.stage)){
+   const sleeping=im.chapter.sleeping,w=144,h=w*sleeping.naturalHeight/sleeping.naturalWidth;c.drawImage(sleeping,480-w/2,374-h,w,h);
+  }else if(a.stage==='rise')still(c,im.chapter.waking,480,SHIP.floor,112);
+  else actor(a.x,a.y);
+  if(['catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage))still(c,art.cat,a.catX,SHIP.floor,78);
+  if(a.stage==='eyeCharge'||(a.stage==='rescue'&&a.time<1.6)){
+   oval(c,p.turquoise,a.catX-3,SHIP.floor-64,5,4);
+   if(a.stage==='rescue')for(const x of [610,735])line(p.turquoise,a.catX,SHIP.floor-64,x,SHIP.floor-85,5);
+  }
+  if(a.stage==='verdict')bubble(c,'Los gatos son la especie más peligrosa del universo. Deben ser erradicados',675,240,p,700);
+  if(a.stage==='door'){c.globalAlpha=Math.min(1,a.time/1.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+ }else{
+  if(!a.boxBroken){line(p.metal,SHIP.boxX,70,SHIP.boxX,SHIP.boxY-25,3);box(c,p.panel,SHIP.boxX-27,SHIP.boxY-22,54,44);c.strokeStyle=p.metal;c.lineWidth=2;c.strokeRect(SHIP.boxX-27,SHIP.boxY-22,54,44);still(c,art.weapon,SHIP.boxX,SHIP.boxY+8,25);}
+  else if(!a.armed&&a.stage!=='pickup')still(c,art.weapon,SHIP.boxX,a.weaponY,28);
+  for(const e of a.enemies){const f=e.hp<=0?Math.min(8,3+Math.floor(e.deadTime*5)):e.hurt>0?1:e.windup>0?2:0;c.save();c.translate(e.x,e.y);c.scale(e.face,1);pose(c,art.grey,f,9,0,0,115);c.restore();if(e.windup>0)oval(c,p.energy,e.x,e.y-84,8,8);}
+  actor(a.x,a.y);still(c,art.cat,a.catX,SHIP.floor,70);
+  for(const b of a.shots)line(p.ice,b.x,b.y,b.x-b.vx*.025,b.y-b.vy*.025,3);
+  for(const b of a.bolts)line(p.laser,b.x,b.y,b.x-b.vx*.04,b.y-b.vy*.04,4);
+  if(a.beam>0){const dx=a.beamTx-a.beamX,dy=a.beamTy-a.beamY,L=Math.hypot(dx,dy)||1;line(p.energy,a.beamX,a.beamY,a.beamX+dx/L*1300,a.beamY+dy/L*1300,36);line(p.light,a.beamX,a.beamY,a.beamX+dx/L*1300,a.beamY+dy/L*1300,9);}
+  if(a.charge>0)oval(c,p.energy,a.x+a.face*45,a.y-65,5+a.charge*9,5+a.charge*9);
+  if(a.aimActive&&a.stage==='combat'){const x=a.aimX,y=a.aimY;line(p.light,x-12,y,x+12,y,2);line(p.light,x,y-12,x,y+12,2);}
+  if(a.stage==='overload'){oval(c,p.energy,SHIP.reactorX,SHIP.reactorY,24+a.time*9,32+a.time*12);}
+  if(a.stage==='emergency'){
+   // Reuse the visible Earth window, enlarging its actual pixels as the ship falls.
+   const q=Math.min(1,a.time/9);c.save();c.beginPath();c.rect(25,310,410,92);c.clip();c.drawImage(art.main,30,445,580,135,25-q*180,310-q*40,410+q*360,92+q*80);c.restore();
+   c.globalAlpha=.12+.14*(1+Math.sin(a.time*9));box(c,p.red,0,0,W,H);c.globalAlpha=1;bubble(c,'¡Nos vamos a estrellar! D:',a.x,240,p,550);
+  }
+  if(a.stage==='combat'){box(c,p.panel,14,14,240,43);box(c,p.ink,85,30,155,10);box(c,a.hp>30?p.ice:p.red,85,30,a.hp*1.55,10);c.font='13px monospace';c.fillStyle=p.light;c.fillText('SALUD',24,40);}
+ }
+ c.restore();
+}
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
+ if(im&&s.phase==='spaceship'){shipScene(c,s,im,p);return;}
  if(im&&s.phase==='bedroom'&&s.chapter.stage==='roomFade'&&s.chapter.time<1.2){
   draw(c,{...s,phase:'aftermath',chapter:{...s.chapter,stage:'leave'}},im,p);
   c.globalAlpha=Math.min(1,s.chapter.time/1.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;return;
  }
- if(im&&['forestFade','forestRun','deer','burned','ship','beam','lift','vanished','complete'].includes(s.chapter.stage)){forest(c,s,im,p);return;}
+ if(im&&s.phase==='bedroom'&&['forestFade','forestRun','deer','burned','ship','beam','lift','vanished','complete'].includes(s.chapter.stage)){forest(c,s,im,p);return;}
  if(im&&s.phase==='bedroom'){bedroom(c,s,im,p);return;}
  c.clearRect(0,0,W,H);const sky=c.createLinearGradient(0,0,0,GROUND);sky.addColorStop(0,p.sky);sky.addColorStop(.55,p.rose);sky.addColorStop(1,p.gold);c.fillStyle=sky;c.fillRect(0,0,W,H);
  // Single proportion-preserving panorama; no repeating mountain or text artifacts.
