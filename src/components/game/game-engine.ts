@@ -17,6 +17,10 @@ type Jet = { x: number; y: number; start: number; fired: [boolean, boolean] };
 type JetShot = { x: number; y: number; vx: number; vy: number; life: number; target: "ufo" | "alien" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
 export const SHIP = { floor: 452, left: 48, right: 910, boxX: 480, boxY: 185, boxHits: 4, reactorX: 847, reactorY: 282, chargeTime: 1.8, rollTime: .52, rollCooldown: 1.1 } as const;
+export const FOREST = { deer: 1820, ship: 3640, abduction: 3900, top: 410, bottom: 490, speed: 260 } as const;
+export function forestIsFree(s:S){return s.phase==='bedroom'&&['forestRun','burned','ship'].includes(s.chapter.stage);}
+export function computerAvailable(s:S){return roomIsFree(s)&&!s.chapter.night&&Math.hypot(s.chapter.roomX-350,s.chapter.roomY-418)<80;}
+export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=false;}
 export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'end';
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
 function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],sounds:[] as string[],labDead:0};}
@@ -24,10 +28,10 @@ export function newState() {
   return {
                 t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom" | "spaceship",
     ship: newShip(),
-      chapter: { enabled: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'exit' | 'forestFade' | 'forestRun' | 'deer' | 'burned' | 'ship' | 'beam' | 'lift' | 'vanished' | 'complete', time: 0, truckX: 0, roomX: 115, roomY: 435, roomWalk: 0, roomDirection: 'right' as 'right'|'left'|'up'|'down', moving: false, night: false, fed: false, searching: false, forestX: 0, forestY: GROUND, forestRunTime: 0, catGone: false, eHeld: false },
+      chapter: { enabled: false, computer: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'exit' | 'forestFade' | 'forestRun' | 'deer' | 'burned' | 'ship' | 'beam' | 'lift' | 'vanished' | 'complete', time: 0, truckX: 0, roomX: 115, roomY: 435, roomWalk: 0, roomDirection: 'right' as 'right'|'left'|'up'|'down', moving: false, night: false, fed: false, searching: false, forestX: 0, forestY: GROUND, forestRunTime: 0, catGone: false, eHeld: false },
      intro: { stage: 'opening' as 'opening' | 'beer' | 'drinking' | 'approach' | 'offer' | 'smoking' | 'warning' | 'rising' | 'leave' | 'depart' | 'done', time: 0, drinks: 0, npcX: -285, eHeld: false },
     pt: 0, cam: 0,
-    p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0 },
+    p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0, roll: 0, rollCd: 0, rollHeld: false, rollFace: 1 },
     cat: { x: 150, y: GROUND, gone: false, walk: 0 },
     u: { x: 600, y: -80, hp: 100, hit: 0, tx: 600, cd: 2, vis: false },
     shots: [] as Shot[], lasers: [] as Shot[], fx: [] as { x: number; y: number; life: number; c: string }[],
@@ -117,6 +121,7 @@ export function chapterAction(s: S): string | null {
   if(s.phase==='spaceship')return shipAction(s);
   if(s.phase!=='aftermath' && s.phase!=='bedroom')return null;
   const a=s.chapter;
+  if(computerAvailable(s))return 'Usar computadora';
   switch(a.stage){
     case 'leave':return 'IRSE';
     case 'feed':return Math.hypot(a.roomX-775,a.roomY-451)<90?'ALIMENTAR AL GATO':null;
@@ -132,6 +137,7 @@ export function interactChapter(s:S){
   if(s.phase==='spaceship'){interactShip(s);return;}
   if(!chapterAction(s))return;
   const a=s.chapter;
+  if(computerAvailable(s)){a.computer=true;s.keys={};s.fire=false;return;}
   if(a.stage==='leave'){s.phase='bedroom';s.pt=0;a.stage='roomFade';}
   else if(a.stage==='feed'){a.stage='meal';a.fed=true;}
   else if(a.stage==='sleepChoice')a.stage='toBed';
@@ -163,8 +169,9 @@ function moveRoom(s:S,dt:number,canStand=roomCanStand){
   a.roomWalk+=dt*9;
 }
 function updateChapter(s:S,dt:number): 'continue'|null {
-  const a=s.chapter;a.time+=dt;s.fire=false;s.shots=[];s.lasers=[];
+  const a=s.chapter;if(a.computer)return null;a.time+=dt;s.fire=false;s.shots=[];s.lasers=[];
   a.moving=false;if(roomIsFree(s))moveRoom(s,dt);
+  if(forestIsFree(s)){const dx=Number(Boolean(s.keys.r))-Number(Boolean(s.keys.l)),dy=Number(Boolean(s.keys.c))-Number(Boolean(s.keys.j)),length=Math.hypot(dx,dy)||1;a.moving=Boolean(dx||dy);if(a.moving){a.roomDirection=dy?(dy>0?'down':'up'):(dx>0?'right':'left');a.forestX=Math.max(0,Math.min(FOREST.abduction,a.forestX+dx/length*FOREST.speed*dt));a.forestY=Math.max(FOREST.top,Math.min(FOREST.bottom,a.forestY+dy/length*FOREST.speed*dt));a.roomWalk+=dt*10;}}
   if(s.keys.e&&!a.eHeld)interactChapter(s);a.eHeld=Boolean(s.keys.e);
   const advance=(stage:typeof a.stage)=>{a.stage=stage;a.time=0;};
   switch(a.stage){
@@ -183,10 +190,10 @@ function updateChapter(s:S,dt:number): 'continue'|null {
     case 'search':break;
     case 'exit':a.roomX=approach(a.roomX,55,70*dt);a.roomY=approach(a.roomY,435,70*dt);a.moving=true;a.roomDirection='left';a.roomWalk+=dt*9;if(a.time>=2)advance('forestFade');break;
     case 'forestFade':if(a.time>=1.4)advance('forestRun');break;
-    case 'forestRun':a.forestRunTime+=dt;a.forestX+=260*dt;if(a.forestRunTime>=7)advance('deer');break;
+    case 'forestRun':if(a.forestX>=FOREST.deer)advance('deer');break;
     case 'deer':if(a.time>=3.6)advance('burned');break;
-    case 'burned':a.forestX+=260*dt;if(a.time>=7)advance('ship');break;
-    case 'ship':if(a.time>=4.5)advance('beam');break;
+    case 'burned':if(a.forestX>=FOREST.ship)advance('ship');break;
+    case 'ship':if(a.forestX>=FOREST.abduction){a.forestY=GROUND;s.keys={};advance('beam');}break;
     case 'beam':if(a.time>=3)advance('lift');break;
     case 'lift':{const q=Math.min(1,a.time/6),ease=q*q*(3-2*q);a.forestY=GROUND-(GROUND-155)*ease;if(q===1)advance('vanished');break;}
     case 'vanished':if(a.time>=1.8){advance('complete');if(a.enabled)enterShip(s);else{s.phase='over';return 'continue';}}break;
@@ -286,7 +293,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     case 'pickup':if(a.time>=2.4){a.armed=true;shipAdvance(s,'combat');shipSound(s,'pickup');}break;
     case 'overload':a.shake=.18+a.time*.06;if(a.time>=4){shipAdvance(s,'emergency');shipSound(s,'explosion');a.bolts=[];a.shots=[];}break;
     case 'emergency':a.shake=.2+a.time*.045;if(a.time>=9){shipAdvance(s,'impact');shipSound(s,'explosion');}break;
-    case 'impact':if(a.time>=1.8){shipAdvance(s,'crossRise');s.chapter.roomX=730;s.chapter.roomY=463;s.chapter.roomDirection='left';a.catX=790;a.catY=470;}break;
+    case 'impact':if(a.time>=1.8){shipAdvance(s,'crossRise');s.chapter.roomX=730;s.chapter.roomY=480;s.chapter.roomDirection='left';a.catX=790;a.catY=485;}break;
     case 'crossRise':timed(2.4,'crossFree');break;
     case 'crossFree':s.chapter.moving=false;moveRoom(s,dt,crossCanStand);a.catX=approach(a.catX,s.chapter.roomX+52,170*dt);a.catY=approach(a.catY,s.chapter.roomY+5,170*dt);break;
     case 'contemplate':a.catX=approach(a.catX,359,95*dt);a.catY=approach(a.catY,338,95*dt);if(a.time>=6){shipAdvance(s,'end');return 'continue';}break;
@@ -330,14 +337,19 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
   if (CINEMATIC.has(s.phase)) return updateCinematic(s, dt);
   if (s.phase === "fight" && canAskHelp(s) && keys.e) { recruit(s); }
   // jugador
-  p.crouch = canMove && !!keys.c && p.y >= GROUND;
+  p.rollCd=Math.max(0,p.rollCd-dt);
+  const rollKey=Boolean(keys['roll']);
+  if(s.phase==='fight'&&rollKey&&!p.rollHeld&&p.rollCd===0&&p.y===GROUND){p.roll=SHIP.rollTime;p.rollCd=SHIP.rollTime+SHIP.rollCooldown;p.rollFace=(keys.r?1:0)-(keys.l?1:0)||p.face;}
+  p.rollHeld=rollKey;
+  p.crouch = canMove && p.roll===0 && !!keys.c && p.y >= GROUND;
   let vx = 0;
   if (canMove && !p.crouch) vx = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
+  if(p.roll>0){vx=p.rollFace;p.roll=Math.max(0,p.roll-dt);}
   if (vx) p.face = vx;
-  const speed = s.phase === "fight" ? 260 : 150;
+  const speed = p.roll>0?420:s.phase === "fight" ? 260 : 150;
   p.x = Math.max(40, Math.min(WORLD - 40, p.x + vx * speed * dt));
   p.walk = vx ? p.walk + dt * 10 : 0;
-  if (canMove && keys.j && p.y >= GROUND) p.vy = -560;
+  if (canMove && p.roll===0 && keys.j && p.y >= GROUND) p.vy = -560;
   p.vy += 1500 * dt; p.y = Math.min(GROUND, p.y + p.vy * dt); if (p.y >= GROUND) p.vy = 0;
   p.hurt -= dt; p.flash -= dt; u.hit -= dt;
   s.cam += (Math.max(0, Math.min(WORLD - W, p.x - W * 0.4)) - s.cam) * Math.min(1, dt * 5);
@@ -398,7 +410,7 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
       }
       // disparo jugador
       s.fireCd -= dt;
-      if (s.fire && s.fireCd <= 0) {
+      if (s.fire && p.roll===0 && s.fireCd <= 0) {
         const gx = p.x + p.face * 22, gy = p.y - (p.crouch ? 30 : 46);
         const dx = u.x - gx, dy = u.y - gy, L = Math.hypot(dx, dy);
         s.shots.push({ x: gx, y: gy, vx: (dx / L) * 700, vy: (dy / L) * 700, life: 1.5 });
@@ -428,7 +440,7 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
     for (const a of s.allies) if (s.recruited && a.hp > 0 && a.hurt <= 0 && l.life > 0 && Math.abs(l.x - a.x) < 16 && l.y > GROUND - 65 && l.y < GROUND) { a.hp = Math.max(0, a.hp - 12); a.hurt = 0.65; l.life = 0; }
     l.x += l.vx * dt; l.y += l.vy * dt; l.life -= dt;
     const top = p.y - (p.crouch ? 36 : 62);
-    if (l.life > 0 && l.x > p.x - 14 && l.x < p.x + 14 && l.y > top && l.y < p.y && p.hurt <= 0) {
+    if (l.life > 0 && l.x > p.x - 14 && l.x < p.x + 14 && l.y > top && l.y < p.y && p.hurt <= 0 && p.roll===0) {
       l.life = 0; p.hp -= 12; p.hurt = 0.6; s.fx.push({ x: l.x, y: l.y, life: 0.35, c: "laser" });
       if (p.hp <= 0) { p.hp = 0; return "lose"; }
     }

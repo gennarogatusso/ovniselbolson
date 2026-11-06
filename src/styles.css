@@ -199,3 +199,24 @@
   .game-overlay { gap: 7px; }
   .game-control { width: 44px; height: 44px; padding: 0; }
 }
+
+/* In-game early-2000s desktop, isolated from the site's theme. */
+.game-computer { --computer-surface: #c4c8c9; --computer-text: #182025; --computer-title: #246687; --computer-label: #fff5df; --computer-folder: #f3d06e; --computer-border: #edf0ee; position: absolute; inset: 0; z-index: 30; font-family: var(--font-mono); background: var(--game-ink); color: var(--computer-text); touch-action: auto; }
+.computer-wallpaper { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 52%; image-rendering: pixelated; }
+.computer-icons { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 6px; }
+.computer-icon { width: 118px; height: 90px; padding: 5px; display: flex; flex-direction: column; gap: 4px; color: var(--computer-label); white-space: normal; text-shadow: 1px 2px 2px var(--game-ink); font-size: 12px; }
+.computer-icon img { width: 50px; height: 50px; object-fit: contain; image-rendering: pixelated; }
+.computer-icon:first-child img { object-fit: cover; object-position: center; clip-path: inset(32%); transform: scale(2.5); }
+.computer-icon svg { width: 46px; height: 46px; fill: var(--computer-folder); stroke: var(--computer-text); }
+.computer-icon:hover, .computer-selected { background: var(--computer-title); color: var(--computer-label); }
+.computer-window { position: absolute; inset: 5% 5% 13% 20%; display: flex; flex-direction: column; border: 3px ridge var(--computer-border); background: var(--computer-surface); }
+.computer-window-title { min-height: 40px; background: var(--computer-title); color: var(--computer-label); padding-left: 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 13px; }
+.computer-window-title button { flex-shrink: 0; height: 34px; width: 34px; background: var(--computer-surface); color: var(--computer-text); }
+.computer-folder { flex: 1; padding: 15px; }
+.computer-file { display: flex; flex-direction: column; width: 140px; height: 100px; color: var(--computer-text); white-space: normal; }
+.computer-file svg { width: 45px; height: 45px; }
+.computer-video { width: 100%; min-height: 0; flex: 1; object-fit: contain; background: var(--game-ink); }
+.computer-taskbar { position: absolute; bottom: 0; inset-inline: 0; min-height: 42px; padding: 3px 6px; background: var(--computer-surface); border-top: 2px ridge var(--computer-border); display: flex; align-items: center; justify-content: space-between; gap: 5px; font-size: 12px; }
+.computer-taskbar > span { display: flex; align-items: center; gap: 5px; }
+.computer-taskbar button { background: var(--computer-surface); color: var(--computer-text); font-size: 12px; }
+@media(max-width:600px) { .computer-icons { flex-direction: row; gap: 2px; } .computer-icon { width: 96px; height: 76px; font-size: 10px; } .computer-icon img { width: 36px; height: 36px; } .computer-icon svg { width: 36px; height: 36px; } .computer-window { inset: 3% 2% 17%; } .computer-taskbar > span { display: none; } .computer-taskbar { justify-content: flex-end; } }

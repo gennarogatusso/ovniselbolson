@@ -31,3 +31,11 @@
 - [x] Auditar motor, escenas, controles y recursos; confirmar causas del bloqueo.
 - [ ] Reparar la conexión visual y los controles del capítulo existente hasta La Cruz.
 - [ ] Comprobar recursos, pruebas y recorrido completo en PC y móvil.
+
+# Pedido maestro del 6 de noviembre
+- [ ] Movimiento manual del bosque en cuatro direcciones y disparadores por posición.
+- [ ] Rodar desde el primer combate con inmunidad, recuperación y límites.
+- [ ] Corregir proporciones en camilla y apoyo completo tras el accidente.
+- [ ] Computadora con escritorio, carpeta y video originales; regreso al dormitorio.
+- [ ] Audio original exclusivo en AWKA al 30%, sin duplicados.
+- [ ] Pruebas y comprobaciones visuales PC/móvil; informe de verificaciones reales.

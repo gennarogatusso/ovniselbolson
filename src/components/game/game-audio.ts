@@ -1,4 +1,7 @@
 import type { S } from './game-engine';
+import ambience from '@/assets/awka-ambience.mp3.asset.json';
+export const AWKA_VOLUME = .30;
+export function awkaMusicActive(s:S,playing:boolean){return playing&&s.phase==='awka'&&s.intro.stage!=='depart'&&s.intro.stage!=='done';}
 
 // Browser-only, gesture-unlocked synthesis: no remote audio or credentials.
 export class GameAudio {
@@ -6,10 +9,14 @@ export class GameAudio {
  private master: GainNode | null = null;
  private lastStage = '';
  private lastPulse = 0;
+ private music: HTMLAudioElement | null = null;
+ private musicActive = false;
  unlock() {
   this.context ??= new AudioContext();
   if (!this.master) { this.master = this.context.createGain(); this.master.gain.value = .12; this.master.connect(this.context.destination); }
   void this.context.resume();
+  this.music ??= new Audio(ambience.url);
+  this.music.volume=AWKA_VOLUME;this.music.loop=true;
  }
  private tone(frequency: number, duration: number, type: OscillatorType = 'sine', end = frequency, volume = .35) {
   const c=this.context,m=this.master;if(!c||!m||c.state!=='running')return;
@@ -17,6 +24,8 @@ export class GameAudio {
   g.gain.setValueAtTime(volume,t);g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g);g.connect(m);o.start(t);o.stop(t+duration);
  }
  update(s:S,playing:boolean) {
+  const active=awkaMusicActive(s,playing);
+  if(active!==this.musicActive){this.musicActive=active;if(active){if(this.music)void this.music.play().catch(()=>{this.musicActive=false;});}else if(this.music){this.music.pause();this.music.currentTime=0;}}
   const a=s.ship;if(!playing||s.phase!=='spaceship'){a.sounds=[];return;}
   for(const event of a.sounds.splice(0)){
    if(event==='pistol')this.tone(380,.09,'square',60,.32);
@@ -39,5 +48,5 @@ export class GameAudio {
    else if(!['impact','crossFree','crossRise'].includes(a.stage))this.tone(48,2.8,'sine',52,.08);
   }
  }
- close(){void this.context?.close();this.context=null;this.master=null;}
+ close(){this.music?.pause();this.music=null;this.musicActive=false;void this.context?.close();this.context=null;this.master=null;}
 }

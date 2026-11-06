@@ -16,3 +16,6 @@
 - Gate the post-jets chapter on the playable state's chapter flag and retain the baseline ending for isolated regression tests; chapter timing and interactions remain in the engine, with military/world and bedroom/screen drawing in the renderer.
 - Keep bedroom collision geometry and proximity interactions in the engine and the night-background latch active until exit; forest continuation uses chapter stages so the original phases, combat and endings stay unchanged.
 - Dispatch spaceship rendering before chapter-background selection and preload every ship asset before play; completed forest stages must never override the active ship scene.
+- Keep optional computer state in the bedroom engine and render its windows in GameComputer; this freezes room progression without changing the sleep sequence.
+- Forest progression uses world-position thresholds and bounded manual input, while abduction remains cinematic; this preserves narrative order without automatic exploration.
+- Keep uploaded AWKA music on one gesture-unlocked audio element separate from synthesized effects; this scopes its volume and lifecycle without altering other scene audio.

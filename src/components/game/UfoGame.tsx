@@ -7,9 +7,10 @@ import player from '@/assets/personaje-juego.png.asset.json';
 import cat from '@/assets/gato-juego.png.asset.json';
 import alien from '@/assets/alien-rise.png.asset.json';
 import reunion from '@/assets/cat-reunion.png.asset.json';
-import { W, H, ENDINGS, CINEMATIC, canAskHelp, newState, newIntroState, introAction, interactIntro, chapterAction, interactChapter, roomIsFree, shipIsFree, shipIsCombat, update, type Ending, type Screen } from './game-engine';
+import { W, H, ENDINGS, CINEMATIC, canAskHelp, newState, newIntroState, introAction, interactIntro, chapterAction, interactChapter, closeComputer, forestIsFree, roomIsFree, shipIsFree, shipIsCombat, update, type Ending, type Screen } from './game-engine';
 import { draw, type GameImages, type Palette } from './game-renderer';
 
+import { GameComputer } from './GameComputer';
 import { GameAudio } from './game-audio';
 import greyArt from '@/assets/ship-grey.png.asset.json';
 import pickupArt from '@/assets/ship-pickup.png.asset.json';
@@ -55,6 +56,7 @@ export function UfoGame() {
  const [screen,setScreen]=useState<Screen>('title'), [ending,setEnding]=useState<Ending|null>(null), [touch,setTouch]=useState(false),[expanded,setExpanded]=useState(false),[loading,setLoading]=useState(true),[assetError,setAssetError]=useState(false),[context,setContext]=useState(false),[combat,setCombat]=useState(false);
  const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false), [freeRoom,setFreeRoom]=useState(false);
  const audio=useRef<GameAudio|null>(null);
+ const [computer,setComputer]=useState(false);
  const screenRef=useRef(screen);screenRef.current=screen;
  useEffect(()=>{
   const mq=window.matchMedia('(pointer: coarse)');const changed=()=>setTouch(mq.matches);changed();mq.addEventListener('change',changed);
@@ -66,7 +68,7 @@ export function UfoGame() {
  useEffect(()=>{
   const map:Record<string,string>={a:'l',arrowleft:'l',d:'r',arrowright:'r',w:'j',arrowup:'j',' ':'j',s:'c',arrowdown:'c',e:'e',shift:'roll'};
   const clear=()=>{st.current.keys={};st.current.fire=false;};
-  const down=(e:KeyboardEvent)=>{const key=e.key.toLowerCase();if(key==='escape'){clear();setScreen(s=>s==='play'?'paused':s==='paused'?'play':s);return;}if(map[key]&&screenRef.current==='play'){e.preventDefault();st.current.keys[map[key]]=true;}};
+  const down=(e:KeyboardEvent)=>{if(st.current.chapter.computer)return;const key=e.key.toLowerCase();if(key==='escape'){clear();setScreen(s=>s==='play'?'paused':s==='paused'?'play':s);return;}if(map[key]&&screenRef.current==='play'){e.preventDefault();st.current.keys[map[key]]=true;}};
   const up=(e:KeyboardEvent)=>{const k=map[e.key.toLowerCase()];if(k)st.current.keys[k]=false;};
   const blur=()=>{clear();setScreen(s=>s==='play'?'paused':s);};
   window.addEventListener('keydown',down);window.addEventListener('keyup',up);window.addEventListener('blur',blur);window.addEventListener('pointerup',clear);
@@ -83,7 +85,7 @@ export function UfoGame() {
     
     if(screen==='play'){ 
      const result=update(st.current,dt);acc+=dt;
-     if(acc>.12){acc=0;setContext(canAskHelp(st.current));setCombat(st.current.phase==='fight'||shipIsCombat(st.current));setAction(introAction(st.current)??chapterAction(st.current));setIntro(st.current.phase==='awka'||CINEMATIC.has(st.current.phase)||st.current.phase==='spaceship'&&!shipIsCombat(st.current)&&!shipIsFree(st.current));setFreeRoom(roomIsFree(st.current)||shipIsFree(st.current));}
+     if(acc>.12){acc=0;setComputer(st.current.chapter.computer);setContext(canAskHelp(st.current));setCombat(st.current.phase==='fight'||shipIsCombat(st.current));setAction(introAction(st.current)??chapterAction(st.current));setIntro(st.current.phase==='awka'||CINEMATIC.has(st.current.phase)||st.current.phase==='spaceship'&&!shipIsCombat(st.current)&&!shipIsFree(st.current));setFreeRoom(roomIsFree(st.current)||shipIsFree(st.current)||forestIsFree(st.current));}
      if(result){setEnding(result==='win'?'revenge':result==='continue'?(st.current.ship.stage==='end'?'cross':st.current.chapter.stage==='complete'?'abduction':'continuation'):null);setScreen(result==='lose'?'lose':'win');}
     }else if(screen!=='paused'){
      // Mantener vivos humo y chispas detrás de las pantallas finales.
@@ -96,11 +98,11 @@ export function UfoGame() {
    raf=requestAnimationFrame(loop);
   };raf=requestAnimationFrame(loop);return()=>cancelAnimationFrame(raf);
  },[screen,loading,assetError]);
- const start=()=>{audio.current??=new GameAudio();try{audio.current.unlock();}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setScreen('play');};
+ const start=()=>{audio.current??=new GameAudio();try{audio.current.unlock();}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setScreen('play');};
  const pause=()=>{st.current.keys={};st.current.fire=false;setScreen('paused');};
  const fullscreen=async()=>{const el=host.current;if(!el)return;if(document.fullscreenElement){await document.exitFullscreen();return;}if(expanded){setExpanded(false);return;}try{if(el.requestFullscreen){await el.requestFullscreen();setExpanded(true);}else setExpanded(true);}catch{setExpanded(true);}};
   const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});
- const joystickMove=(e:PointerEvent<HTMLDivElement>)=>{if(!e.currentTarget.hasPointerCapture(e.pointerId))return;const r=e.currentTarget.getBoundingClientRect(),dx=(e.clientX-(r.left+r.width/2))/(r.width*.34),dy=(e.clientY-(r.top+r.height/2))/(r.height*.34);st.current.keys.l=dx<-.18;st.current.keys.r=dx>.18;if(roomIsFree(st.current)||st.current.ship.stage==='crossFree'){st.current.keys.j=dy<-.25;st.current.keys.c=dy>.25;}};
+ const joystickMove=(e:PointerEvent<HTMLDivElement>)=>{if(!e.currentTarget.hasPointerCapture(e.pointerId))return;const r=e.currentTarget.getBoundingClientRect(),dx=(e.clientX-(r.left+r.width/2))/(r.width*.34),dy=(e.clientY-(r.top+r.height/2))/(r.height*.34);st.current.keys.l=dx<-.18;st.current.keys.r=dx>.18;if(roomIsFree(st.current)||forestIsFree(st.current)||st.current.ship.stage==='crossFree'){st.current.keys.j=dy<-.25;st.current.keys.c=dy>.25;}};
  const joystickStart=(e:PointerEvent<HTMLDivElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);joystickMove(e);};
  const joystickStop=()=>{st.current.keys.l=false;st.current.keys.r=false;st.current.keys.j=false;st.current.keys.c=false;};
  const aim=(e:PointerEvent)=>{if(!shipIsCombat(st.current)||!cv.current)return;const r=cv.current.getBoundingClientRect();st.current.ship.aimX=(e.clientX-r.left)/r.width*W;st.current.ship.aimY=(e.clientY-r.top)/r.height*H;st.current.ship.aimActive=true;};
@@ -114,13 +116,14 @@ export function UfoGame() {
     {screen==='play'&&<Button size="icon" variant="outline" title="Pausar" aria-label="Pausar" onClick={pause}><Pause/></Button>}
     <Button size="icon" variant="outline" title={expanded?'Salir de pantalla completa':'Pantalla completa'} aria-label={expanded?'Salir de pantalla completa':'Pantalla completa'} onClick={fullscreen}>{expanded?<Minimize/>:<Maximize/>}</Button>
    </div>
-      {screen==='play'&&touch&&(freeRoom||combat||(!intro&&!CINEMATIC.has(st.current.phase)))&&<div className={`game-touch ${shipIsCombat(st.current)?'game-ship-touch':''} pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-between px-3`}>
+      {screen==='play'&&!computer&&touch&&(freeRoom||combat||(!intro&&!CINEMATIC.has(st.current.phase)))&&<div className={`game-touch ${shipIsCombat(st.current)?'game-ship-touch':''} pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-between px-3`}>
         <div className="pointer-events-auto flex items-end gap-2"><div className="game-joystick" role="group" aria-label="Joystick de movimiento" onPointerDown={joystickStart} onPointerMove={joystickMove} onPointerUp={joystickStop} onPointerCancel={joystickStop}><span className="game-joystick-thumb"/><ArrowLeft className="game-joystick-left"/><ArrowRight className="game-joystick-right"/></div>{!shipIsCombat(st.current)&&<Button className={`${controlClass} game-move-control`} aria-label={freeRoom?"Caminar hacia abajo":"Agacharse"} {...hold('c')}><ArrowDown/></Button>}</div>
-    <div className="pointer-events-auto flex items-end gap-2">{context&&<Button className={controlClass} aria-label="Pedir ayuda a los pibes" {...hold('e')}><Hand/></Button>}{!shipIsCombat(st.current)&&<Button className={controlClass} aria-label={freeRoom?"Caminar hacia arriba":"Saltar"} {...hold('j')}><ArrowUp/></Button>}{shipIsCombat(st.current)&&<Button className={`${controlClass} game-roll-control`} aria-label="Rodar" {...hold('roll')}><RotateCcw/></Button>}{combat&&<Button className={`${controlClass} game-fire-control`} aria-label="Disparar" onPointerDown={fire} onPointerUp={()=>{st.current.fire=false;}} onPointerCancel={()=>{st.current.fire=false;}}><Crosshair/></Button>}</div>
+    <div className="pointer-events-auto flex items-end gap-2">{context&&<Button className={controlClass} aria-label="Pedir ayuda a los pibes" {...hold('e')}><Hand/></Button>}{!shipIsCombat(st.current)&&<Button className={controlClass} aria-label={freeRoom?"Caminar hacia arriba":"Saltar"} {...hold('j')}><ArrowUp/></Button>}{combat&&<Button className={`${controlClass} game-roll-control`} aria-label="Rodar" {...hold('roll')}><RotateCcw/></Button>}{combat&&<Button className={`${controlClass} game-fire-control`} aria-label="Disparar" onPointerDown={fire} onPointerUp={()=>{st.current.fire=false;}} onPointerCancel={()=>{st.current.fire=false;}}><Crosshair/></Button>}</div>
    </div>}
-   {screen==='play'&&action&&<Button className={`game-intro-action ${(freeRoom||shipIsCombat(st.current))&&touch?'game-room-action':''} absolute bottom-3 left-1/2 z-20 -translate-x-1/2`} onClick={()=>{if(st.current.phase==='awka')interactIntro(st.current);else interactChapter(st.current);setAction(null);}}><Hand/>{action}</Button>}
-   {screen==='play'&&!touch&&context&&<Button className="absolute bottom-4 left-1/2 -translate-x-1/2" onClick={()=>{st.current.keys.e=true;}}><Hand/> PEDIR AYUDA A LOS PIBES · E</Button>}
-   {screen!=='play'&&<div className="game-overlay absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/65 px-5 text-center">
+   {screen==='play'&&!computer&&action&&<Button className={`game-intro-action ${(freeRoom||shipIsCombat(st.current))&&touch?'game-room-action':''} absolute bottom-3 left-1/2 z-20 -translate-x-1/2`} onClick={()=>{if(st.current.phase==='awka')interactIntro(st.current);else interactChapter(st.current);setAction(null);}}><Hand/>{action}</Button>}
+   {screen==='play'&&!computer&&!touch&&context&&<Button className="absolute bottom-4 left-1/2 -translate-x-1/2" onClick={()=>{st.current.keys.e=true;}}><Hand/> PEDIR AYUDA A LOS PIBES · E</Button>}
+   {screen==='play'&&computer&&<GameComputer onClose={()=>{closeComputer(st.current);setComputer(false);}}/>}
+    {screen!=='play'&&<div className="game-overlay absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/65 px-5 text-center">
         {screen==='title'&&<div className="game-title-card"><p className="font-mono text-xs text-celeste">UFOCAT Test 1.1</p><p className="font-serif text-lg italic text-foreground/90">Vos y tu gato pasan un momento de terror en las afueras de El Bolsón</p><Button size="lg" onClick={start} disabled={loading||assetError}><Play/>{loading?'CARGANDO…':'JUGAR'}</Button>{assetError&&<p role="alert">No se pudieron cargar las imágenes. Recargá la página para reintentar.</p>}</div>}
     {screen==='paused'&&<><h2 className="game-title font-serif">Pausa</h2><Button size="lg" onClick={()=>setScreen('play')}><Play/>CONTINUAR</Button><Button variant="ghost" onClick={()=>{setScreen('title');st.current=newState();}}>MENÚ DEL JUEGO</Button></>}
     {screen==='win'&&ending&&<><h2 className="game-ending font-serif">{ENDINGS[ending].title}</h2><p className="font-mono text-xs text-celeste">{ENDINGS[ending].sub}</p><Button onClick={start}><RotateCcw/> VOLVER A JUGAR</Button><Button variant="outline" onClick={()=>{st.current=newState();setScreen('title');}}>MENÚ DEL JUEGO</Button></>}

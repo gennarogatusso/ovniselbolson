@@ -1,4 +1,4 @@
-import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, canAskHelp, type S } from './game-engine';
+import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, forestIsFree, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement };
 export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement };
@@ -161,7 +161,7 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    c.drawImage(art.forest,0,H-h,w,h);c.restore();
   }
  }
- const later=['ship','beam','lift','vanished','complete'].includes(a.stage),burn=a.stage==='burned'?Math.min(1,a.time/7):later?1:0;
+ const later=['ship','beam','lift','vanished','complete'].includes(a.stage),burn=a.stage==='burned'?Math.min(1,(a.forestX-FOREST.deer)/(FOREST.ship-FOREST.deer)):later?1:0;
  if(burn>0){
   c.save();c.globalAlpha=burn;
   for(let i=0;i<10;i++){
@@ -171,7 +171,7 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   }
   c.restore();
  }
- const deerX=330+7*260+160-a.forestX;
+ const deerX=330+FOREST.deer+160-a.forestX;
  if(deerX>-200&&deerX<W+200)still(c,art.deer,deerX,GROUND+3,94);
  if(later){
   const q=a.stage==='ship'?Math.min(1,a.time/4.5):1;
@@ -216,13 +216,13 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(a.stage==='contemplate'||a.stage==='end')pose(c,art.contemplate,0,2,305,334,118);
   else if(a.stage==='crossRise')pose(c,art.push,2,3,s.chapter.roomX,s.chapter.roomY,118);
   else roomActor(c,s,im.chapter);
-  still(c,art.cat,a.catX,a.catY,70);
+  catSprite(c,im.cat,a.catX,a.catY,0,-1);
   if(a.stage==='impact'){c.globalAlpha=Math.max(0,1-a.time/1.8);box(c,p.light,0,0,W,H);c.globalAlpha=1;}
  }else if(lab){
   const dead=['rescue','rise','labFree','door'].includes(a.stage);
   for(const x of [610,735])pose(c,art.grey,dead?Math.min(8,3+Math.floor(a.labDead*5)):0,9,x,SHIP.floor,115);
   if(['awakening','verdict','catEntry','eyeCharge','rescue'].includes(a.stage)){
-   const sleeping=im.chapter.sleeping,w=144,h=w*sleeping.naturalHeight/sleeping.naturalWidth;c.drawImage(sleeping,480-w/2,374-h,w,h);
+   const sleeping=im.chapter.sleeping,w=118,h=w*sleeping.naturalHeight/sleeping.naturalWidth;c.drawImage(sleeping,480-w/2,364-h,w,h);
   }else if(a.stage==='rise')still(c,im.chapter.waking,480,SHIP.floor,112);
   else actor(a.x,a.y);
   if(['catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage))still(c,art.cat,a.catX,SHIP.floor,78);
@@ -319,8 +319,9 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
    const stand=s.phase==='reunion'?Math.max(0,Math.min(1,(s.pt-4.6)/.8)):1;
    pose(c,im.reunion,0,2,player.x,player.y,96,1-stand);
    pose(c,im.reunion,1,2,player.x,player.y,96,stand);
-  }else if(im && !(player.hurt>0&&Math.floor(player.hurt*20)%2))sprite(c,im.player,player.x,player.y,86,player.face,player.walk,player.crouch);
-  if(im && player.armed>0 && !['reunion','alien','speech','attack','fade','jets','aftermath'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im.gun,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
+  }else if(im && player.roll>0){c.save();c.translate(player.x,player.y);c.scale(player.rollFace,1);pose(c,im.ship.roll,Math.min(5,Math.floor((1-player.roll/SHIP.rollTime)*6)),6,0,0,86);c.restore();}
+  else if(im && !(player.hurt>0&&Math.floor(player.hurt*20)%2))sprite(c,im.player,player.x,player.y,86,player.face,player.walk,player.crouch);
+  if(im && player.roll===0 && player.armed>0 && !['reunion','alien','speech','attack','fade','jets','aftermath'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im.gun,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
   if(s.phase==='aftermath'&&im){ufo(c,{...s,phase:'arrive'},p);military(c,s,im.chapter);}
   if(s.u.vis && !['boom','over'].includes(s.phase))ufo(c,s,p);
  if(s.phase==='jets'&&s.ufoHits>0){c.save();for(let i=0;i<7;i++){const pulse=(s.t*2+i*.8)%3;c.globalAlpha=.45+(pulse/3)*.35;oval(c,p.smoke,s.u.x+Math.sin(i*2+s.t)*28,s.u.y-18-pulse*22,10+pulse*5,13+pulse*7);oval(c,i%2?p.gold:p.red,s.u.x+Math.sin(i*3+s.t*3)*24,s.u.y+Math.cos(i*4)*8,7+pulse*3,11+pulse*4);}c.restore();}
