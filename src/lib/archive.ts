@@ -76,17 +76,17 @@ export const expedientes: Expediente[] = [
     lead: "Una intensa estela luminosa observada desde distintos puntos de la Patagonia durante la noche del 2 de noviembre de 2026.",
     imagenes: [
       {
-        src: "https://i.postimg.cc/s2zJmFNM/imagen3.png",
+        src: "/imagens/imagen1.png",
         pie: "Registro fotográfico compartido del fenómeno luminoso.",
         fuente: "Imagen aportada para este expediente; autoría y ubicación no indicadas."
       },
       {
-        src: "https://i.postimg.cc/htTrV4pd/imagen1.png",
+        src: "/imagens/imagen2.png",
         pie: "Registro fotográfico compartido del fenómeno luminoso.",
         fuente: "Imagen aportada para este expediente; autoría y ubicación no indicadas."
       },
       {
-        src: "https://i.postimg.cc/rwxJ5yQ1/imagen2.png",
+        src: "/imagens/imagen3.png",
         pie: "Registro fotográfico compartido del fenómeno luminoso.",
         fuente: "Imagen aportada para este expediente; autoría y ubicación no indicadas."
       }
