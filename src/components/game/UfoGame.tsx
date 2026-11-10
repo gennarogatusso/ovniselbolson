@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Link } from '@tanstack/react-router';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crosshair, Hand, Maximize, Minimize, Pause, Play, RotateCcw } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crosshair, Hand, Maximize, Minimize, Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import mountain from '@/assets/piltriquitron-cartoon.png.asset.json';
 import player from '@/assets/personaje-juego.png.asset.json';
@@ -57,6 +57,7 @@ export function UfoGame() {
  const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false), [freeRoom,setFreeRoom]=useState(false);
  const audio=useRef<GameAudio|null>(null);
  const [computer,setComputer]=useState(false),[creditsOpen,setCreditsOpen]=useState(false);
+ const [masterVolume,setMasterVolume]=useState(.8),[volumeOpen,setVolumeOpen]=useState(false);
  const screenRef=useRef(screen);screenRef.current=screen;
  useEffect(()=>{
   const mq=window.matchMedia('(pointer: coarse)');const changed=()=>setTouch(mq.matches);changed();mq.addEventListener('change',changed);
@@ -98,7 +99,7 @@ export function UfoGame() {
    raf=requestAnimationFrame(loop);
   };raf=requestAnimationFrame(loop);return()=>cancelAnimationFrame(raf);
  },[screen,loading,assetError]);
- const start=()=>{setCreditsOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setScreen('play');};
+ const start=()=>{setCreditsOpen(false);setVolumeOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();audio.current.setVolume(masterVolume);}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setScreen('play');};
  const pause=()=>{st.current.keys={};st.current.fire=false;setScreen('paused');};
  const fullscreen=async()=>{const el=host.current;if(!el)return;if(document.fullscreenElement){await document.exitFullscreen();return;}if(expanded){setExpanded(false);return;}try{if(el.requestFullscreen){await el.requestFullscreen();setExpanded(true);}else setExpanded(true);}catch{setExpanded(true);}};
   const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});
@@ -114,6 +115,16 @@ export function UfoGame() {
    <canvas ref={cv} width={W} height={H} aria-label="OVNIS EN EL BOLSÓN, escenario de juego" className="h-full w-full" onPointerDown={e=>{if(e.pointerType==='mouse'&&e.button===0)fire(e);}} onPointerMove={aim} onPointerUp={()=>{st.current.fire=false;}} onPointerCancel={()=>{st.current.fire=false;}} onContextMenu={e=>e.preventDefault()}/>
    {screen!=='title'&&<div className="absolute right-2 top-2 z-20 flex gap-2">
     {screen==='play'&&<Button size="icon" variant="outline" title="Pausar" aria-label="Pausar" onClick={pause}><Pause/></Button>}
+    <div className="game-volume-anchor">
+     <Button size="icon" variant="outline" title="Control de volumen" aria-label="Control de volumen" aria-expanded={volumeOpen} aria-controls="game-volume-panel" onClick={()=>setVolumeOpen(open=>!open)}>
+      {masterVolume===0?<VolumeX/>:<Volume2/>}
+     </Button>
+     {volumeOpen&&<div id="game-volume-panel" className="game-volume-panel" role="group" aria-label="Volumen del juego">
+      <label htmlFor="ufo-game-volume">VOLUMEN</label>
+      <input id="ufo-game-volume" type="range" min="0" max="100" step="1" value={Math.round(masterVolume*100)} aria-label="Volumen del juego" onChange={e=>{const next=Number(e.currentTarget.value)/100;setMasterVolume(next);audio.current?.setVolume(next);}}/>
+      <output htmlFor="ufo-game-volume">{Math.round(masterVolume*100)}%</output>
+     </div>}
+    </div>
     <Button size="icon" variant="outline" title={expanded?'Salir de pantalla completa':'Pantalla completa'} aria-label={expanded?'Salir de pantalla completa':'Pantalla completa'} onClick={fullscreen}>{expanded?<Minimize/>:<Maximize/>}</Button>
    </div>}
       {screen==='play'&&!computer&&touch&&(freeRoom||combat||(!intro&&!CINEMATIC.has(st.current.phase)))&&<div className={`game-touch ${shipIsCombat(st.current)?'game-ship-touch':''} pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-between px-3`}>

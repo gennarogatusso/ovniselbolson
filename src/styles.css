@@ -247,3 +247,30 @@
  .game-menu-credits { left: 5.4%; top: 60.4%; width: 14%; height: 6.2%; }
  .game-menu-exit { left: 5.4%; top: 67.6%; width: 9.5%; height: 6.2%; }
 }
+
+
+/* Control maestro de sonido y botón de disparo táctil más accesible. */
+.game-volume-anchor { position: relative; }
+.game-volume-panel {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 40;
+  width: 190px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px 10px;
+  padding: 12px 14px; border: 1px solid rgb(210 230 245 / 45%); border-radius: 10px;
+  background: rgb(12 20 32 / 94%); color: #f5f7fa; box-shadow: 0 8px 26px rgb(0 0 0 / 42%);
+  backdrop-filter: blur(8px); font: 600 11px var(--font-mono); letter-spacing: .1em;
+}
+.game-volume-panel label { grid-column: 1 / -1; }
+.game-volume-panel input { width: 100%; min-width: 0; accent-color: #79ef9e; cursor: pointer; }
+.game-volume-panel output { min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+@media(max-width:767px) {
+  .game-touch .game-fire-control {
+    width: clamp(100px, 27vw, 124px); height: clamp(100px, 27vw, 124px);
+    border: 2px solid rgb(190 255 210 / 78%);
+    background-color: rgb(58 160 102 / 66%);
+    box-shadow: 0 4px 18px rgb(0 0 0 / 46%), 0 0 18px rgb(121 239 158 / 24%);
+  }
+  .game-touch .game-fire-control svg { width: 40px; height: 40px; }
+}
+@media(max-height:450px) and (max-width:767px) {
+  .game-touch .game-fire-control { width: 82px; height: 82px; }
+  .game-touch .game-fire-control svg { width: 33px; height: 33px; }
+}

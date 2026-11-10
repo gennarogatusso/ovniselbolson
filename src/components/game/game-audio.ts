@@ -3,7 +3,7 @@ import ambience from '@/assets/awka-ambience.mp3.asset.json';
 export const AWKA_VOLUME = .30;
 export function awkaMusicActive(s:S,playing:boolean){return playing&&s.phase==='awka'&&s.intro.stage!=='depart'&&s.intro.stage!=='done';}
 
-type MusicTheme = 'night'|'horror'|'battle'|'aftermath'|'bedroom'|'forest';
+type MusicTheme = 'night'|'horror'|'battle'|'aftermath'|'bedroom'|'forest'|'finale';
 type ThemeConfig = {
  bpm:number;
  chords:number[][];
@@ -46,6 +46,11 @@ const MUSIC_THEMES:Record<MusicTheme,ThemeConfig> = {
   melody:[null,null,77,null,null,72,null,null,74,null,null,69,null,null,72,null],
   padWave:'sawtooth',leadWave:'triangle',padVolume:.06,leadVolume:.095,bassVolume:.14,
  },
+ finale:{
+  bpm:64,chords:[[50,53,57,62],[46,50,53,58],[41,45,48,53],[48,52,55,60]],
+  melody:[null,74,null,77,null,81,null,77,null,74,null,72,null,69,null,72],
+  padWave:'sine',leadWave:'sine',padVolume:.075,leadVolume:.12,bassVolume:.12,
+ },
 };
 
 const hz=(midi:number)=>440*Math.pow(2,(midi-69)/12);
@@ -57,6 +62,7 @@ export class GameAudio {
  private lastPulse=0;
  private music:HTMLAudioElement|null=null;
  private musicActive=false;
+ private volume=0.8;
 
  // Música procedural: no necesita descargar archivos ni servicios externos.
  private musicTheme:MusicTheme|null=null;
@@ -73,10 +79,16 @@ export class GameAudio {
 
  unlock(){
   this.context??=new AudioContext();
-  if(!this.master){this.master=this.context.createGain();this.master.gain.value=.12;this.master.connect(this.context.destination);}
+  if(!this.master){this.master=this.context.createGain();this.master.gain.value=.12*this.volume;this.master.connect(this.context.destination);}
   void this.context.resume();
   this.music??=new Audio(ambience.url);
-  this.music.volume=AWKA_VOLUME;this.music.loop=true;
+  this.music.volume=AWKA_VOLUME*this.volume;this.music.loop=true;
+ }
+
+ setVolume(value:number){
+  this.volume=Math.max(0,Math.min(1,value));
+  if(this.master&&this.context)this.master.gain.setTargetAtTime(.12*this.volume,this.context.currentTime,.035);
+  if(this.music)this.music.volume=AWKA_VOLUME*this.volume;
  }
 
  private tone(frequency:number,duration:number,type:OscillatorType='sine',end=frequency,volume=.35){
@@ -130,6 +142,39 @@ export class GameAudio {
   source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
  }
 
+ private musicOrganChord(bus:GainNode,chord:number[],when:number,duration:number){
+  const c=this.context;if(!c)return;
+  for(const [index,note] of chord.entries()){
+   const partials:[number,number,OscillatorType][]=[[1,.065,'sine'],[2,.018,'triangle']];
+   for(const [multiple,volume,wave] of partials){
+    const oscillator=c.createOscillator(),gain=c.createGain();
+    oscillator.type=wave;oscillator.frequency.setValueAtTime(hz(note)*multiple*(index%2?1.001:1),when);
+    gain.gain.setValueAtTime(.0001,when);
+    gain.gain.linearRampToValueAtTime(volume,when+Math.min(2.4,duration*.28));
+    gain.gain.setValueAtTime(volume,when+duration*.66);
+    gain.gain.linearRampToValueAtTime(.0001,when+duration);
+    oscillator.connect(gain);gain.connect(bus);
+    oscillator.onended=()=>{this.musicNodes.delete(oscillator);oscillator.disconnect();gain.disconnect();};
+    this.musicNodes.add(oscillator);oscillator.start(when);oscillator.stop(when+duration+.04);
+   }
+  }
+ }
+
+ private musicPianoNote(bus:GainNode,note:number,when:number,duration:number,volume:number){
+  const c=this.context;if(!c)return;
+  const partials:[number,number][]=[[1,1],[2,.24],[3,.07]];
+  for(const [multiple,level] of partials){
+   const oscillator=c.createOscillator(),gain=c.createGain();
+   oscillator.type='sine';oscillator.frequency.setValueAtTime(hz(note)*multiple,when);
+   gain.gain.setValueAtTime(.0001,when);
+   gain.gain.linearRampToValueAtTime(volume*level,when+.018);
+   gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
+   oscillator.connect(gain);gain.connect(bus);
+   oscillator.onended=()=>{this.musicNodes.delete(oscillator);oscillator.disconnect();gain.disconnect();};
+   this.musicNodes.add(oscillator);oscillator.start(when);oscillator.stop(when+duration+.03);
+  }
+ }
+
  private stopMusic(){
   if(this.musicTimer!==null){window.clearInterval(this.musicTimer);this.musicTimer=null;}
   const oldBus=this.musicBus;
@@ -160,16 +205,18 @@ export class GameAudio {
   const config=MUSIC_THEMES[theme],stepDuration=60/config.bpm/2;
   let guard=0;
   while(this.nextMusicTime<c.currentTime+.30&&guard++<24){
-   const step=this.musicStep%32,bar=Math.floor(step/8),chord=config.chords[bar%config.chords.length]??config.chords[0]??[];
-   if(step%8===0){
-    for(const note of chord)this.musicNote(bus,note,this.nextMusicTime,stepDuration*7.5,config.padWave,config.padVolume);
-   }
-   if(step%4===0&&chord[0]!==undefined){
-    this.musicNote(bus,chord[0]-12,this.nextMusicTime,stepDuration*3.5,'triangle',config.bassVolume);
-   }
-   const melody=config.melody[step%16];
-   if(melody!==null&&melody!==undefined){
-    this.musicNote(bus,melody,this.nextMusicTime,stepDuration*1.8,config.leadWave,config.leadVolume);
+   const step=this.musicStep%32,bar=Math.floor(step/(theme==='finale'?16:8)),chord=config.chords[bar%config.chords.length]??config.chords[0]??[];
+   if(theme==='finale'){
+    if(step%16===0)this.musicOrganChord(bus,chord,this.nextMusicTime,stepDuration*15.8);
+    if(step%4===0&&chord[0]!==undefined)this.musicNote(bus,chord[0]-12,this.nextMusicTime,stepDuration*3.6,'sine',config.bassVolume);
+    const piano=config.melody[step%16];
+    if(piano!==null&&piano!==undefined)this.musicPianoNote(bus,piano,this.nextMusicTime,stepDuration*2.6,config.leadVolume);
+    if(step%8===4&&chord[2]!==undefined)this.musicNote(bus,chord[2]+12,this.nextMusicTime,stepDuration*3.4,'triangle',.025);
+   }else{
+    if(step%8===0)for(const note of chord)this.musicNote(bus,note,this.nextMusicTime,stepDuration*7.5,config.padWave,config.padVolume);
+    if(step%4===0&&chord[0]!==undefined)this.musicNote(bus,chord[0]-12,this.nextMusicTime,stepDuration*3.5,'triangle',config.bassVolume);
+    const melody=config.melody[step%16];
+    if(melody!==null&&melody!==undefined)this.musicNote(bus,melody,this.nextMusicTime,stepDuration*1.8,config.leadWave,config.leadVolume);
    }
    if(theme==='battle'){
     if(step%8===0||step%8===4)this.musicKick(this.nextMusicTime);
@@ -185,7 +232,8 @@ export class GameAudio {
   if(s.phase==='spaceship'){
    if(s.ship.stage==='combat'||s.ship.stage==='overload')return 'battle';
    if(s.ship.stage==='emergency')return 'aftermath';
-   // Laboratorio, despertar y cierre de la Cruz conservan su audio original.
+   if(['crossRise','crossFree','contemplate','end'].includes(s.ship.stage))return 'finale';
+   // Los sonidos del laboratorio y del resto de la nave no se modifican.
    return null;
   }
   if(s.phase==='walk')return 'night';
@@ -285,13 +333,12 @@ export class GameAudio {
   if(s.t-this.lastPulse>interval){this.lastPulse=s.t;
    if(a.stage==='emergency')this.tone(Math.floor(a.time*2)%2?740:490,.55,'sine',440,.42);
    else if(a.charge>0)this.tone(140+640*a.charge/1.8,.2,'triangle',300+750*a.charge/1.8,.12+a.charge*.1);
-   else if(a.stage==='contemplate'||a.stage==='end'){
-    // Motivo final más cálido y nostálgico en la Cruz.
+   else if((a.stage==='contemplate'||a.stage==='end')&&this.musicTheme!=='finale'){
     const notes=[146.83,174.61,196,220,196,174.61,164.81,146.83];
     const n=notes[Math.floor(a.time/1.4)%notes.length]??146.83;
     this.tone(n,2.15,'sine',n*.998,.18);this.tone(n*2,2.35,'sine',n*2,.075);
    }
-   else if(!['impact','crossFree','crossRise'].includes(a.stage))this.tone(48,2.8,'sine',52,.08);
+   else if(!['impact','crossFree','crossRise'].includes(a.stage)&&this.musicTheme!=='finale')this.tone(48,2.8,'sine',52,.08);
   }
  }
 
