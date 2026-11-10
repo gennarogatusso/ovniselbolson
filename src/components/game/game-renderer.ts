@@ -168,7 +168,7 @@ function roomBackground(c:CanvasRenderingContext2D,im:HTMLImageElement,alpha=1){
 function roomActor(c:CanvasRenderingContext2D,s:S,im:ChapterImages){
  const a=s.chapter,art=a.roomDirection==='up'?im.up:a.roomDirection==='down'?im.down:im.walk;
  c.save();c.translate(a.roomX,a.roomY);if(a.roomDirection==='left')c.scale(-1,1);
- pose(c,art,a.moving?Math.floor(a.roomWalk)%4:0,4,0,0,110);c.restore();
+ pose(c,art,a.moving?Math.floor(a.roomWalk)%4:0,4,0,0,143);c.restore();
 }
 function bedPose(c:CanvasRenderingContext2D,im:HTMLImageElement,alpha=1){
  if(!ready(im))return;
@@ -214,23 +214,9 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    c.drawImage(art.forest,0,H-h,w,h);c.restore();
   }
  }
- const later=['ship','beam','lift','vanished','complete'].includes(a.stage),burn=a.stage==='burned'?Math.min(1,(a.forestX-FOREST.deer)/(FOREST.ship-FOREST.deer)):later?1:0;
- if(burn>0){
-  c.save();c.globalAlpha=burn;
-  for(let i=0;i<10;i++){
-   const x=((i*211-a.forestX*.85)%(W+230)+W+230)%(W+230)-100;
-   box(c,p.ink,x,GROUND-175,13,177);c.strokeStyle=p.ink;c.lineWidth=8;c.beginPath();c.moveTo(x+6,GROUND-90);c.lineTo(x-39,GROUND-140);c.moveTo(x+6,GROUND-120);c.lineTo(x+39,GROUND-169);c.stroke();
-   oval(c,p.smoke,x+30,GROUND+12,36,3);
-  }
-  c.restore();
- }
+ const later=['ship','beam','lift','vanished','complete'].includes(a.stage);
  const deerX=330+FOREST.deer+160-a.forestX;
  if(deerX>-200&&deerX<W+200)still(c,art.deer,deerX,GROUND+3,94);
- if(later){
-  const q=a.stage==='ship'?Math.min(1,a.time/4.5):1;
-  const width=340+q*390,height=width*art.ship.naturalHeight/art.ship.naturalWidth;
-  c.save();c.globalAlpha=q;c.drawImage(art.ship,440-width/2,155-height,width,height);c.restore();
- }
  const beam=['beam','lift','vanished','complete'].includes(a.stage);
  if(beam){
   const q=a.stage==='beam'?Math.min(1,a.time/3):1;c.save();c.globalCompositeOperation='screen';c.globalAlpha=q*.6;
@@ -242,6 +228,12 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   const running=['forestRun','burned','forestFade'].includes(a.stage),x=a.stage==='lift'?330+110*Math.min(1,a.time/6):330;
   if(running)pose(c,art.run,Math.floor(s.t*10)%4,4,x,a.forestY,100);
   else still(c,im.player,x,a.forestY,100);
+ }
+ // Plano general: OVNI completo y protagonista que desaparece detrás del casco.
+ if(later){
+  const reveal=a.stage==='ship'?Math.min(1,a.time/1.15):1;
+  const width=730,height=width*art.ship.naturalHeight/art.ship.naturalWidth;
+  c.save();c.globalAlpha=reveal;c.drawImage(art.ship,(W-width)/2,155-height,width,height);c.restore();
  }
  if(a.stage==='deer')bubble(c,'¿Qué carajo está pasando?',330,GROUND-120,p,520);
  if(a.stage==='forestFade'){c.globalAlpha=1-Math.min(1,a.time/1.4);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
@@ -276,7 +268,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   for(const x of [610,735])pose(c,art.grey,dead?Math.min(8,3+Math.floor(a.labDead*5)):0,9,x,SHIP.floor,115);
   if(['awakening','verdict','catEntry','eyeCharge','rescue'].includes(a.stage)){
    const sleeping=im.chapter.sleeping,w=118,h=w*sleeping.naturalHeight/sleeping.naturalWidth;c.drawImage(sleeping,480-w/2,364-h,w,h);
-  }else if(a.stage==='rise')still(c,im.chapter.waking,480,SHIP.floor,112);
+  }else if(a.stage==='rise')still(c,im.chapter.waking,480,380,112);
   else actor(a.x,a.y);
   if(['catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage))still(c,art.cat,a.catX,SHIP.floor,78);
   if(a.stage==='eyeCharge'||(a.stage==='rescue'&&a.time<1.6)){

@@ -76,6 +76,8 @@ export class GameAudio {
  private lastPhase='';
  private lastIntroStage='';
  private lastChapterStage='';
+ private lastJetScreenX=[Number.NaN,Number.NaN];
+ private nextJetWhoosh=0;
 
  unlock(){
   this.context??=new AudioContext();
@@ -255,11 +257,37 @@ export class GameAudio {
    else if(s.phase==='rise'){this.tone(180,.85,'sawtooth',720,.18);}
    else if(s.phase==='draw'){this.tone(760,.045,'square',260,.18);this.tone(115,.11,'triangle',70,.18);}
    else if(s.phase==='fight'){this.tone(95,.35,'sine',48,.2);}
-   else if(s.phase==='boom'||s.phase==='crash'){this.noise(.8,.28,900,70);this.tone(72,.95,'sawtooth',25,.38);}
+   else if(s.phase==='boom'){this.noise(.8,.28,900,70);this.tone(72,.95,'sawtooth',25,.38);}
+   else if(s.phase==='crash'){
+    // Impacto pesado contra la ladera: golpe metálico, tierra y vibración grave.
+    this.noise(1.35,.38,1100,48);this.tone(58,1.75,'sawtooth',24,.50);
+    this.tone(230,.62,'square',38,.18);this.noise(.48,.16,2800,210);
+   }
    else if(s.phase==='jets'){this.noise(1.35,.25,2600,260);this.tone(780,1.1,'sawtooth',95,.16);}
-   else if(s.phase==='aftermath'){this.tone(92,.7,'sine',62,.13);}
+   else if(s.phase==='aftermath'){
+    this.tone(92,.7,'sine',62,.13);
+    if(s.chapter.stage==='truck'){
+     // Motor diésel del camión entrando y frenando junto a la nave.
+     this.noise(1.9,.24,420,55);this.tone(66,1.8,'sawtooth',152,.24);
+     this.tone(148,1.15,'sawtooth',82,.13);this.noise(.3,.10,1650,380);
+    }
+   }
    this.lastPhase=s.phase;
   }
+
+  // Doppler de cada avión al cruzar el encuadre a gran velocidad.
+  if(s.phase==='jets'){
+   const now=this.context?.currentTime??0;
+   for(let i=0;i<s.jets.length;i++){
+    const jet=s.jets[i];if(!jet)continue;
+    const screenX=jet.x-s.cam,previous=this.lastJetScreenX[i]??Number.NaN;
+    if(Number.isFinite(previous)&&previous<190&&screenX>=190&&now>=this.nextJetWhoosh){
+     this.noise(.72,.22,3200,160);this.tone(190,.72,'sawtooth',58,.17);
+     this.tone(920,.38,'sine',280,.055);this.nextJetWhoosh=now+.48;
+    }
+    this.lastJetScreenX[i]=screenX;
+   }
+  }else{this.lastJetScreenX=[Number.NaN,Number.NaN];}
 
   if(s.phase==='awka'&&s.intro.stage!==this.lastIntroStage){
    if(s.intro.stage==='drinking'){
