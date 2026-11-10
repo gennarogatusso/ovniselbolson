@@ -151,7 +151,7 @@
 .game-overlay[data-menu="title"] { background: linear-gradient(90deg, rgb(8 12 25 / 0.72), rgb(8 12 25 / 0.18) 58%, rgb(8 12 25 / 0.1)); }
 .game-title-card { position: absolute; inset: 0 auto 0 0; width: min(48%, 470px); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 18px; padding: clamp(18px, 5vw, 56px); text-align: left; text-shadow: 0 2px 12px #000; }
 .game-title-background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.game-stage:has(.game-title-card) canvas { visibility: hidden; }
+.ufo-game[data-screen="title"] .game-stage > canvas { visibility: hidden; }
 .game-stage:has(.game-title-card) .game-overlay { background: transparent; }
 .game-title-card p:nth-child(2) { max-width: 390px; }
 .game-title-card button { min-width: 150px; }
@@ -220,3 +220,30 @@
 .computer-taskbar > span { display: flex; align-items: center; gap: 5px; }
 .computer-taskbar button { background: var(--computer-surface); color: var(--computer-text); font-size: 12px; }
 @media(max-width:600px) { .computer-icons { flex-direction: row; gap: 2px; } .computer-icon { width: 96px; height: 76px; font-size: 10px; } .computer-icon img { width: 36px; height: 36px; } .computer-icon svg { width: 36px; height: 36px; } .computer-window { inset: 3% 2% 17%; } .computer-taskbar > span { display: none; } .computer-taskbar { justify-content: flex-end; } }
+
+
+/* Menú principal ilustrado de UFOCAT. Las zonas transparentes activan las opciones impresas en el arte. */
+.game-menu { position: absolute; inset: 0; z-index: 16; }
+.game-menu-hit { position: absolute; display: block; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: pointer; color: transparent; text-decoration: none; }
+.game-menu-hit:hover:not(:disabled) { background: rgb(255 255 255 / 7%); box-shadow: 0 0 20px rgb(185 220 255 / 18%); }
+.game-menu-hit:focus-visible { outline: 2px solid #fff; outline-offset: 3px; background: rgb(255 255 255 / 10%); }
+.game-menu-hit:disabled { cursor: not-allowed; }
+.game-menu-play { left: 1.8%; top: 43.8%; width: 19.5%; height: 9%; }
+.game-menu-hide-options { position: absolute; left: 5.2%; top: 53.8%; width: 11.5%; height: 5.4%; pointer-events: none; border-radius: 999px; background: radial-gradient(ellipse at center, rgb(12 25 56 / 96%) 0%, rgb(12 25 56 / 88%) 58%, rgb(12 25 56 / 0%) 100%); backdrop-filter: blur(3px); }
+.game-menu-credits { left: 5.8%; top: 60.5%; width: 13.5%; height: 6%; }
+.game-menu-exit { left: 5.8%; top: 67.7%; width: 9%; height: 6%; }
+.game-menu-status, .game-menu-error { position: absolute; left: 5.8%; top: 76%; max-width: 35%; margin: 0; color: #fff; font: 600 clamp(9px, 1vw, 13px) var(--font-mono); text-shadow: 0 2px 8px #000; }
+.game-menu-error { top: auto; bottom: 3%; color: #ffd7d7; }
+.game-credits-backdrop { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; padding: 18px; background: rgb(3 7 18 / 76%); backdrop-filter: blur(6px); }
+.game-credits-card { width: min(560px, 88%); padding: clamp(22px, 4vw, 42px); border: 1px solid rgb(191 220 255 / 45%); border-radius: 14px; background: linear-gradient(145deg, rgb(12 22 43 / 97%), rgb(20 27 50 / 96%)); color: #f7f5f0; text-align: center; box-shadow: 0 18px 55px rgb(0 0 0 / 55%); }
+.game-credits-card h2 { margin: 0 0 18px; font: 700 clamp(20px, 3vw, 30px) var(--font-mono); letter-spacing: .16em; }
+.game-credits-card p { margin: 0 0 26px; font: 500 clamp(14px, 1.8vw, 18px) var(--font-sans); line-height: 1.5; }
+.game-credits-close { padding: 10px 24px; border: 1px solid rgb(210 230 255 / 55%); border-radius: 6px; background: rgb(120 170 220 / 15%); color: #fff; font: 600 13px var(--font-mono); letter-spacing: .08em; cursor: pointer; }
+.game-credits-close:hover { background: rgb(120 170 220 / 28%); }
+.game-credits-close:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+@media(max-width:600px) {
+ .game-menu-play { left: 1.2%; top: 43.8%; width: 20.5%; height: 9.5%; }
+ .game-menu-hide-options { left: 4.8%; top: 53.8%; width: 12%; height: 5.5%; }
+ .game-menu-credits { left: 5.4%; top: 60.4%; width: 14%; height: 6.2%; }
+ .game-menu-exit { left: 5.4%; top: 67.6%; width: 9.5%; height: 6.2%; }
+}

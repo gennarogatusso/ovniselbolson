@@ -56,7 +56,7 @@ export function UfoGame() {
  const [screen,setScreen]=useState<Screen>('title'), [ending,setEnding]=useState<Ending|null>(null), [touch,setTouch]=useState(false),[expanded,setExpanded]=useState(false),[loading,setLoading]=useState(true),[assetError,setAssetError]=useState(false),[context,setContext]=useState(false),[combat,setCombat]=useState(false);
  const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false), [freeRoom,setFreeRoom]=useState(false);
  const audio=useRef<GameAudio|null>(null);
- const [computer,setComputer]=useState(false);
+ const [computer,setComputer]=useState(false),[creditsOpen,setCreditsOpen]=useState(false);
  const screenRef=useRef(screen);screenRef.current=screen;
  useEffect(()=>{
   const mq=window.matchMedia('(pointer: coarse)');const changed=()=>setTouch(mq.matches);changed();mq.addEventListener('change',changed);
@@ -68,7 +68,7 @@ export function UfoGame() {
  useEffect(()=>{
   const map:Record<string,string>={a:'l',arrowleft:'l',d:'r',arrowright:'r',w:'j',arrowup:'j',' ':'j',s:'c',arrowdown:'c',e:'e',shift:'roll'};
   const clear=()=>{st.current.keys={};st.current.fire=false;};
-  const down=(e:KeyboardEvent)=>{if(st.current.chapter.computer)return;const key=e.key.toLowerCase();if(key==='escape'){clear();setScreen(s=>s==='play'?'paused':s==='paused'?'play':s);return;}if(map[key]&&screenRef.current==='play'){e.preventDefault();st.current.keys[map[key]]=true;}};
+  const down=(e:KeyboardEvent)=>{if(st.current.chapter.computer)return;const key=e.key.toLowerCase();if(key==='escape'){clear();setCreditsOpen(false);setScreen(s=>s==='play'?'paused':s==='paused'?'play':s);return;}if(map[key]&&screenRef.current==='play'){e.preventDefault();st.current.keys[map[key]]=true;}};
   const up=(e:KeyboardEvent)=>{const k=map[e.key.toLowerCase()];if(k)st.current.keys[k]=false;};
   const blur=()=>{clear();setScreen(s=>s==='play'?'paused':s);};
   window.addEventListener('keydown',down);window.addEventListener('keyup',up);window.addEventListener('blur',blur);window.addEventListener('pointerup',clear);
@@ -98,7 +98,7 @@ export function UfoGame() {
    raf=requestAnimationFrame(loop);
   };raf=requestAnimationFrame(loop);return()=>cancelAnimationFrame(raf);
  },[screen,loading,assetError]);
- const start=()=>{audio.current??=new GameAudio();try{audio.current.unlock();}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setScreen('play');};
+ const start=()=>{setCreditsOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setScreen('play');};
  const pause=()=>{st.current.keys={};st.current.fire=false;setScreen('paused');};
  const fullscreen=async()=>{const el=host.current;if(!el)return;if(document.fullscreenElement){await document.exitFullscreen();return;}if(expanded){setExpanded(false);return;}try{if(el.requestFullscreen){await el.requestFullscreen();setExpanded(true);}else setExpanded(true);}catch{setExpanded(true);}};
   const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});
@@ -110,7 +110,7 @@ export function UfoGame() {
  const controlClass='game-control rounded-full border border-silver/50 bg-background/70 text-foreground touch-none';
  return <div ref={host} className={`ufo-game ${expanded?'game-expanded':''}`} data-screen={screen}>
   <div className="game-stage">
-   {screen==='title'&&<img className="game-title-background" src={mountain.url} alt=""/>}
+   {screen==='title'&&<img className="game-title-background" src="/imagens/menu%20de%20juego.png" alt=""/>}
    <canvas ref={cv} width={W} height={H} aria-label="OVNIS EN EL BOLSÓN, escenario de juego" className="h-full w-full" onPointerDown={e=>{if(e.pointerType==='mouse'&&e.button===0)fire(e);}} onPointerMove={aim} onPointerUp={()=>{st.current.fire=false;}} onPointerCancel={()=>{st.current.fire=false;}} onContextMenu={e=>e.preventDefault()}/>
    <div className="absolute right-2 top-2 z-20 flex gap-2">
     {screen==='play'&&<Button size="icon" variant="outline" title="Pausar" aria-label="Pausar" onClick={pause}><Pause/></Button>}
@@ -123,13 +123,27 @@ export function UfoGame() {
    {screen==='play'&&!computer&&action&&<Button className={`game-intro-action ${(freeRoom||shipIsCombat(st.current))&&touch?'game-room-action':''} absolute bottom-3 left-1/2 z-20 -translate-x-1/2`} onClick={()=>{if(st.current.phase==='awka')interactIntro(st.current);else interactChapter(st.current);setAction(null);}}><Hand/>{action}</Button>}
    {screen==='play'&&!computer&&!touch&&context&&<Button className="absolute bottom-4 left-1/2 -translate-x-1/2" onClick={()=>{st.current.keys.e=true;}}><Hand/> PEDIR AYUDA A LOS PIBES · E</Button>}
    {screen==='play'&&computer&&<GameComputer onClose={()=>{closeComputer(st.current);setComputer(false);}}/>}
-    {screen!=='play'&&<div className="game-overlay absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/65 px-5 text-center">
-        {screen==='title'&&<div className="game-title-card"><p className="font-mono text-xs text-celeste">UFOCAT Test 1.1</p><p className="font-serif text-lg italic text-foreground/90">Vos y tu gato pasan un momento de terror en las afueras de El Bolsón</p><Button size="lg" onClick={start} disabled={loading||assetError}><Play/>{loading?'CARGANDO…':'JUGAR'}</Button>{assetError&&<p role="alert">No se pudieron cargar las imágenes. Recargá la página para reintentar.</p>}</div>}
-    {screen==='paused'&&<><h2 className="game-title font-serif">Pausa</h2><Button size="lg" onClick={()=>setScreen('play')}><Play/>CONTINUAR</Button><Button variant="ghost" onClick={()=>{setScreen('title');st.current=newState();}}>MENÚ DEL JUEGO</Button></>}
-    {screen==='win'&&ending&&<><h2 className="game-ending font-serif">{ENDINGS[ending].title}</h2><p className="font-mono text-xs text-celeste">{ENDINGS[ending].sub}</p><Button onClick={start}><RotateCcw/> VOLVER A JUGAR</Button><Button variant="outline" onClick={()=>{st.current=newState();setScreen('title');}}>MENÚ DEL JUEGO</Button></>}
-    {screen==='lose'&&<><h2 className="game-title font-serif">TE DERROTARON</h2><p className="font-mono text-xs">El gato sigue a bordo del platillo.</p><Button onClick={start}><RotateCcw/>VOLVER A JUGAR</Button></>}
-    {!loading&&<Button variant="link" asChild><Link to="/">VOLVER A APFAA</Link></Button>}
-   </div>}
+    {screen==='title'&&<nav className="game-menu" aria-label="Menú principal de UFOCAT">
+     <button type="button" className="game-menu-hit game-menu-play" aria-label="Jugar" onClick={start} disabled={loading||assetError}/>
+     <span className="game-menu-hide-options" aria-hidden="true"/>
+     <button type="button" className="game-menu-hit game-menu-credits" aria-label="Créditos" onClick={()=>setCreditsOpen(true)}/>
+     <Link to="/" className="game-menu-hit game-menu-exit" aria-label="Salir de UFOCAT"/>
+     {creditsOpen&&<div className="game-credits-backdrop" onClick={()=>setCreditsOpen(false)}>
+      <section className="game-credits-card" role="dialog" aria-modal="true" aria-labelledby="game-credits-title" onClick={e=>e.stopPropagation()}>
+       <h2 id="game-credits-title">CRÉDITOS</h2>
+       <p>Creado por Gennaro Montecino &amp; la SI (Super Inteligencia)</p>
+       <button type="button" className="game-credits-close" onClick={()=>setCreditsOpen(false)}>VOLVER</button>
+      </section>
+     </div>}
+     {loading&&<p className="game-menu-status">CARGANDO…</p>}
+     {assetError&&<p className="game-menu-error" role="alert">No se pudieron cargar las imágenes. Recargá la página para reintentar.</p>}
+    </nav>}
+    {screen!=='play'&&screen!=='title'&&<div className="game-overlay absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/65 px-5 text-center">
+     {screen==='paused'&&<><h2 className="game-title font-serif">Pausa</h2><Button size="lg" onClick={()=>setScreen('play')}><Play/>CONTINUAR</Button><Button variant="ghost" onClick={()=>{setScreen('title');st.current=newState();}}>MENÚ DEL JUEGO</Button></>}
+     {screen==='win'&&ending&&<><h2 className="game-ending font-serif">{ENDINGS[ending].title}</h2><p className="font-mono text-xs text-celeste">{ENDINGS[ending].sub}</p><Button onClick={start}><RotateCcw/> VOLVER A JUGAR</Button><Button variant="outline" onClick={()=>{st.current=newState();setScreen('title');}}>MENÚ DEL JUEGO</Button></>}
+     {screen==='lose'&&<><h2 className="game-title font-serif">TE DERROTARON</h2><p className="font-mono text-xs">El gato sigue a bordo del platillo.</p><Button onClick={start}><RotateCcw/>VOLVER A JUGAR</Button></>}
+     {!loading&&<Button variant="link" asChild><Link to="/">VOLVER A APFAA</Link></Button>}
+    </div>}
   </div>
  </div>;
 }
