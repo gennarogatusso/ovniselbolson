@@ -274,3 +274,31 @@
   .game-touch .game-fire-control { width: 82px; height: 82px; }
   .game-touch .game-fire-control svg { width: 33px; height: 33px; }
 }
+
+
+/* Layout de combate móvil inspirado en la anotación "CONTROL IDEA". */
+@media(max-width:767px) {
+ .game-combat-layout { display:block !important; height:176px; padding-inline:max(10px,env(safe-area-inset-left)) !important; }
+ .game-combat-layout .game-touch-left,
+ .game-combat-layout .game-touch-right { position:absolute; top:0; bottom:0; display:block; pointer-events:auto; }
+ .game-combat-layout .game-touch-left { left:max(10px,env(safe-area-inset-left)); width:clamp(132px,39vw,166px); }
+ .game-combat-layout .game-touch-right { right:max(10px,env(safe-area-inset-right)); width:clamp(128px,38vw,158px); }
+ .game-combat-layout .game-joystick { position:absolute; left:0; bottom:0; width:clamp(112px,34vw,142px); height:clamp(74px,22vw,90px); }
+ .game-combat-layout .game-jump-control { position:absolute; left:7px; bottom:clamp(91px,25vw,108px); width:clamp(60px,17vw,70px); height:clamp(60px,17vw,70px); z-index:2; }
+ .game-combat-layout .game-move-control { position:absolute; left:clamp(94px,27vw,112px); bottom:clamp(91px,25vw,108px); width:clamp(54px,15vw,64px); height:clamp(54px,15vw,64px); z-index:2; }
+ .game-combat-layout .game-context-control { position:absolute; left:0; right:auto; top:0; width:50px; height:50px; }
+ .game-combat-layout .game-roll-control { position:absolute; right:0; top:0; width:clamp(58px,16vw,68px); height:clamp(58px,16vw,68px); z-index:3; }
+ .game-combat-layout .game-fire-control {
+  position:absolute; right:0; bottom:0; width:clamp(112px,32vw,140px); height:clamp(112px,32vw,140px);
+  border:2px solid rgb(190 255 210 / 82%); background:radial-gradient(circle at 36% 27%,rgb(145 255 187 / 78%),rgb(43 145 87 / 86%) 70%);
+  box-shadow:0 5px 20px rgb(0 0 0 / 48%),0 0 20px rgb(121 239 158 / 28%); z-index:4;
+ }
+ .game-combat-layout .game-fire-control svg { width:clamp(37px,10vw,48px); height:clamp(37px,10vw,48px); stroke-width:2.8; }
+ .game-combat-layout .game-jump-control svg, .game-combat-layout .game-roll-control svg { width:26px; height:26px; }
+}
+@media(max-height:450px) and (max-width:767px) {
+ .game-combat-layout { height:130px; }
+ .game-combat-layout .game-jump-control, .game-combat-layout .game-move-control { bottom:68px; }
+ .game-combat-layout .game-fire-control { width:88px; height:88px; }
+ .game-combat-layout .game-roll-control { width:48px; height:48px; }
+}
