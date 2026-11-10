@@ -49,7 +49,7 @@ function Ficha() {
         {rows.map(([k, v]) => (
           <div key={k} className="border-b border-border py-4 pr-4">
             <dt className="label-mono">{k}</dt>
-            <dd className="mt-1 text-sm">{v}</dd>
+            <dd className="mt-1 text-sm">{k === "Estado" && e.estado === "RESUELTO" ? <span className="inline-flex items-center border border-emerald-400/40 bg-emerald-400/10 px-2 py-1 font-mono text-[0.65rem] tracking-[0.14em] text-emerald-300">{v}</span> : v}</dd>
           </div>
         ))}
       </dl>
@@ -59,7 +59,7 @@ function Ficha() {
           {e.imagenes.map((im) => (
             <figure key={im.src} className="border border-border bg-card">
               <button onClick={() => setZoom(im.src)} className="block w-full" aria-label="Ampliar imagen">
-                <img src={im.src} alt={im.pie} className="aspect-[4/3] w-full bg-background object-contain transition hover:opacity-90" loading="lazy" />
+                <img src={im.src} alt={im.pie} className="block h-auto max-h-[70vh] w-full bg-background object-contain transition hover:opacity-90" loading="lazy" />
               </button>
               <figcaption className="p-4">
                 <p className="text-sm">{im.pie}</p>
@@ -74,8 +74,8 @@ function Ficha() {
       {e.cierre && <p className="mt-8 max-w-3xl border-l-2 border-celeste pl-5 font-serif text-xl font-medium leading-relaxed">{e.cierre}</p>}
       {zoom && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-background/95 p-4 backdrop-blur" role="dialog" aria-modal="true" onClick={() => setZoom(null)}>
-          <button className="absolute right-4 top-4" aria-label="Cerrar"><X /></button>
-          <img src={zoom} alt="" className="max-h-[90vh] max-w-full object-contain" />
+          <button onClick={() => setZoom(null)} className="absolute right-4 top-4 rounded border border-border bg-card p-2 text-foreground hover:text-celeste" aria-label="Cerrar imagen ampliada"><X /></button>
+          <img src={zoom} alt="Imagen ampliada del expediente" onClick={(event) => event.stopPropagation()} className="max-h-[90vh] max-w-full object-contain" />
         </div>
       )}
       {e.audio && (

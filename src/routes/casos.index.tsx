@@ -68,7 +68,7 @@ function Casos() {
                   <span className="font-serif text-xl md:col-span-5">{e.titulo}</span>
                   <span className="text-sm text-muted-foreground md:col-span-2">{e.fecha}</span>
                   <span className="text-sm text-muted-foreground md:col-span-2">{e.localidad}</span>
-                  <span className="label-mono md:col-span-1">{e.estado}</span>
+                  <span className={`label-mono md:col-span-1 ${e.estado === "RESUELTO" ? "inline-flex w-fit items-center border border-emerald-400/40 bg-emerald-400/10 px-2 py-1 text-emerald-300" : ""}`}>{e.estado}</span>
                 </Link>
               </li>
             ))}

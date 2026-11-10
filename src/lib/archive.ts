@@ -8,7 +8,7 @@ import chubut2 from "@/assets/OVNI_CHUBUT_2.jpg.asset.json";
 // Estructuras del archivo APFAA. Los arreglos están vacíos a propósito:
 // solo deben contener registros reales y documentados.
 
-export type EstadoInvestigacion = "Abierto" | "En análisis" | "Explicado" | "No concluyente" | "Archivado" | "Sin explicación concluyente documentada" | "Caso histórico con hipótesis oficial posterior";
+export type EstadoInvestigacion = "Abierto" | "En análisis" | "Explicado" | "No concluyente" | "Archivado" | "Sin explicación concluyente documentada" | "Caso histórico con hipótesis oficial posterior" | "RESUELTO";
 
 export interface Fuente {
   titulo: string;
@@ -65,6 +65,46 @@ export interface Reporte {
 }
 
 export const expedientes: Expediente[] = [
+  {
+    codigo: "APFAA-006",
+    titulo: "Fenómeno Aéreo Desconocido visto en toda la Patagonia",
+    fecha: "2026-11-02",
+    fechaDetalle: "Noche del 2 de noviembre de 2026",
+    localidad: "Varias localidades",
+    region: "Patagonia argentina; reportes en Chubut y Santa Cruz, entre otras zonas.",
+    tipo: "Fenómeno luminoso con estela / posible reingreso de restos espaciales",
+    lead: "Una intensa estela luminosa observada desde distintos puntos de la Patagonia durante la noche del 2 de noviembre de 2026.",
+    imagenes: [
+      {
+        src: "https://i.postimg.cc/s2zJmFNM/imagen3.png",
+        pie: "Registro fotográfico compartido del fenómeno luminoso.",
+        fuente: "Imagen aportada para este expediente; autoría y ubicación no indicadas."
+      },
+      {
+        src: "https://i.postimg.cc/htTrV4pd/imagen1.png",
+        pie: "Registro fotográfico compartido del fenómeno luminoso.",
+        fuente: "Imagen aportada para este expediente; autoría y ubicación no indicadas."
+      },
+      {
+        src: "https://i.postimg.cc/rwxJ5yQ1/imagen2.png",
+        pie: "Registro fotográfico compartido del fenómeno luminoso.",
+        fuente: "Imagen aportada para este expediente; autoría y ubicación no indicadas."
+      }
+    ],
+    descripcion: `Durante la noche del 2 de noviembre de 2026, habitantes de distintas localidades de la Patagonia observaron un llamativo fenómeno luminoso en el cielo. Numerosos registros compartidos en redes sociales y medios regionales mostraron una intensa estela brillante que llamó la atención de vecinos de Chubut y Santa Cruz, entre otras zonas.
+
+La explicación más probable difundida públicamente apunta al reingreso atmosférico de restos de un cohete chino CZ-2C, que habría producido el efecto visual conocido como «medusa espacial» (space jellyfish).
+
+Esta interpretación fue difundida por referentes de RS Astroturismo y reproducida por medios regionales. La identificación se presenta como una explicación probable y no como una confirmación oficial: no se incorpora al expediente un documento oficial que establezca de manera concluyente el origen del fenómeno.`,
+    cierre: "La clasificación RESUELTO refleja la explicación más probable difundida públicamente. No implica que exista una confirmación oficial documentada.",
+    estado: "RESUELTO",
+    fuentes: [
+      { titulo: "La Opinión Austral — Misteriosas luces iluminaron el cielo de Santa Cruz", tipo: "Prensa", url: "https://laopinionaustral.com.ar/chubut/misteriosas-luces-iluminaron-el-cielo-de-santa-cruz-que-fue-lo-que-se-vio-727190.html" },
+      { titulo: "La Opinión Austral — La verdad detrás de la medusa espacial", tipo: "Prensa", url: "https://laopinionaustral.com.ar/videos/amp-la-verdad-detrs-del-ovni-o-la-medusa-espacial-que-sorprendi-a-vecinos-en-la-patagonia-727344.html" },
+      { titulo: "Radio 3 — Una extraña luz cruzó el cielo y sorprendió a Chubut y Santa Cruz", tipo: "Prensa", url: "https://radio3cadenapatagonia.com.ar/una-extrana-luz-cruzo-el-cielo-y-sorprendio-a-chubut-y-santa-cruz/" },
+      { titulo: "LU17 — Luces que iluminaron el cielo patagónico: ¿habrían sido restos de basura espacial?", tipo: "Prensa", url: "https://lu17.com/contenido/156046/luces-que-iluminaron-el-cielo-patagonico-habrian-sido-restos-de-basura-espacial" }
+    ]
+  },
   {
     codigo: "APFAA-002",
     titulo: "Ovni sobre Puerto Madryn grabado por Prefectura Naval Argentina",
@@ -233,7 +273,7 @@ export const materiales: MaterialVisual[] = [
 export const reportes: Reporte[] = [];
 
 export const localidades = ["El Bolsón", "Lago Puelo", "El Hoyo", "Epuyén", "Bariloche", "Cholila", "El Maitén", "Península Valdés"];
-export const tiposFenomeno = ["Luz nocturna", "Objeto diurno", "Fenómeno lumínico múltiple", "Rastro / marca en suelo", "Interferencia", "Avistamiento luminoso reportado por testigos", "Avistamiento luminoso con registro de comunicación de radio", "Fenómeno aéreo anómalo reportado por tripulación aeronáutica", "Otro"];
-export const estados: EstadoInvestigacion[] = ["Abierto", "En análisis", "Explicado", "No concluyente", "Archivado", "Sin explicación concluyente documentada", "Caso histórico con hipótesis oficial posterior"];
+export const tiposFenomeno = ["Luz nocturna", "Objeto diurno", "Fenómeno lumínico múltiple", "Rastro / marca en suelo", "Interferencia", "Avistamiento luminoso reportado por testigos", "Avistamiento luminoso con registro de comunicación de radio", "Fenómeno aéreo anómalo reportado por tripulación aeronáutica", "Fenómeno luminoso con estela / posible reingreso de restos espaciales", "Otro"];
+export const estados: EstadoInvestigacion[] = ["Abierto", "En análisis", "Explicado", "No concluyente", "Archivado", "Sin explicación concluyente documentada", "Caso histórico con hipótesis oficial posterior", "RESUELTO"];
 
 export const CONTACTO_EMAIL = "montecinogenaro@gmail.com";
