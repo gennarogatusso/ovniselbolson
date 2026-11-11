@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Montserrat:wght@400;700&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -376,7 +377,4 @@
 @keyframes game-welcome-fade-out {
   from { opacity: 1; }
   to { opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .game-welcome-intro { animation-duration: 1s; animation-delay: 2s; }
 }
