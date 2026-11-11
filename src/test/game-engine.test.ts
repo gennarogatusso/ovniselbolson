@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIFFICULTY, newState, update, shotInterval, projectileDamage, canAskHelp } from '../components/game/game-engine';
+import { DIFFICULTY, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('increases movement by exactly 20 percent',()=>expect(DIFFICULTY.movement).toBe(1.20));
@@ -17,5 +17,6 @@ describe('OVNI difficulty and narrative', () => {
     for(let i=0;i<2000&&!result;i++){if(phases.at(-1)!==s.phase)phases.push(s.phase);result=update(s,.05);if(String(s.phase)==='reunion'){expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);}if(String(s.phase)==='fade'){expect(s.jets.every(jet=>jet.x>3200)).toBe(true);expect(s.ufoHits).toBeGreaterThan(0);expect(s.alienHit).toBe(true);expect(s.alien.reveal).toBe(0);expect(s.jetShots).toHaveLength(0);}expect(s.shots).toHaveLength(0);expect(s.lasers).toHaveLength(0);}
         expect(phases).toEqual(['crash','arrive','reunion','alien','speech','attack','jets','fade']);expect(result).toBe('continue');expect(s.allies.every(a=>a.dead&&a.hp===0)).toBe(true);expect(s.cat.gone).toBe(false);
   });
+  it('respawns at the laboratory bed checkpoint after ship combat defeat',()=>{const s=newState();s.phase='spaceship';s.ship.stage='combat';s.ship.hp=0;s.ship.reactorHp=25;s.ship.boxBroken=true;expect(update(s,.016)).toBe('lose');respawnAtShipCheckpoint(s);expect(s.phase).toBe('spaceship');expect(s.ship.stage).toBe('awakening');expect(s.ship.hp).toBe(100);expect(s.ship.reactorHp).toBe(100);expect(s.ship.boxBroken).toBe(false);});
   it('restart resets allies, cat, cinematic and recruitment',()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
 });

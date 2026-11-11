@@ -3,7 +3,7 @@ import ambience from '@/assets/awka-ambience.mp3.asset.json';
 export const AWKA_VOLUME = .30;
 export function awkaMusicActive(s:S,playing:boolean){return playing&&s.phase==='awka'&&s.intro.stage!=='depart'&&s.intro.stage!=='done';}
 
-type MusicTheme = 'night'|'horror'|'battle'|'aftermath'|'bedroom'|'forest'|'finale';
+type MusicTheme = 'night'|'horror'|'battle'|'aftermath'|'bedroom'|'forest'|'lab'|'finale';
 type ThemeConfig = {
  bpm:number;
  chords:number[][];
@@ -45,6 +45,11 @@ const MUSIC_THEMES:Record<MusicTheme,ThemeConfig> = {
   bpm:64,chords:[[36,43,48,53],[34,41,46,51],[31,38,43,48],[33,40,45,50]],
   melody:[null,null,77,null,null,72,null,null,74,null,null,69,null,null,72,null],
   padWave:'sawtooth',leadWave:'triangle',padVolume:.06,leadVolume:.095,bassVolume:.14,
+ },
+ lab:{
+  bpm:56,chords:[[31,38,45,50],[29,36,43,48],[33,40,45,52],[28,35,42,47]],
+  melody:[null,null,69,null,null,72,null,null,67,null,null,65,null,69,null,null],
+  padWave:'triangle',leadWave:'sine',padVolume:.075,leadVolume:.065,bassVolume:.12,
  },
  finale:{
   bpm:64,chords:[[50,53,57,62],[46,50,53,58],[41,45,48,53],[48,52,55,60]],
@@ -232,6 +237,7 @@ export class GameAudio {
  private chooseTheme(s:S,playing:boolean):MusicTheme|null{
   if(!playing||s.phase==='awka')return null;
   if(s.phase==='spaceship'){
+   if(['awakening','verdict','catEntry','eyeCharge','rescue','rise','labFree','door'].includes(s.ship.stage))return 'lab';
    if(s.ship.stage==='combat'||s.ship.stage==='overload')return 'battle';
    if(s.ship.stage==='emergency')return 'aftermath';
    if(['crossRise','crossFree','contemplate','end'].includes(s.ship.stage))return 'finale';
@@ -353,6 +359,7 @@ export class GameAudio {
    else if(event==='door')this.tone(170,.4,'sawtooth',45,.2);
    else if(event==='roll')this.tone(160,.22,'triangle',40,.2);
    else if(event==='break')this.tone(250,.3,'square',25,.4);
+   else if(event==='corehit'){this.noise(.28,.18,1800,220);this.tone(180,.24,'sawtooth',62,.25);}
    else if(event==='pickup')this.tone(220,.5,'sine',660,.3);
    else this.tone(90,.16,'square',25,.35);
   }

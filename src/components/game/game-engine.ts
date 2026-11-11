@@ -23,7 +23,7 @@ export function computerAvailable(s:S){return roomIsFree(s)&&!s.chapter.night&&M
 export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=false;}
 export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'end';
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
-function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],sounds:[] as string[],labDead:0};}
+function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],sounds:[] as string[],labDead:0};}
 export function newState() {
   return {
                 t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom" | "spaceship",
@@ -205,6 +205,7 @@ export function introAction(s: S): string | null {
   return s.intro.stage === 'beer' ? 'Beber cerveza' : s.intro.stage === 'offer' ? 'Aceptar' : s.intro.stage === 'leave' ? 'Irse de la cervecería' : null;
 }
 export function enterShip(s:S){s.phase='spaceship';s.ship=newShip();s.ship.stage='awakening';s.keys={};s.fire=false;s.shots=[];s.lasers=[];s.cam=0;}
+export function respawnAtShipCheckpoint(s:S){enterShip(s);}
 export function shipIsCombat(s:S){return s.phase==='spaceship'&&s.ship.stage==='combat';}
 export function shipIsFree(s:S){return s.phase==='spaceship'&&['labFree','crossFree'].includes(s.ship.stage);}
 export function crossCanStand(x:number,y:number){
@@ -242,11 +243,15 @@ function superShot(s:S){
   const dx=a.beamTx-a.beamX,dy=a.beamTy-a.beamY,L=Math.hypot(dx,dy)||1;
   for(const e of a.enemies){const ex=e.x-a.beamX,ey=e.y-48-a.beamY,along=(ex*dx+ey*dy)/L,dist=Math.abs(ex*dy-ey*dx)/L;if(e.hp>0&&along>0&&dist<62)defeat(s,e);}
   const rx=SHIP.reactorX-a.beamX,ry=SHIP.reactorY-a.beamY;
-  if((rx*dx+ry*dy)>0&&Math.abs(rx*dy-ry*dx)/L<82){shipAdvance(s,'overload');a.enemies.forEach(e=>{if(e.hp>0)defeat(s,e);});}
+  const reactorHit=(rx*dx+ry*dy)>0&&Math.abs(rx*dy-ry*dx)/L<82;
+  if(reactorHit&&a.reactorHp>0){
+    a.reactorHp=Math.max(0,a.reactorHp-25);a.reactorHit=.7;shipSound(s,'corehit');
+    if(a.reactorHp===0){shipAdvance(s,'overload');a.enemies.forEach(e=>{if(e.hp>0)defeat(s,e);});a.bolts=[];a.shots=[];shipSound(s,'explosion');}
+  }
   shipSound(s,'super');
 }
 function updateShip(s:S,dt:number):'continue'|'lose'|null{
-  const a=s.ship;a.time+=dt;a.hurt=Math.max(0,a.hurt-dt);a.shake=Math.max(0,a.shake-dt);a.beam=Math.max(0,a.beam-dt);a.beamCd=Math.max(0,a.beamCd-dt);a.flash=Math.max(0,a.flash-dt);a.rollCd=Math.max(0,a.rollCd-dt);
+  const a=s.ship;a.time+=dt;a.hurt=Math.max(0,a.hurt-dt);a.shake=Math.max(0,a.shake-dt);a.beam=Math.max(0,a.beam-dt);a.beamCd=Math.max(0,a.beamCd-dt);a.flash=Math.max(0,a.flash-dt);a.rollCd=Math.max(0,a.rollCd-dt);a.reactorHit=Math.max(0,a.reactorHit-dt);
   if(s.keys.e&&!a.eHeld)interactShip(s);a.eHeld=Boolean(s.keys.e);
   for(const e of a.enemies){e.hurt=Math.max(0,e.hurt-dt);if(e.hp<=0)e.deadTime+=dt;}
   const timed=(seconds:number,stage:ShipStage)=>{if(a.time>=seconds)shipAdvance(s,stage);};
