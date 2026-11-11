@@ -93,6 +93,7 @@ function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
  emitter.addColorStop(0,'rgba(255,255,255,.98)');emitter.addColorStop(.24,abduction?'rgba(129,249,255,.95)':'rgba(155,213,255,.55)');emitter.addColorStop(1,'rgba(47,172,255,0)');
  c.fillStyle=emitter;c.beginPath();c.ellipse(0,12,17,6,0,0,Math.PI*2);c.fill();
  c.shadowBlur=0;c.fillStyle='#172b3a';c.beginPath();c.ellipse(0,11,8,3,0,0,Math.PI*2);c.fill();
+ if(['reunion','alien','speech','attack','fade'].includes(s.phase)){box(c,p.ink,-27,5,25,18);box(c,p.metal,-31,20,33,4);}
  if(u.hit>0){c.globalAlpha=Math.min(1,u.hit*2);oval(c,'#ffffff',0,0,67,16);c.globalAlpha=1;}
  c.restore();
  if(['crash','arrive','reunion','alien','speech','attack','fade'].includes(s.phase)){
