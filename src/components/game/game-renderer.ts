@@ -103,7 +103,7 @@ function drawCatAbductionLighting(c:CanvasRenderingContext2D,s:S,p:Palette){
  if(!s.u.vis||!['descend','beam','rise'].includes(s.phase))return;
  const {u,cat}=s,clamp=(v:number)=>Math.max(0,Math.min(1,v));
  const lift=s.phase==='beam'?clamp((s.pt-.6)/1.6):s.phase==='rise'?1:0;
- const intensity=s.phase==='descend'?clamp(s.pt/1.5)*.72:s.phase==='beam'?.86+.1*Math.sin(s.t*5):Math.max(.22,1-s.pt/2.8);
+ const intensity=s.phase==='descend'?clamp(s.pt/1.5)*.72:s.phase==='beam' ? .86+.1*Math.sin(s.t*5) :Math.max(.22,1-s.pt/2.8);
  const topX=u.x,topY=u.y+15,endX=cat.x;
  const endY=s.phase==='descend'?GROUND-5:Math.max(topY+42,cat.y-(s.phase==='rise'?19:7));
  const spread=(s.phase==='rise'?72:155-78*lift)*(.94+.06*Math.sin(s.t*4));
