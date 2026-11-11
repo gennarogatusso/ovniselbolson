@@ -721,8 +721,8 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
    const stand=s.phase==='reunion'?Math.max(0,Math.min(1,(s.pt-4.6)/.8)):1;
    pose(c,im.reunion,0,2,player.x,player.y,96,1-stand);
    pose(c,im.reunion,1,2,player.x,player.y,96,stand);
-  }else if(im && player.roll>0){c.save();c.translate(player.x,player.y);c.scale(player.rollFace,1);pose(c,im.ship.roll,Math.min(5,Math.floor((1-player.roll/SHIP.rollTime)*6)),6,0,0,86);c.restore();}
-  else if(im && player.specialAnim>0 && !(player.hurt>0&&Math.floor(player.hurt*20)%2)){c.save();c.translate(player.x,player.y);c.scale(player.face,1);specialPose(c,im.specialFrames,SPECIAL_ATTACK_ANIM_DURATION-player.specialAnim,0,0,86);c.restore();}
+  }else if(im && s.specialAnim>0 && !(player.hurt>0&&Math.floor(player.hurt*20)%2)){c.save();c.translate(player.x,player.y);c.scale(player.face,1);specialPose(c,im.specialFrames,SPECIAL_ATTACK_ANIM_DURATION-s.specialAnim,0,0,86);c.restore();}
+  else if(im && player.roll>0){c.save();c.translate(player.x,player.y);c.scale(player.rollFace,1);pose(c,im.ship.roll,Math.min(5,Math.floor((1-player.roll/SHIP.rollTime)*6)),6,0,0,86);c.restore();}
   else if(im && !(player.hurt>0&&Math.floor(player.hurt*20)%2))sprite(c,im.player,player.x,player.y,86,player.face,player.walk,player.crouch);
   if(im && player.roll===0 && player.armed>0 && !['reunion','alien','speech','attack','fade','jets','aftermath'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im.gun,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
   if(s.phase==='aftermath'&&im){ufo(c,{...s,phase:'arrive'},p);military(c,s,im.chapter);}
