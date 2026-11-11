@@ -200,7 +200,7 @@ function detectSpriteFrames(im:HTMLImageElement):SpriteFrameRect[]{
  const xs=runs(cols,Math.max(1,Math.floor(h*.0008)),Math.max(12,Math.floor(w*.025)));
  const ys=runs(rows,Math.max(1,Math.floor(w*.0008)),Math.max(12,Math.floor(h*.025)));
  let frames:SpriteFrameRect[]=[];
- if(xs.length*ys.length>=2&&xs.length*ys.length<=36)for(const y of ys)for(const x of xs){let occupied=0;for(let j=y.start;j<=y.end;j++)occupied+=rows[j]??0;if(occupied>=Math.max(4,(x.end-x.start+1)*2))frames.push({x:x.start,y:y.start,width:x.end-x.start+1,height:y.end-y.start+1});}
+ if(xs.length*ys.length>=2&&xs.length*ys.length<=36)for(const y of ys)for(const x of xs){let occupied=0;for(let j=y.start;j<=y.end;j++)for(let i=x.start;i<=x.end;i++){const k=(j*w+i)*4;if((d[k+3]??0)>18&&(transparent||Math.hypot((d[k]??0)-bg[0]!, (d[k+1]??0)-bg[1]!, (d[k+2]??0)-bg[2]!)>48))occupied++;}if(occupied>=Math.max(6,(x.end-x.start+1)*(y.end-y.start+1)*.002))frames.push({x:x.start,y:y.start,width:x.end-x.start+1,height:y.end-y.start+1});}
  if(frames.length<2){const nx=4,ny=2,cw=w/nx,ch=h/ny;frames=[];for(let y=0;y<ny;y++)for(let x=0;x<nx;x++)frames.push({x:Math.round(x*cw),y:Math.round(y*ch),width:Math.round((x+1)*cw)-Math.round(x*cw),height:Math.round((y+1)*ch)-Math.round(y*ch)});}
  nucleusFrameCache.set(im,frames);return frames;
 }
