@@ -55,17 +55,126 @@ function drawNpc(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:numbe
  const width=h*sprite.width/sprite.height;c.save();c.imageSmoothingEnabled=false;c.drawImage(sprite,x-width/2,y-h,width,h);c.restore();
 }
 function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
- const {u}=s; c.save();c.translate(u.x,u.y);if(s.phase==='crash')c.rotate(Math.sin(s.pt*13)*.25+s.pt*.08);
- if(['arrive','reunion','alien','speech','attack','fade'].includes(s.phase)) c.rotate(.25);
- c.shadowColor=p.ice;c.shadowBlur=s.phase==='fight'?12:4;
- oval(c,u.hit>0?p.light:p.metal,0,0,63,16);oval(c,p.ink,0,9,49,8);oval(c,p.ice,0,-12,27,19);oval(c,p.glass,-7,-17,15,10);
- c.shadowBlur=0;for(let i=0;i<7;i++)oval(c,(i+Math.floor(s.t*8))%2?p.laser:p.gold,-48+i*16,2,3,3);
- if(['reunion','alien','speech','attack','fade'].includes(s.phase)){box(c,p.ink,-27,5,25,18);box(c,p.metal,-31,20,33,4);}
+ const {u}=s,abduction=['descend','beam','rise'].includes(s.phase),pulse=.5+.5*Math.sin(s.t*5.2);
+ c.save();c.translate(u.x,u.y);
+ if(s.phase==='crash')c.rotate(Math.sin(s.pt*13)*.25+s.pt*.08);
+ if(['arrive','reunion','alien','speech','attack','fade'].includes(s.phase))c.rotate(.25);
+ // Halo exterior: el brillo se intensifica cuando el OVNI fija al gato.
+ c.globalCompositeOperation='screen';
+ const halo=c.createRadialGradient(0,7,5,0,7,abduction?112:76);
+ halo.addColorStop(0,abduction?'rgba(150,246,255,.34)':'rgba(150,210,255,.12)');
+ halo.addColorStop(.42,abduction?'rgba(75,196,255,.14)':'rgba(75,160,255,.045)');
+ halo.addColorStop(1,'rgba(70,160,255,0)');
+ c.fillStyle=halo;c.fillRect(-120,-110,240,220);
+ c.globalCompositeOperation='source-over';
+ // Cúpula superior de vidrio.
+ const dome=c.createLinearGradient(0,-33,0,2);
+ dome.addColorStop(0,'#f0fbff');dome.addColorStop(.28,'#9fc9dc');dome.addColorStop(.72,'#425b70');dome.addColorStop(1,'#1b2c3d');
+ c.shadowColor=abduction?'#91f3ff':p.ice;c.shadowBlur=abduction?18+10*pulse:s.phase==='fight'?12:4;
+ c.fillStyle=dome;c.beginPath();c.ellipse(0,-8,29,18,0,0,Math.PI*2);c.fill();
+ c.strokeStyle='rgba(218,249,255,.72)';c.lineWidth=1.5;c.beginPath();c.ellipse(0,-8,28,17,0,Math.PI*1.08,Math.PI*1.9);c.stroke();
+ // Casco metálico en capas y con reflejos.
+ const hull=c.createLinearGradient(0,-17,0,18);
+ hull.addColorStop(0,'#edf8fa');hull.addColorStop(.2,'#a9c0cb');hull.addColorStop(.48,'#526b7b');hull.addColorStop(.72,'#263d50');hull.addColorStop(1,'#101d2b');
+ c.fillStyle=hull;c.beginPath();c.ellipse(0,1,68,16,0,0,Math.PI*2);c.fill();
+ c.shadowBlur=0;c.strokeStyle='rgba(224,248,255,.9)';c.lineWidth=1.4;c.beginPath();c.ellipse(0,0,67,15,0,Math.PI,Math.PI*2);c.stroke();
+ c.strokeStyle='rgba(21,42,57,.9)';c.lineWidth=2;c.beginPath();c.ellipse(0,7,54,8,0,0,Math.PI);c.stroke();
+ c.fillStyle='rgba(220,247,255,.25)';c.beginPath();c.ellipse(-10,-5,39,3,0,-.12,Math.PI+.12);c.fill();
+ // Paneles del borde y luces circulares.
+ for(let i=0;i<15;i++){
+  const angle=(Math.PI*2*i)/15,x=Math.cos(angle)*59,y=1+Math.sin(angle)*10.4;
+  const active=(i+Math.floor(s.t*7))%3!==0;
+  const color=abduction?(active?'#c9ffff':'#54d9ff'):(active?p.laser:p.gold);
+  c.shadowColor=abduction?'#8ff8ff':color;c.shadowBlur=abduction?10:5;
+  oval(c,color,x,y,2.8,2.1);
+ }
+ c.shadowBlur=abduction?17:7;c.shadowColor=abduction?'#b4ffff':p.ice;
+ const emitter=c.createRadialGradient(0,12,1,0,12,18);
+ emitter.addColorStop(0,'rgba(255,255,255,.98)');emitter.addColorStop(.24,abduction?'rgba(129,249,255,.95)':'rgba(155,213,255,.55)');emitter.addColorStop(1,'rgba(47,172,255,0)');
+ c.fillStyle=emitter;c.beginPath();c.ellipse(0,12,17,6,0,0,Math.PI*2);c.fill();
+ c.shadowBlur=0;c.fillStyle='#172b3a';c.beginPath();c.ellipse(0,11,8,3,0,0,Math.PI*2);c.fill();
+ if(u.hit>0){c.globalAlpha=Math.min(1,u.hit*2);oval(c,'#ffffff',0,0,67,16);c.globalAlpha=1;}
  c.restore();
- if(['crash','arrive','reunion','alien','speech','attack','fade'].includes(s.phase)) {
+ if(['crash','arrive','reunion','alien','speech','attack','fade'].includes(s.phase)){
   for(let i=0;i<12;i++){const q=(s.t*.25+i/12)%1;c.globalAlpha=(1-q)*.5;oval(c,p.smoke,u.x+Math.sin(i*2)*22+q*40,u.y-q*145,9+q*24,10+q*20);}c.globalAlpha=1;
  }
 }
+function drawCatAbductionLighting(c:CanvasRenderingContext2D,s:S,p:Palette){
+ if(!s.u.vis||!['descend','beam','rise'].includes(s.phase))return;
+ const {u,cat}=s,clamp=(v:number)=>Math.max(0,Math.min(1,v));
+ const lift=s.phase==='beam'?clamp((s.pt-.6)/1.6):s.phase==='rise'?1:0;
+ const intensity=s.phase==='descend'?clamp(s.pt/1.5)*.72:s.phase==='beam'?.86+.1*Math.sin(s.t*5):Math.max(.22,1-s.pt/2.8);
+ const topX=u.x,topY=u.y+15,endX=cat.x;
+ const endY=s.phase==='descend'?GROUND-5:Math.max(topY+42,cat.y-(s.phase==='rise'?19:7));
+ const spread=(s.phase==='rise'?72:155-78*lift)*(.94+.06*Math.sin(s.t*4));
+ c.save();c.globalCompositeOperation='screen';
+ // Baño frío que alcanza árboles, fachadas y calle alrededor de la nave.
+ const spill=c.createRadialGradient(u.x,u.y+105,18,u.x,u.y+105,360);
+ spill.addColorStop(0,'rgba(94,221,255,.18)');spill.addColorStop(.42,'rgba(68,159,225,.075)');spill.addColorStop(1,'rgba(45,125,205,0)');
+ c.globalAlpha=intensity;c.fillStyle=spill;c.fillRect(u.x-370,u.y-260,740,740);
+ // Luz cálida de faroles/ventanas cercanas, con reflejo suave sobre el asfalto.
+ const firstHouse=Math.max(40,Math.floor((s.cam-260-40)/300)*300+40);
+ for(let houseX=firstHouse;houseX<s.cam+W+180;houseX+=300){
+  const houseWidth=houseX===340?205:145,lampX=houseX+houseWidth*.64,lampY=GROUND-91;
+  const flicker=.92+.05*Math.sin(s.t*2.3+houseX*.018)+.025*Math.sin(s.t*7+houseX);
+  const radius=94,glow=c.createRadialGradient(lampX,lampY,1,lampX,lampY,radius);
+  glow.addColorStop(0,'rgba(255,218,156,.42)');glow.addColorStop(.28,'rgba(255,170,103,.19)');glow.addColorStop(1,'rgba(255,145,81,0)');
+  c.globalAlpha=intensity*flicker;c.fillStyle=glow;c.fillRect(lampX-radius,lampY-radius,radius*2,radius*2);
+  c.globalAlpha=intensity*.74;c.shadowColor='#ffd18f';c.shadowBlur=13;
+  oval(c,'rgba(255,230,183,.9)',lampX,lampY,3.2,4.2);c.shadowBlur=0;
+  const roadGlow=c.createRadialGradient(lampX,GROUND+31,1,lampX,GROUND+31,82);
+  roadGlow.addColorStop(0,'rgba(255,190,119,.17)');roadGlow.addColorStop(1,'rgba(255,145,81,0)');
+  c.globalAlpha=intensity*.72;c.fillStyle=roadGlow;c.fillRect(lampX-82,GROUND-51,164,164);
+ }
+ // Bloom concentrado en la parte inferior del casco.
+ const ufoGlow=c.createRadialGradient(u.x,u.y+12,2,u.x,u.y+12,175);
+ ufoGlow.addColorStop(0,'rgba(224,255,255,.40)');ufoGlow.addColorStop(.28,'rgba(87,218,255,.19)');ufoGlow.addColorStop(1,'rgba(58,160,255,0)');
+ c.globalAlpha=intensity;c.fillStyle=ufoGlow;c.fillRect(u.x-180,u.y-165,360,360);
+ // Haz volumétrico con bordes difusos y un núcleo casi blanco.
+ const outer=c.createLinearGradient(topX,topY,endX,endY);
+ outer.addColorStop(0,'rgba(225,255,255,.62)');outer.addColorStop(.22,'rgba(131,235,255,.32)');outer.addColorStop(.72,'rgba(74,202,255,.13)');outer.addColorStop(1,'rgba(66,183,255,.055)');
+ c.globalAlpha=intensity*.86;c.fillStyle=outer;c.beginPath();
+ c.moveTo(topX-17,topY);c.lineTo(topX+17,topY);c.lineTo(endX+spread,endY);c.lineTo(endX-spread,endY);c.closePath();c.fill();
+ const inner=c.createLinearGradient(topX,topY,endX,endY);
+ inner.addColorStop(0,'rgba(255,255,255,.92)');inner.addColorStop(.3,'rgba(191,250,255,.42)');inner.addColorStop(1,'rgba(139,230,255,.10)');
+ c.globalAlpha=intensity*.62;c.fillStyle=inner;c.beginPath();
+ c.moveTo(topX-5,topY);c.lineTo(topX+5,topY);c.lineTo(endX+spread*.23,endY);c.lineTo(endX-spread*.23,endY);c.closePath();c.fill();
+ // Rayos finos que vibran dentro del cono.
+ for(let i=0;i<9;i++){
+  const q=(i+1)/10,drift=Math.sin(s.t*2.6+i*1.8)*spread*.12;
+  c.globalAlpha=intensity*(.10+.07*Math.sin(s.t*3+i));
+  c.strokeStyle=i%3===0?'rgba(244,255,255,.8)':'rgba(121,226,255,.62)';
+  c.lineWidth=i%3===0?2:1;c.beginPath();
+  c.moveTo(topX+(i-4)*2,topY+8);
+  c.lineTo(topX+(endX-topX)*q+drift,topY+(endY-topY)*q);
+  c.stroke();
+ }
+ // Anillo y charco de luz sobre el suelo: se apagan a medida que el gato sube.
+ const groundPower=s.phase==='rise'?Math.max(0,1-s.pt/1.05):1-lift*.68;
+ if(groundPower>0){
+  const groundGlow=c.createRadialGradient(cat.x,GROUND-3,2,cat.x,GROUND-3,190);
+  groundGlow.addColorStop(0,'rgba(222,255,255,.5)');groundGlow.addColorStop(.22,'rgba(93,220,255,.24)');groundGlow.addColorStop(1,'rgba(60,174,255,0)');
+  c.globalAlpha=intensity*groundPower;c.fillStyle=groundGlow;c.fillRect(cat.x-195,GROUND-198,390,390);
+  c.globalAlpha=intensity*groundPower*.68;c.strokeStyle='rgba(178,249,255,.72)';c.lineWidth=2;
+  c.beginPath();c.ellipse(cat.x,GROUND+1,44+Math.sin(s.t*5)*9,7+Math.sin(s.t*5)*1.5,0,0,Math.PI*2);c.stroke();
+ }
+ // Polvo y pequeños fragmentos iluminados que ascienden desde el gato al OVNI.
+ for(let i=0;i<22;i++){
+  const q=(s.t*.48+i/22)%1,x=cat.x+(topX-cat.x)*q+Math.sin(s.t*2.4+i*1.9)*(7+spread*.13);
+  const y=endY+(topY-endY)*q;
+  c.globalAlpha=intensity*(.2+.45*(1-q));c.shadowColor='#c8faff';c.shadowBlur=8;
+  oval(c,i%4===0?'#ffffff':'#a6efff',x,y,1.3+(i%3)*.55,1.7+(i%2)*.6);
+ }
+ c.shadowBlur=0;
+ // Viñeta sutil para llevar la mirada al punto de abducción.
+ c.globalCompositeOperation='multiply';c.globalAlpha=.23*intensity;
+ const vignette=c.createRadialGradient(u.x,GROUND*.53,150,u.x,GROUND*.53,710);
+ vignette.addColorStop(0,'rgba(8,17,34,0)');vignette.addColorStop(1,'rgba(5,9,23,.65)');
+ c.fillStyle=vignette;c.fillRect(s.cam-40,0,W+80,H);
+ c.restore();
+}
+
+
 function pose(c:CanvasRenderingContext2D,im:HTMLImageElement,frame:number,count:number,x:number,y:number,h:number,alpha=1) {
  if(!ready(im)||alpha<=0)return;
  const fw=im.naturalWidth/count,w=h*fw/im.naturalHeight;
@@ -431,7 +540,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  for(const [x,y,r] of [[2804,GROUND-12,8],[2872,GROUND-34,6],[3002,GROUND-18,10],[3105,GROUND-25,7]] as const){oval(c,'#8d8170',x,y,r,r*.62);oval(c,'#c0a888',x-r*.25,y-r*.25,r*.32,r*.16);}
  c.globalAlpha=.35;for(let i=0;i<10;i++){const x=2800+i*31,y=GROUND-24-Math.sin(i*.6)*32;box(c,p.gold,x,y,2,7);}c.globalAlpha=1;
  for(let i=0;i<25;i++){const x=(i*139+s.t*12)%WORLD;c.globalAlpha=.35;oval(c,p.gold,x,400+Math.sin(i+s.t)*25,2,1);}c.globalAlpha=1;
- if(s.u.vis && s.phase==='beam'){c.globalAlpha=.35;c.fillStyle=p.ice;c.beginPath();c.moveTo(s.u.x-20,s.u.y+14);c.lineTo(s.u.x+20,s.u.y+14);c.lineTo(s.u.x+55,GROUND);c.lineTo(s.u.x-55,GROUND);c.fill();c.globalAlpha=1;}
+ drawCatAbductionLighting(c,s,p);
  for(const [i,a] of s.allies.entries()) { if(a.hurt>0 && Math.floor(a.hurt*15)%2)continue;if(im?.allies[i])person(c,im.allies[i]??im.allies[0],a.x,a.y,s.recruited?a.walk:s.t,i,a.dead||a.hp<=0);if(s.recruited && s.phase==='fight'){box(c,p.panel,a.x-18,a.y-83,36,4);box(c,p.ice,a.x-18,a.y-83,36*a.hp/100,4);}}
   const hugging=!s.cat.gone && ((s.phase==='reunion'&&Math.abs(s.cat.x-s.p.x)<45)||['alien','speech','attack','fade','aftermath'].includes(s.phase));
   if(im && !s.cat.gone && !hugging)catSprite(c,im.cat,s.cat.x,s.cat.y,s.cat.walk,s.cat.x>s.p.x?-1:1);
