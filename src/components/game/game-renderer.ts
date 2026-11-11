@@ -396,8 +396,8 @@ function drawForestPuddles(c:CanvasRenderingContext2D,s:S,groundY:number){
   const shimmer=.65+.35*Math.sin(s.t*2.1+i*1.7);
   const glow=c.createRadialGradient(x,y-3,1,x,y,rx*1.55);
   glow.addColorStop(0,'rgba(126,211,255,.17)');glow.addColorStop(.35,'rgba(61,141,190,.13)');glow.addColorStop(1,'rgba(35,80,115,0)');
-  c.globalAlpha=.9;c.fillStyle=glow;c.fillRect(x-rx*1.6,y-ry*3,rx*3.2,ry*6);
-  c.globalAlpha=.7;c.fillStyle='rgba(11,24,38,.78)';c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fill();
+  c.globalCompositeOperation='multiply';c.globalAlpha=.66;c.fillStyle='rgba(7,17,30,.94)';c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fill();
+  c.globalCompositeOperation='screen';c.globalAlpha=.9;c.fillStyle=glow;c.fillRect(x-rx*1.6,y-ry*3,rx*3.2,ry*6);
   c.globalAlpha=.48*shimmer;c.strokeStyle='rgba(157,224,255,.9)';c.lineWidth=1.1;
   c.beginPath();c.ellipse(x-2,y-1,rx*.82,ry*.52,-.035,Math.PI*1.08,Math.PI*1.9);c.stroke();
   c.globalAlpha=.26;c.fillStyle='rgba(236,249,255,.8)';c.beginPath();c.ellipse(x-rx*.25,y-ry*.35,rx*.24,Math.max(1,ry*.16),-.08,0,Math.PI*2);c.fill();
