@@ -52,6 +52,50 @@ import forestArt from '@/assets/forest-background.jpg.asset.json';
 import deerArt from '@/assets/forest-deer.png.asset.json';
 import shipArt from '@/assets/forest-ufo.png.asset.json';
 
+type PreparedSpecialSprite = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
+
+function prepareTransparentSprite(source: HTMLImageElement, sourceX=0, regionWidth=source.naturalWidth): Promise<PreparedSpecialSprite> {
+ const width=Math.max(1,Math.min(regionWidth,source.naturalWidth-sourceX)),height=source.naturalHeight;
+ const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+ const context=canvas.getContext('2d',{willReadFrequently:true});
+ const fallback={image:source,anchorX:width/2,baseY:height,bodyHeight:height};
+ if(!context)return Promise.resolve(fallback);
+ context.drawImage(source,sourceX,0,width,height,0,0,width,height);
+ const frame=context.getImageData(0,0,width,height),pixels=frame.data,total=width*height,removed=new Uint8Array(total),queue=new Int32Array(total);
+ const nearWhite=(index:number)=>{const offset=index*4,r=pixels[offset]??0,g=pixels[offset+1]??0,b=pixels[offset+2]??0,min=Math.min(r,g,b),max=Math.max(r,g,b);return min>214&&max-min<42;};
+ let tail=0,head=0;
+ const seed=(index:number)=>{if(index>=0&&index<total&&!removed[index]&&nearWhite(index)){removed[index]=1;queue[tail++]=index;}};
+ for(let x=0;x<width;x++){seed(x);seed((height-1)*width+x);}
+ for(let y=0;y<height;y++){seed(y*width);seed(y*width+width-1);}
+ while(head<tail){
+  const index=queue[head++]!,x=index%width,y=Math.floor(index/width);
+  if(x>0)seed(index-1);if(x<width-1)seed(index+1);if(y>0)seed(index-width);if(y<height-1)seed(index+width);
+ }
+ for(let index=0;index<total;index++)if(removed[index])pixels[index*4+3]=0;
+ // Reduce the one-pixel pale fringe left by JPEG compression without erasing enclosed white highlights.
+ for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
+  const index=y*width+x;if(removed[index])continue;
+  let edge=false;for(let oy=-1;oy<=1&&!edge;oy++)for(let ox=-1;ox<=1;ox++)if(removed[(y+oy)*width+x+ox]){edge=true;break;}
+  if(!edge)continue;
+  const offset=index*4,r=pixels[offset]??0,g=pixels[offset+1]??0,b=pixels[offset+2]??0,min=Math.min(r,g,b),max=Math.max(r,g,b),brightness=(r+g+b)/3;
+  if(min>170&&max-min<62){const fringe=Math.max(0,Math.min(.9,(brightness-170)/82));pixels[offset+3]=Math.round((pixels[offset+3]??255)*(1-fringe));}
+ }
+ let left=width,right=-1,top=height,bottom=-1,bodyLeft=width,bodyRight=-1,bodyTop=height,bodyBottom=-1;
+ for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+  const index=y*width+x,offset=index*4,alpha=pixels[offset+3]??0;if(alpha>10){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+  const r=pixels[offset]??255,g=pixels[offset+1]??255,b=pixels[offset+2]??255;
+  if(alpha>24&&r<112&&g<112&&b<138){bodyLeft=Math.min(bodyLeft,x);bodyRight=Math.max(bodyRight,x);bodyTop=Math.min(bodyTop,y);bodyBottom=Math.max(bodyBottom,y);}
+ }
+ if(right<left||bottom<top)return Promise.resolve(fallback);
+ const padding=3,cropWidth=right-left+1,cropHeight=bottom-top+1,output=document.createElement('canvas');
+ output.width=cropWidth+padding*2;output.height=cropHeight+padding*2;
+ const out=output.getContext('2d');if(!out)return Promise.resolve(fallback);
+ context.putImageData(frame,0,0);out.imageSmoothingEnabled=false;out.drawImage(canvas,left,top,cropWidth,cropHeight,padding,padding,cropWidth,cropHeight);
+ const hasBody=bodyRight>=bodyLeft&&bodyBottom>=bodyTop;
+ const prepared={anchorX:hasBody?(bodyLeft+bodyRight)/2-left+padding:output.width/2,baseY:hasBody?bodyBottom-top+padding:output.height,bodyHeight:hasBody?bodyBottom-bodyTop+1:output.height};
+ return new Promise(resolve=>{const image=new Image();image.onload=()=>resolve({...prepared,image});image.onerror=()=>resolve(fallback);image.src=output.toDataURL('image/png');});
+}
+
 export function UfoGame() {
  const cv=useRef<HTMLCanvasElement>(null), host=useRef<HTMLDivElement>(null), st=useRef(newState()), images=useRef<GameImages|null>(null), palette=useRef<Palette|null>(null);
  const [screen,setScreen]=useState<Screen>('title'), [ending,setEnding]=useState<Ending|null>(null), [touch,setTouch]=useState(false),[expanded,setExpanded]=useState(false),[loading,setLoading]=useState(true),[assetError,setAssetError]=useState(false),[context,setContext]=useState(false),[combat,setCombat]=useState(false);
@@ -65,7 +109,7 @@ export function UfoGame() {
   const mq=window.matchMedia('(pointer: coarse)');const changed=()=>setTouch(mq.matches);changed();mq.addEventListener('change',changed);
   const readPalette=()=>{if(!host.current)return;const css=getComputedStyle(host.current);const colors={} as Palette;for(const key of ['turquoise','sky','rose','gold','sunset','light','ice','panel','ink','forest','trunk','wall','roof','leaf','road','curb','lane','shadow','hill','metal','glass','laser','smoke','stone','skin','red','alien','energy'] as const)colors[key]=css.getPropertyValue('--game-'+key).trim();palette.current=colors;};readPalette();
   const load=(url:string)=>new Promise<HTMLImageElement>((resolve,reject)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>resolve(i);i.onerror=reject;i.src=url;});let active=true;
-    Promise.all([load(mountain.url),load(player.url),load(cat.url),load(alien.url),load(reunion.url),load('/imagens/imagem-cb85a873.png'),load('/imagens/imagem-4233f6e4.png'),load('/imagens/imagem-3241014a.png'),load('/imagens/imagem-97d3754a.png'),load('/imagens/imagem-2fed5c3b.webp'),load('/imagens/imagem-499d0608.png'),load('/imagens/imagem-28e06bb0.webp'),load('/imagens/imagem-debb83e3.webp'),load('/imagens/imagem-63fa9a4e.webp'),load(awkaBuilding.url),load(awkaMountain.url),load(awkaSeated.url),load(awkaBeer.url),load(awkaDrink.url),load(awkaSmokeIn.url),load(awkaSmokeOut.url),load(awkaRise.url),load(awkaCat.url),load(truckArt.url),load(trumpArt.url),load(mileiArt.url),load(argArt.url),load(usaArt.url),load(roomArt.url),load(eatingArt.url),load(sleepingArt.url),load(wakingArt.url),load(darkArt.url),load(walkArt.url),load(upArt.url),load(downArt.url),load(runArt.url),load(restArt.url),load(forestArt.url),load(deerArt.url),load(shipArt.url),load(greyArt.url),load(pickupArt.url),load(pushArt.url),load(rollArt.url),load(contemplateArt.url),load(shipCatArt.url),load(weaponArt.url),load(labArt.url),load(mainArt.url),load(crossArt.url),load('/imagens/arbol.png'),load('/imagens/ataque-especial.webp')] as const).then(([mountain,player,cat,alien,reunion,alien1,alien2,alien3,alien4,fighter,gun,ally1,ally2,house,building,introMountain,seated,beer,drink,smokeIn,smokeOut,rise,introCat,truck,trump,milei,arg,usa,bedroom,eating,sleeping,waking,dark,walk,up,down,run,restingCat,forest,deer,ship,grey,pickup,push,roll,contemplate,shipCat,weapon,laboratory,main,cross,tree,special])=>{if(!active)return;images.current={ship:{grey,pickup,push,roll,contemplate,cat:shipCat,weapon,laboratory,main,cross},chapter:{truck,trump,milei,arg,usa,bedroom,eating,sleeping,waking,dark,walk,up,down,run,restingCat,forest,deer,ship},special,mountain,player,cat,alien,reunion,fighter,gun,allies:[ally1,ally2],house,tree,alienFrames:[alien1,alien2,alien3,alien4],intro:{building,mountain:introMountain,seated,beer,drink,smokeIn,smokeOut,rise,cat:introCat}};setLoading(false);}).catch(()=>{if(active){setAssetError(true);setLoading(false);}});
+    Promise.all([load(mountain.url),load(player.url),load(cat.url),load(alien.url),load(reunion.url),load('/imagens/imagem-cb85a873.png'),load('/imagens/imagem-4233f6e4.png'),load('/imagens/imagem-3241014a.png'),load('/imagens/imagem-97d3754a.png'),load('/imagens/imagem-2fed5c3b.webp'),load('/imagens/imagem-499d0608.png'),load('/imagens/imagem-28e06bb0.webp'),load('/imagens/imagem-debb83e3.webp'),load('/imagens/imagem-63fa9a4e.webp'),load(awkaBuilding.url),load(awkaMountain.url),load(awkaSeated.url),load(awkaBeer.url),load(awkaDrink.url),load(awkaSmokeIn.url),load(awkaSmokeOut.url),load(awkaRise.url),load(awkaCat.url),load(truckArt.url),load(trumpArt.url),load(mileiArt.url),load(argArt.url),load(usaArt.url),load(roomArt.url),load(eatingArt.url),load(sleepingArt.url),load(wakingArt.url),load(darkArt.url),load(walkArt.url),load(upArt.url),load(downArt.url),load(runArt.url),load(restArt.url),load(forestArt.url),load(deerArt.url),load(shipArt.url),load(greyArt.url),load(pickupArt.url),load(pushArt.url),load(rollArt.url),load(contemplateArt.url),load(shipCatArt.url),load(weaponArt.url),load(labArt.url),load(mainArt.url),load(crossArt.url),load('/imagens/arbol.png'),load('/imagens/1.jpg'),load('/imagens/2.jpg'),load('/imagens/3.jpg'),load('/imagens/4.jpg'),load('/imagens/5.jpg'),load('/imagens/6.jpg'),load('/imagens/7.jpg'),load('/imagens/bola%20violeta.jpg')] as const).then(async ([mountain,player,cat,alien,reunion,alien1,alien2,alien3,alien4,fighter,gun,ally1,ally2,house,building,introMountain,seated,beer,drink,smokeIn,smokeOut,rise,introCat,truck,trump,milei,arg,usa,bedroom,eating,sleeping,waking,dark,walk,up,down,run,restingCat,forest,deer,ship,grey,pickup,push,roll,contemplate,shipCat,weapon,laboratory,main,cross,tree,special1,special2,special3,special4,special5,special6,special7,specialBall])=>{if(!active)return;const specialFrames=await Promise.all([special1,special2,special3,special4,special5,special6,special7].map(source=>prepareTransparentSprite(source)));const half=Math.floor(specialBall.naturalWidth/2);const specialProjectileFrames=await Promise.all([prepareTransparentSprite(specialBall,0,half),prepareTransparentSprite(specialBall,half,specialBall.naturalWidth-half)]);images.current={ship:{grey,pickup,push,roll,contemplate,cat:shipCat,weapon,laboratory,main,cross},chapter:{truck,trump,milei,arg,usa,bedroom,eating,sleeping,waking,dark,walk,up,down,run,restingCat,forest,deer,ship},specialFrames,specialProjectileFrames:[specialProjectileFrames[0].image,specialProjectileFrames[1].image],mountain,player,cat,alien,reunion,fighter,gun,allies:[ally1,ally2],house,tree,alienFrames:[alien1,alien2,alien3,alien4],intro:{building,mountain:introMountain,seated,beer,drink,smokeIn,smokeOut,rise,cat:introCat}};setLoading(false);}).catch(()=>{if(active){setAssetError(true);setLoading(false);}});
   return()=>{active=false;audio.current?.close();mq.removeEventListener('change',changed);};
  },[]);
  useEffect(()=>{

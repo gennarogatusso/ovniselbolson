@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { DIFFICULTY, GROUND, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, triggerSpecial } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, triggerSpecial, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_PROJECTILE_SPEED } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
+  it('uses a quick original-sprite attack and a more readable homing projectile speed',()=>{expect(SPECIAL_ATTACK_ANIM_DURATION).toBe(0.36);expect(SPECIAL_PROJECTILE_SPEED).toBe(520);});
   it('increases movement by exactly 20 percent',()=>expect(DIFFICULTY.movement).toBe(1.20));
   it('increases real firing frequency by 20 percent',()=>{expect(shotInterval(100)).toBeCloseTo(1.4/1.20);expect(shotInterval(30)).toBeCloseTo(.9/1.20);});
   it('increases aggression by exactly 20 percent',()=>expect(DIFFICULTY.aggression).toBe(1.20));
