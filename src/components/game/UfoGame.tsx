@@ -103,7 +103,7 @@ export function UfoGame() {
    raf=requestAnimationFrame(loop);
   };raf=requestAnimationFrame(loop);return()=>cancelAnimationFrame(raf);
  },[screen,loading,assetError]);
- const start=()=>{setCreditsOpen(false);setVolumeOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();audio.current.setVolume(masterVolume);}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();welcomeActiveRef.current=true;setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setWelcomeVisible(true);setScreen('play');};
+ const start=()=>{setCreditsOpen(false);setVolumeOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();audio.current.setVolume(masterVolume);audio.current.resetForestAudio();}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();welcomeActiveRef.current=true;setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setWelcomeVisible(true);setScreen('play');};
  const pause=()=>{st.current.keys={};st.current.fire=false;setScreen('paused');};
  const fullscreen=async()=>{const el=host.current;if(!el)return;if(document.fullscreenElement){await document.exitFullscreen();return;}if(expanded){setExpanded(false);return;}try{if(el.requestFullscreen){await el.requestFullscreen();setExpanded(true);}else setExpanded(true);}catch{setExpanded(true);}};
   const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});

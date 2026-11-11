@@ -1,6 +1,7 @@
 import type { S } from './game-engine';
 import ambience from '@/assets/awka-ambience.mp3.asset.json';
 export const AWKA_VOLUME = .30;
+const FOREST_RAIN_STAGES = new Set(['forestFade','forestRun','deer','burned','ship','beam','lift','vanished','complete']);
 export function awkaMusicActive(s:S,playing:boolean){return playing&&s.phase==='awka'&&s.intro.stage!=='depart'&&s.intro.stage!=='done';}
 
 type MusicTheme = 'night'|'horror'|'battle'|'aftermath'|'bedroom'|'forest'|'lab'|'finale';
@@ -66,6 +67,11 @@ export class GameAudio {
  private lastStage='';
  private lastPulse=0;
  private music:HTMLAudioElement|null=null;
+ private forestTrack:HTMLAudioElement|null=null;
+ private rainTrack:HTMLAudioElement|null=null;
+ private forestMusicStarted=false;
+ private rainActive=false;
+ private gamePaused=false;
  private musicActive=false;
  private volume=0.8;
 
@@ -90,12 +96,26 @@ export class GameAudio {
   void this.context.resume();
   this.music??=new Audio(ambience.url);
   this.music.volume=AWKA_VOLUME*this.volume;this.music.loop=true;
+  this.forestTrack??=new Audio('/imagens/audio%20bosque%20-%20final.mp3');
+  this.forestTrack.loop=true;this.forestTrack.preload='auto';
+  this.rainTrack??=new Audio('/imagens/lluvia.mp3');
+  this.rainTrack.loop=true;this.rainTrack.preload='auto';
  }
 
  setVolume(value:number){
   this.volume=Math.max(0,Math.min(1,value));
   if(this.master&&this.context)this.master.gain.setTargetAtTime(.12*this.volume,this.context.currentTime,.035);
   if(this.music)this.music.volume=AWKA_VOLUME*this.volume;
+  if(this.forestTrack)this.forestTrack.volume=.72*this.volume;
+  if(this.rainTrack)this.rainTrack.volume=.42*this.volume;
+ }
+
+ resetForestAudio(){
+  this.forestMusicStarted=false;this.rainActive=false;this.gamePaused=false;
+  for(const track of [this.forestTrack,this.rainTrack]){
+   if(!track)continue;
+   track.pause();track.currentTime=0;
+  }
  }
 
  private tone(frequency:number,duration:number,type:OscillatorType='sine',end=frequency,volume=.35){
@@ -341,12 +361,30 @@ export class GameAudio {
   const a=s.ship;
   if(!playing){
    a.sounds=[];
+   this.forestTrack?.pause();this.rainTrack?.pause();this.gamePaused=true;
    this.setMusic(null);
    this.lastPhase=s.phase;this.lastIntroStage=s.intro.stage;this.lastChapterStage=s.chapter.stage;
    return;
   }
 
-  this.setMusic(this.chooseTheme(s,playing));
+  if(this.gamePaused){
+   this.gamePaused=false;
+   if(this.forestMusicStarted&&this.forestTrack?.paused)void this.forestTrack.play().catch(()=>{});
+  }
+  // La banda sonora del bosque comienza al salir de la habitación y permanece activa hasta el final.
+  if(!this.forestMusicStarted&&s.phase==='bedroom'&&s.chapter.stage==='exit'){
+   this.forestMusicStarted=true;
+   if(this.forestTrack){this.forestTrack.currentTime=0;void this.forestTrack.play().catch(()=>{});}
+  }
+  const rainInForest=this.forestMusicStarted&&s.phase==='bedroom'&&FOREST_RAIN_STAGES.has(s.chapter.stage);
+  if(rainInForest){
+   this.rainActive=true;
+   if(this.rainTrack?.paused)void this.rainTrack.play().catch(()=>{});
+  }else if(this.rainActive){
+   this.rainActive=false;
+   if(this.rainTrack){this.rainTrack.pause();this.rainTrack.currentTime=0;}
+  }
+  this.setMusic(this.forestMusicStarted?null:this.chooseTheme(s,playing));
   this.updateSceneSounds(s);
 
   if(s.phase!=='spaceship'){a.sounds=[];return;}
@@ -379,6 +417,9 @@ export class GameAudio {
 
  close(){
   this.music?.pause();this.music=null;this.musicActive=false;
+  this.forestTrack?.pause();this.forestTrack=null;
+  this.rainTrack?.pause();this.rainTrack=null;
+  this.forestMusicStarted=false;this.rainActive=false;this.gamePaused=false;
   this.stopMusic();
   for(const oscillator of this.musicNodes){try{oscillator.stop();}catch{/* Ya estaba detenido. */}}
   this.musicNodes.clear();
