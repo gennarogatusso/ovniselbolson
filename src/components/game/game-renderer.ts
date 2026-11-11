@@ -2,7 +2,7 @@ import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, forestIsFree, canAskH
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement };
 export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement };
-export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
+export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; nucleus: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
 function drawTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,w:number,h:number){if(!ready(im))return;let b=trims.get(im);if(!b){const t=document.createElement('canvas');t.width=im.naturalWidth;t.height=im.naturalHeight;const q=t.getContext('2d');if(!q)return;q.drawImage(im,0,0);const d=q.getImageData(0,0,t.width,t.height).data;let l=t.width,r=0,top=t.height,bot=0;for(let yy=0;yy<t.height;yy++)for(let xx=0;xx<t.width;xx++){const i=(yy*t.width+xx)*4;if((d[i+3]??0)>16&&((d[i]??255)<245||(d[i+1]??255)<245||(d[i+2]??255)<245)){l=Math.min(l,xx);r=Math.max(r,xx);top=Math.min(top,yy);bot=Math.max(bot,yy);}}b=l<=r&&top<=bot?[l,top,r-l+1,bot-top+1]:[0,0,t.width,t.height];trims.set(im,b);}c.drawImage(im,b[0],b[1],b[2],b[3],x,y,w,h);}
 export type Palette = Record<'turquoise'|'sky'|'rose'|'gold'|'sunset'|'light'|'ice'|'panel'|'ink'|'forest'|'trunk'|'wall'|'roof'|'leaf'|'road'|'curb'|'lane'|'shadow'|'hill'|'metal'|'glass'|'laser'|'smoke'|'stone'|'skin'|'red'|'alien'|'energy',string>;
@@ -161,6 +161,64 @@ function military(c:CanvasRenderingContext2D,s:S,im:ChapterImages){
  const start=a.truckX+85+(s.crashX-310-a.truckX-85)*leaderQ;
  still(c,im.milei,start+(s.p.x-57-start)*walk,GROUND,86,leaderQ);
 }
+
+const treeCache=new WeakMap<HTMLImageElement,HTMLCanvasElement>();
+type SpriteFrameRect={x:number;y:number;width:number;height:number};
+const nucleusFrameCache=new WeakMap<HTMLImageElement,SpriteFrameRect[]>();
+
+function prepareTree(im:HTMLImageElement):HTMLCanvasElement{
+ const cached=treeCache.get(im);if(cached)return cached;
+ const src=document.createElement('canvas');src.width=im.naturalWidth;src.height=im.naturalHeight;
+ const q=src.getContext('2d');if(!q)return src;
+ try{
+  q.drawImage(im,0,0);const img=q.getImageData(0,0,src.width,src.height),d=img.data,w=src.width,h=src.height;
+  const seen=new Uint8Array(w*h),stack=new Int32Array(w*h);let n=0;
+  const bg=(i:number)=>{const k=i*4;return (d[k+3]??0)<18||((d[k]??0)>242&&(d[k+1]??0)>242&&(d[k+2]??0)>242);};
+  const add=(i:number)=>{if(i>=0&&i<w*h&&!seen[i]&&bg(i)){seen[i]=1;stack[n++]=i;}};
+  for(let x=0;x<w;x++){add(x);add((h-1)*w+x);}for(let y=0;y<h;y++){add(y*w);add(y*w+w-1);}
+  while(n){const i=stack[--n];if(i===undefined)continue;const x=i%w,y=Math.floor(i/w);d[i*4+3]=0;if(x)add(i-1);if(x<w-1)add(i+1);if(y)add(i-w);if(y<h-1)add(i+w);}
+  q.putImageData(img,0,0);let l=w,t=h,rr=0,b=0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if((d[(y*w+x)*4+3]??0)>18){l=Math.min(l,x);rr=Math.max(rr,x);t=Math.min(t,y);b=Math.max(b,y);}
+  if(rr>=l&&b>=t){const out=document.createElement('canvas');out.width=rr-l+1;out.height=b-t+1;out.getContext('2d')?.drawImage(src,l,t,out.width,out.height,0,0,out.width,out.height);treeCache.set(im,out);return out;}
+ }catch(error){console.warn('No se pudo recortar arbol.png',error);}
+ treeCache.set(im,src);return src;
+}
+function drawWindTree(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,baseY:number,height:number,time:number,phase:number,alpha=1){
+ if(!ready(im))return;const tree=prepareTree(im),w=height*tree.width/tree.height;
+ const sway=Math.sin(time*1.25+phase)*.034+Math.sin(time*2.1+phase*.7)*.009;
+ c.save();c.translate(x,baseY);c.rotate(sway);c.globalAlpha=alpha;c.imageSmoothingEnabled=false;c.drawImage(tree,-w/2,-height,w,height);c.restore();
+}
+function detectSpriteFrames(im:HTMLImageElement):SpriteFrameRect[]{
+ const cached=nucleusFrameCache.get(im);if(cached)return cached;
+ const w=im.naturalWidth,h=im.naturalHeight,src=document.createElement('canvas');src.width=w;src.height=h;
+ const q=src.getContext('2d');if(!q)return [];q.drawImage(im,0,0);
+ let d:Uint8ClampedArray;try{d=q.getImageData(0,0,w,h).data;}catch{return [];}
+ const corners=[0,(w-1)*4,(h-1)*w*4,(h*w-1)*4],transparent=corners.reduce((a,k)=>a+(d[k+3]??0),0)/4<80;
+ const bg=[0,1,2].map(ch=>corners.reduce((a,k)=>a+(d[k+ch]??0),0)/4),cols=new Uint32Array(w),rows=new Uint32Array(h);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=(y*w+x)*4;if((d[k+3]??0)<18)continue;const active=transparent||Math.hypot((d[k]??0)-bg[0]!, (d[k+1]??0)-bg[1]!, (d[k+2]??0)-bg[2]!)>48;if(active){cols[x]=(cols[x]??0)+1;rows[y]=(rows[y]??0)+1;}}
+ const runs=(v:Uint32Array,th:number,min:number)=>{const out:Array<{start:number;end:number}>=[];let s=-1,last=-1;for(let i=0;i<v.length;i++){if((v[i]??0)>=th){if(s<0)s=i;last=i;}else if(s>=0&&i-last>4){if(last-s+1>=min)out.push({start:s,end:last});s=-1;last=-1;}}if(s>=0&&last-s+1>=min)out.push({start:s,end:last});return out;};
+ const xs=runs(cols,Math.max(1,Math.floor(h*.0008)),Math.max(12,Math.floor(w*.025)));
+ const ys=runs(rows,Math.max(1,Math.floor(w*.0008)),Math.max(12,Math.floor(h*.025)));
+ let frames:SpriteFrameRect[]=[];
+ if(xs.length*ys.length>=2&&xs.length*ys.length<=36)for(const y of ys)for(const x of xs){let occupied=0;for(let j=y.start;j<=y.end;j++)occupied+=rows[j]??0;if(occupied>=Math.max(4,(x.end-x.start+1)*2))frames.push({x:x.start,y:y.start,width:x.end-x.start+1,height:y.end-y.start+1});}
+ if(frames.length<2){const nx=4,ny=2,cw=w/nx,ch=h/ny;frames=[];for(let y=0;y<ny;y++)for(let x=0;x<nx;x++)frames.push({x:Math.round(x*cw),y:Math.round(y*ch),width:Math.round((x+1)*cw)-Math.round(x*cw),height:Math.round((y+1)*ch)-Math.round(y*ch)});}
+ nucleusFrameCache.set(im,frames);return frames;
+}
+function drawNucleusSequence(c:CanvasRenderingContext2D,im:HTMLImageElement,time:number,x:number,y:number){
+ if(!ready(im))return;const frames=detectSpriteFrames(im);if(!frames.length)return;
+ const f=frames[Math.min(frames.length-1,Math.floor(Math.min(.9999,time/4)*frames.length))]!;
+ const scale=Math.min(188/f.width,188/f.height),w=f.width*scale,h=f.height*scale;
+ c.save();c.imageSmoothingEnabled=false;c.shadowColor='#9bdcff';c.shadowBlur=14;c.drawImage(im,f.x,f.y,f.width,f.height,x-w/2,y-h/2,w,h);c.restore();
+}
+function drawStreetSurface(c:CanvasRenderingContext2D,p:Palette){
+ const g=c.createLinearGradient(0,GROUND,0,H);g.addColorStop(0,'#373b43');g.addColorStop(.22,'#30343c');g.addColorStop(1,'#242a32');
+ c.fillStyle=g;c.fillRect(-1200,GROUND,WORLD+1200,H-GROUND);
+ box(c,'#8b9294',-1200,GROUND,WORLD+1200,7);box(c,'#c1c3ba',-1200,GROUND,WORLD+1200,1);box(c,'#555e65',-1200,GROUND+6,WORLD+1200,2);
+ for(let x=-1200;x<WORLD+1200;x+=46){const seed=Math.sin(x*12.9898)*43758.5453,rand=seed-Math.floor(seed),y=GROUND+15+rand*72;c.globalAlpha=.10+rand*.07;oval(c,rand>.5?'#a5aab0':'#101820',x+rand*38,y,5+rand*10,1.2+rand*1.8);c.globalAlpha=1;for(let j=0;j<3;j++){const px=x+((seed+j*19)%38+38)%38,py=GROUND+12+((seed+j*31)%70+70)%70;box(c,j%2?'#747b82':'#171e27',px,py,1.5,1);}}
+ for(let x=-1050;x<WORLD+1000;x+=310){const seed=Math.sin(x*7.31)*10000,offset=Math.abs(seed)%50;c.strokeStyle='rgba(12,17,24,.42)';c.lineWidth=1.2;c.beginPath();c.moveTo(x+offset,GROUND+25);c.lineTo(x+offset+4,GROUND+31);c.lineTo(x+offset-2,GROUND+38);c.lineTo(x+offset+5,GROUND+44);c.stroke();c.strokeStyle='rgba(150,157,164,.13)';c.lineWidth=1;c.beginPath();c.moveTo(x+55,GROUND+18);c.lineTo(x+170,GROUND+18);c.stroke();}
+ for(let x=-1200;x<WORLD+1200;x+=100){c.globalAlpha=.22;box(c,'#111820',x,GROUND+51,46,4);c.globalAlpha=.85;box(c,'#d4c9a8',x+2,GROUND+51,42,2);c.globalAlpha=1;}
+}
+
 function roomBackground(c:CanvasRenderingContext2D,im:HTMLImageElement,alpha=1){
  if(!ready(im))return;const scale=Math.min(W/im.naturalWidth,H/im.naturalHeight),w=im.naturalWidth*scale,h=im.naturalHeight*scale;
  c.save();c.globalAlpha=alpha;c.drawImage(im,(W-w)/2,(H-h)/2,w,h);c.restore();
@@ -287,7 +345,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(a.beam>0){const dx=a.beamTx-a.beamX,dy=a.beamTy-a.beamY,L=Math.hypot(dx,dy)||1;line(p.energy,a.beamX,a.beamY,a.beamX+dx/L*1300,a.beamY+dy/L*1300,36);line(p.light,a.beamX,a.beamY,a.beamX+dx/L*1300,a.beamY+dy/L*1300,9);}
   if(a.charge>0)oval(c,p.energy,a.x+a.face*45,a.y-65,5+a.charge*9,5+a.charge*9);
   if(a.aimActive&&a.stage==='combat'){const x=a.aimX,y=a.aimY;line(p.light,x-12,y,x+12,y,2);line(p.light,x,y-12,x,y+12,2);}
-  if(a.stage==='overload'){oval(c,p.energy,SHIP.reactorX,SHIP.reactorY,24+a.time*9,32+a.time*12);}
+  if(a.stage==='overload')drawNucleusSequence(c,im.nucleus,a.time,SHIP.reactorX,SHIP.reactorY);
   if(a.stage==='emergency'){
    // Reuse the visible Earth window, enlarging its actual pixels as the ship falls.
    const q=Math.min(1,a.time/9);c.save();c.beginPath();c.rect(25,310,410,92);c.clip();c.drawImage(art.main,30,445,580,135,25-q*180,310-q*40,410+q*360,92+q*80);c.restore();
@@ -314,16 +372,15 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  if(mountain && ready(mountain)){const ratio=mountain.naturalWidth/mountain.naturalHeight,h=Math.max(GROUND,(W+WORLD*.03)/ratio),w=h*ratio; c.drawImage(mountain,(W-w)/2-s.cam*.015,GROUND-h,w,h);if(isAwka){c.globalCompositeOperation='multiply';box(c,'rgba(11,17,43,.48)',0,0,W,GROUND);c.globalCompositeOperation='source-over';}else{c.globalCompositeOperation='soft-light';box(c,p.sunset,0,0,W,GROUND);c.globalCompositeOperation='source-over';}}
   c.globalAlpha=.15;for(let i=0;i<5;i++){const x=(i*243+s.t*2)%1200-100;oval(c,p.light,x,50+i*13,90,9);}c.globalAlpha=1;
  
- // Distant forest, then the town and the playable street.
- c.save();c.translate(-s.cam*.35,0);for(let x=-200;x<WORLD;x+=95){box(c,p.trunk,x,360,5,90);c.fillStyle=p.forest;c.beginPath();c.moveTo(x-27,415);c.lineTo(x+3,320+(x%3)*12);c.lineTo(x+33,415);c.fill();}c.restore();
+ // Bosque lejano con la nueva textura y movimiento de viento.
+ c.save();c.translate(-s.cam*.35,0);for(let x=-200;x<WORLD;x+=112){if(im?.tree&&ready(im.tree))drawWindTree(c,im.tree,x,GROUND-20,92+Math.abs(Math.sin(x*.013))*20,s.t,x*.017,.58);else{box(c,p.trunk,x,360,5,90);c.fillStyle=p.forest;c.beginPath();c.moveTo(x-27,415);c.lineTo(x+3,320+(x%3)*12);c.lineTo(x+33,415);c.fill();}}c.restore();
  c.save();c.translate(-s.cam,0);
  for(let x=40;x<WORLD-500;x+=300){const special=x===340, width=special?205:145;
     oval(c,p.shadow,x+width/2,GROUND+6,width*.65,9);if(im)drawTrimmed(c,im.house,x-10,GROUND-137,width+20,137);
   for(let j=0;j<3;j++)box(c,p.trunk,x+width+18+j*15,GROUND-22,3,23);box(c,p.trunk,x+width+14,GROUND-15,52,3);
-  const tx=x+width+72;box(c,p.trunk,tx,GROUND-85,9,85);const wind=Math.sin(s.t*1.5+x)*3;
-  for(let j=0;j<3;j++){c.fillStyle=p.leaf;c.beginPath();c.moveTo(tx-25+j*4,GROUND-50-j*24);c.lineTo(tx+4+wind,GROUND-115-j*18);c.lineTo(tx+35-j*4,GROUND-50-j*24);c.fill();}
+  const tx=x+width+72;if(im?.tree&&ready(im.tree))drawWindTree(c,im.tree,tx,GROUND+2,126,s.t,x*.021,.98);else{box(c,p.trunk,tx,GROUND-85,9,85);const wind=Math.sin(s.t*1.5+x)*3;for(let j=0;j<3;j++){c.fillStyle=p.leaf;c.beginPath();c.moveTo(tx-25+j*4,GROUND-50-j*24);c.lineTo(tx+4+wind,GROUND-115-j*18);c.lineTo(tx+35-j*4,GROUND-50-j*24);c.fill();}}
  }
- box(c,p.road,-1200,GROUND,WORLD+1200,H-GROUND);box(c,p.curb,-1200,GROUND,WORLD+1200,7);for(let x=0;x<WORLD;x+=100)box(c,p.lane,x,GROUND+51,45,3);
+ drawStreetSurface(c,p);
  if(im && s.cam < 0){
   const art=im.intro, width=1050, height=width*art.building.naturalHeight/art.building.naturalWidth;
   if(ready(art.building))c.drawImage(art.building,-1050,GROUND-height+6,width,height);
