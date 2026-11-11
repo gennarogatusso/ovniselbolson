@@ -1,7 +1,8 @@
 export const W = 960, H = 540, GROUND = 450, WORLD = 3200;
 export const DIFFICULTY = { movement: 1.20, frequency: 1.20, aggression: 1.20 } as const;
-export const SPECIAL_ATTACK_ANIM_DURATION = 0.36;
-export const SPECIAL_PROJECTILE_SPEED = 520;
+export const SPECIAL_ATTACK_ANIM_DURATION = 1.2;
+export const SPECIAL_ATTACK_RELEASE_DELAY = 0.8;
+export const SPECIAL_PROJECTILE_SPEED = 300;
 export const SPECIAL_ATTACK_DAMAGE_FACTOR = 0.5;
 export const SPECIAL_ATTACK_UFO_DAMAGE = 35 * SPECIAL_ATTACK_DAMAGE_FACTOR;
 export const SPECIAL_ATTACK_SHIP_DAMAGE = 32 * SPECIAL_ATTACK_DAMAGE_FACTOR;
@@ -17,7 +18,7 @@ export type Screen = "title" | "play" | "paused" | "win" | "lose";
 export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade", "jets", "aftermath", "bedroom"]);
 export function shotInterval(hp: number) { return (hp < 40 ? 0.9 : 1.4) / DIFFICULTY.frequency; }
 export function projectileDamage(b: {kind?: string}) { return b.kind === "stone" ? 3 : 4; }
-export type Shot = { x: number; y: number; vx: number; vy: number; life: number; kind?: "stone" | "special"; specialTarget?: "ufo" | "shipEnemy"; targetIndex?: number };
+export type Shot = { x: number; y: number; vx: number; vy: number; life: number; delay?: number; kind?: "stone" | "special"; specialTarget?: "ufo" | "shipEnemy"; targetIndex?: number };
 type Jet = { x: number; y: number; start: number; fired: [boolean, boolean] };
 type JetShot = { x: number; y: number; vx: number; vy: number; life: number; target: "ufo" | "alien" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
@@ -50,7 +51,7 @@ export type S = ReturnType<typeof newState>;
 export function triggerSpecial(s:S):boolean{
  if(s.phase==='fight'){
   if(s.specialCd>0||s.u.hp<=0||!s.u.vis)return false;
-  const p=s.p;s.shots.push({x:p.x+p.face*28,y:p.y-50,vx:p.face*SPECIAL_PROJECTILE_SPEED,vy:0,life:3,kind:'special',specialTarget:'ufo'});
+  const p=s.p;s.shots.push({x:p.x+p.face*28,y:p.y-50,vx:p.face*SPECIAL_PROJECTILE_SPEED,vy:0,life:3,delay:SPECIAL_ATTACK_RELEASE_DELAY,kind:'special',specialTarget:'ufo'});
   s.specialCd=5;s.specialAnim=SPECIAL_ATTACK_ANIM_DURATION;return true;
  }
  if(s.phase==='spaceship'&&s.ship.stage==='combat'){
@@ -58,7 +59,7 @@ export function triggerSpecial(s:S):boolean{
   let index=-1,best=Infinity;
   a.enemies.forEach((e,i)=>{if(e.hp<=0)return;const d=Math.hypot(e.x-a.x,(e.y-48)-(a.y-58));if(d<best){best=d;index=i;}});
   if(index<0)return false;
-  a.shots.push({x:a.x+a.face*34,y:a.y-66,vx:a.face*SPECIAL_PROJECTILE_SPEED,vy:0,life:3,kind:'special',specialTarget:'shipEnemy',targetIndex:index});
+  a.shots.push({x:a.x+a.face*34,y:a.y-66,vx:a.face*SPECIAL_PROJECTILE_SPEED,vy:0,life:3,delay:SPECIAL_ATTACK_RELEASE_DELAY,kind:'special',specialTarget:'shipEnemy',targetIndex:index});
   a.specialCd=5;a.specialAnim=SPECIAL_ATTACK_ANIM_DURATION;shipSound(s,'super');return true;
  }
  return false;
@@ -314,6 +315,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
       }else a.charge=Math.max(0,a.charge-dt*2);
       for(const b of a.shots){
         if(b.kind==='special'){
+          if((b.delay??0)>0){b.x=a.x+a.face*34;b.y=a.y-66;b.delay=Math.max(0,(b.delay??0)-dt);continue;}
           let target=b.targetIndex===undefined?undefined:a.enemies[b.targetIndex];
           if(!target||target.hp<=0){let index=-1,best=Infinity;for(let i=0;i<a.enemies.length;i++){const e=a.enemies[i];if(e&&e.hp>0){const d=Math.hypot(e.x-b.x,(e.y-48)-b.y);if(d<best){best=d;index=i;target=e;}}}b.targetIndex=index;}
           if(!target||target.hp<=0){b.life=0;continue;}
@@ -465,6 +467,7 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
 
   for (const b of s.shots) {
     if(b.kind==='special'&&b.specialTarget==='ufo'){
+      if((b.delay??0)>0){b.x=p.x+p.face*28;b.y=p.y-50;b.delay=Math.max(0,(b.delay??0)-dt);continue;}
       const dx=u.x-b.x,dy=u.y-b.y,L=Math.hypot(dx,dy)||1;b.vx=dx/L*SPECIAL_PROJECTILE_SPEED;b.vy=dy/L*SPECIAL_PROJECTILE_SPEED;
       if(s.phase==='fight'&&L<48+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;hitUfo(s,SPECIAL_ATTACK_UFO_DAMAGE,b.x,b.y);}
       else{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;}

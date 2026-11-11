@@ -178,7 +178,9 @@ function drawCatAbductionLighting(c:CanvasRenderingContext2D,s:S,p:Palette){
 
 
 function specialPose(c:CanvasRenderingContext2D,frames:SpecialFrame[],elapsed:number,x:number,y:number,h:number){
- const t=Math.max(0,elapsed),frame=t<.225?Math.min(4,Math.floor(t/.045)):t<.2925?5:6,sprite=frames[frame];
+ const t=Math.max(0,elapsed);
+ const frame=t<.16?0:t<.32?1:t<.48?2:t<.64?3:t<.8?4:t<.98?5:6;
+ const sprite=frames[frame];
  if(!sprite||!ready(sprite.image))return;
  const scale=h/Math.max(1,sprite.bodyHeight),w=sprite.image.naturalWidth*scale,drawH=sprite.image.naturalHeight*scale;
  c.save();c.imageSmoothingEnabled=false;c.drawImage(sprite.image,x-sprite.anchorX*scale,y-sprite.baseY*scale,w,drawH);c.restore();
@@ -633,7 +635,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   else if(!a.armed&&a.stage!=='pickup')still(c,art.weapon,SHIP.boxX,a.weaponY,28);
   for(const e of a.enemies){const f=e.hp<=0?Math.min(8,3+Math.floor(e.deadTime*5)):e.hurt>0?1:e.windup>0?2:0;c.save();c.translate(e.x,e.y);c.scale(e.face,1);pose(c,art.grey,f,9,0,0,115);c.restore();if(e.windup>0)oval(c,p.energy,e.x,e.y-84,8,8);}
   actor(a.x,a.y);still(c,art.cat,a.catX,SHIP.floor,70);
-  for(const b of a.shots){if(b.kind==='special')drawSpecialProjectile(c,im.specialProjectileFrames,b,s.t);else line(p.ice,b.x,b.y,b.x-b.vx*.025,b.y-b.vy*.025,3);}
+  for(const b of a.shots){if(b.kind==='special'){if((b.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,b,s.t);}else line(p.ice,b.x,b.y,b.x-b.vx*.025,b.y-b.vy*.025,3);}
   for(const b of a.bolts)line(p.laser,b.x,b.y,b.x-b.vx*.04,b.y-b.vy*.04,4);
   if(a.beam>0){const dx=a.beamTx-a.beamX,dy=a.beamTy-a.beamY,L=Math.hypot(dx,dy)||1;line(p.energy,a.beamX,a.beamY,a.beamX+dx/L*1300,a.beamY+dy/L*1300,36);line(p.light,a.beamX,a.beamY,a.beamX+dx/L*1300,a.beamY+dy/L*1300,9);}
   if(a.charge>0)oval(c,p.energy,a.x+a.face*45,a.y-65,5+a.charge*9,5+a.charge*9);
@@ -740,7 +742,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
   for(const shot of s.jetShots){c.strokeStyle='#ffe27a';c.lineWidth=5;c.beginPath();c.moveTo(shot.x,shot.y);c.lineTo(shot.x-shot.vx*.025,shot.y-shot.vy*.025);c.stroke();oval(c,'#fff1a8',shot.x,shot.y,4,4);}
   c.restore();
  }
- for(const b of s.shots) {if(b.kind==='special'){if(im)drawSpecialProjectile(c,im.specialProjectileFrames,b,s.t);}else if(b.kind==='stone'){oval(c,p.stone,b.x,b.y,5,4);box(c,p.light,b.x-2,b.y-2,2,1);}else {c.strokeStyle=p.ice;c.lineWidth=3;c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.012,b.y-b.vy*.012);c.stroke();}}
+ for(const b of s.shots) {if(b.kind==='special'){if(im&&(b.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,b,s.t);}else if(b.kind==='stone'){oval(c,p.stone,b.x,b.y,5,4);box(c,p.light,b.x-2,b.y-2,2,1);}else {c.strokeStyle=p.ice;c.lineWidth=3;c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.012,b.y-b.vy*.012);c.stroke();}}
  c.strokeStyle=p.laser;c.lineWidth=4;for(const b of s.lasers){c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.045,b.y-b.vy*.045);c.stroke();}
  for(const f of s.fx){c.globalAlpha=Math.min(1,f.life);oval(c,p[f.c as keyof Palette]??p.gold,f.x,f.y,4+Math.max(0,1-f.life)*12,4+Math.max(0,1-f.life)*12);}c.globalAlpha=1;c.restore();
  c.font='13px "IBM Plex Mono", monospace';c.textBaseline='top';c.fillStyle=p.light;
