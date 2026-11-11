@@ -2,7 +2,7 @@ import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, forestIsFree, canAskH
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement };
 export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement };
-export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
+export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; special: HTMLImageElement; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
 function drawTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,w:number,h:number){if(!ready(im))return;let b=trims.get(im);if(!b){const t=document.createElement('canvas');t.width=im.naturalWidth;t.height=im.naturalHeight;const q=t.getContext('2d');if(!q)return;q.drawImage(im,0,0);const d=q.getImageData(0,0,t.width,t.height).data;let l=t.width,r=0,top=t.height,bot=0;for(let yy=0;yy<t.height;yy++)for(let xx=0;xx<t.width;xx++){const i=(yy*t.width+xx)*4;if((d[i+3]??0)>16&&((d[i]??255)<245||(d[i+1]??255)<245||(d[i+2]??255)<245)){l=Math.min(l,xx);r=Math.max(r,xx);top=Math.min(top,yy);bot=Math.max(bot,yy);}}b=l<=r&&top<=bot?[l,top,r-l+1,bot-top+1]:[0,0,t.width,t.height];trims.set(im,b);}c.drawImage(im,b[0],b[1],b[2],b[3],x,y,w,h);}
 export type Palette = Record<'turquoise'|'sky'|'rose'|'gold'|'sunset'|'light'|'ice'|'panel'|'ink'|'forest'|'trunk'|'wall'|'roof'|'leaf'|'road'|'curb'|'lane'|'shadow'|'hill'|'metal'|'glass'|'laser'|'smoke'|'stone'|'skin'|'red'|'alien'|'energy',string>;
@@ -176,6 +176,16 @@ function drawCatAbductionLighting(c:CanvasRenderingContext2D,s:S,p:Palette){
 }
 
 
+function specialPose(c:CanvasRenderingContext2D,im:HTMLImageElement,frame:number,x:number,y:number,h:number){
+ if(!ready(im))return;const fw=im.naturalWidth/4,fh=im.naturalHeight/4,f=Math.max(0,Math.min(15,frame)),w=h*fw/fh;c.save();c.imageSmoothingEnabled=false;c.drawImage(im,(f%4)*fw,Math.floor(f/4)*fh,fw,fh,x-w/2,y-h,w,h);c.restore();
+}
+function drawSpecialProjectile(c:CanvasRenderingContext2D,im:HTMLImageElement,b:{x:number;y:number;vx:number;vy:number},time:number){
+ if(!ready(im))return;const frame=13+Math.floor(time*17)%3,angle=Math.atan2(b.vy,b.vx),fw=im.naturalWidth/4,fh=im.naturalHeight/4;
+ c.save();c.translate(b.x,b.y);c.rotate(angle);c.globalCompositeOperation='screen';const glow=c.createRadialGradient(0,0,2,0,0,48);glow.addColorStop(0,'rgba(255,245,255,.95)');glow.addColorStop(.28,'rgba(207,134,255,.72)');glow.addColorStop(1,'rgba(129,34,255,0)');c.fillStyle=glow;c.beginPath();c.ellipse(-5,0,48,26,0,0,Math.PI*2);c.fill();c.imageSmoothingEnabled=false;c.drawImage(im,(frame%4)*fw,Math.floor(frame/4)*fh,fw,fh,-43,-25,86,50);c.restore();
+}
+function drawSpecialCharge(c:CanvasRenderingContext2D,x:number,y:number,face:number,time:number){
+ const px=x+face*39,py=y-54,pulse=.85+.15*Math.sin(time*46);c.save();c.globalCompositeOperation='screen';const glow=c.createRadialGradient(px,py,2,px,py,31*pulse);glow.addColorStop(0,'rgba(255,255,255,.98)');glow.addColorStop(.24,'rgba(221,174,255,.98)');glow.addColorStop(.56,'rgba(158,72,255,.72)');glow.addColorStop(1,'rgba(126,35,255,0)');c.fillStyle=glow;c.beginPath();c.arc(px,py,31*pulse,0,Math.PI*2);c.fill();for(let i=0;i<7;i++){const a=time*12+i*Math.PI*2/7,rr=24+Math.sin(time*18+i)*4;oval(c,'rgba(222,170,255,.9)',px+Math.cos(a)*rr,py+Math.sin(a)*rr,2,2);}c.restore();
+}
 function pose(c:CanvasRenderingContext2D,im:HTMLImageElement,frame:number,count:number,x:number,y:number,h:number,alpha=1) {
  if(!ready(im)||alpha<=0)return;
  const fw=im.naturalWidth/count,w=h*fw/im.naturalHeight;
@@ -586,7 +596,8 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  c.drawImage(background,(W-bw)/2,(H-bh)/2,bw,bh);
  const actor=(x:number,y:number,h=112)=>{
   c.save();c.translate(x,y);c.scale(a.face,1);
-  if(a.roll>0)pose(c,art.roll,Math.min(5,Math.floor((1-a.roll/SHIP.rollTime)*6)),6,0,0,h);
+  if(a.specialAnim>0&&a.roll===0&&a.push==='none')specialPose(c,im.special,Math.min(7,Math.floor((.42-a.specialAnim)/.42*8)),0,0,h);
+  else if(a.roll>0)pose(c,art.roll,Math.min(5,Math.floor((1-a.roll/SHIP.rollTime)*6)),6,0,0,h);
   else if(a.push!=='none')pose(c,art.push,a.push==='lean'?0:a.push==='flight'?1:2,3,0,0,h);
   else if(a.stage==='pickup'||a.armed)pose(c,art.pickup,a.stage==='pickup'?Math.min(3,Math.floor(a.time/2.4*4)):3,4,0,0,h);
   else pose(c,im.chapter.walk,Math.floor(a.walk)%4,4,0,0,h);
@@ -619,7 +630,8 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   else if(!a.armed&&a.stage!=='pickup')still(c,art.weapon,SHIP.boxX,a.weaponY,28);
   for(const e of a.enemies){const f=e.hp<=0?Math.min(8,3+Math.floor(e.deadTime*5)):e.hurt>0?1:e.windup>0?2:0;c.save();c.translate(e.x,e.y);c.scale(e.face,1);pose(c,art.grey,f,9,0,0,115);c.restore();if(e.windup>0)oval(c,p.energy,e.x,e.y-84,8,8);}
   actor(a.x,a.y);still(c,art.cat,a.catX,SHIP.floor,70);
-  for(const b of a.shots)line(p.ice,b.x,b.y,b.x-b.vx*.025,b.y-b.vy*.025,3);
+  if(a.specialAnim>0&&(a.roll>0||a.push!=='none'))drawSpecialCharge(c,a.x,a.y,a.face,s.t);
+  for(const b of a.shots){if(b.kind==='special')drawSpecialProjectile(c,im.special,b,s.t);else line(p.ice,b.x,b.y,b.x-b.vx*.025,b.y-b.vy*.025,3);}
   for(const b of a.bolts)line(p.laser,b.x,b.y,b.x-b.vx*.04,b.y-b.vy*.04,4);
   if(a.beam>0){const dx=a.beamTx-a.beamX,dy=a.beamTy-a.beamY,L=Math.hypot(dx,dy)||1;line(p.energy,a.beamX,a.beamY,a.beamX+dx/L*1300,a.beamY+dy/L*1300,36);line(p.light,a.beamX,a.beamY,a.beamX+dx/L*1300,a.beamY+dy/L*1300,9);}
   if(a.charge>0)oval(c,p.energy,a.x+a.face*45,a.y-65,5+a.charge*9,5+a.charge*9);
@@ -708,7 +720,9 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
    pose(c,im.reunion,0,2,player.x,player.y,96,1-stand);
    pose(c,im.reunion,1,2,player.x,player.y,96,stand);
   }else if(im && player.roll>0){c.save();c.translate(player.x,player.y);c.scale(player.rollFace,1);pose(c,im.ship.roll,Math.min(5,Math.floor((1-player.roll/SHIP.rollTime)*6)),6,0,0,86);c.restore();}
+  else if(im && player.specialAnim>0 && !(player.hurt>0&&Math.floor(player.hurt*20)%2)){c.save();c.translate(player.x,player.y);c.scale(player.face,1);specialPose(c,im.special,Math.min(7,Math.floor((.42-player.specialAnim)/.42*8)),0,0,86);c.restore();}
   else if(im && !(player.hurt>0&&Math.floor(player.hurt*20)%2))sprite(c,im.player,player.x,player.y,86,player.face,player.walk,player.crouch);
+  if(im&&player.specialAnim>0&&player.roll>0)drawSpecialCharge(c,player.x,player.y,player.rollFace,s.t);
   if(im && player.roll===0 && player.armed>0 && !['reunion','alien','speech','attack','fade','jets','aftermath'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im.gun,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
   if(s.phase==='aftermath'&&im){ufo(c,{...s,phase:'arrive'},p);military(c,s,im.chapter);}
   if(s.u.vis && !['boom','over'].includes(s.phase))ufo(c,s,p);
@@ -725,7 +739,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
   for(const shot of s.jetShots){c.strokeStyle='#ffe27a';c.lineWidth=5;c.beginPath();c.moveTo(shot.x,shot.y);c.lineTo(shot.x-shot.vx*.025,shot.y-shot.vy*.025);c.stroke();oval(c,'#fff1a8',shot.x,shot.y,4,4);}
   c.restore();
  }
- for(const b of s.shots) {if(b.kind==='stone'){oval(c,p.stone,b.x,b.y,5,4);box(c,p.light,b.x-2,b.y-2,2,1);}else {c.strokeStyle=p.ice;c.lineWidth=3;c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.012,b.y-b.vy*.012);c.stroke();}}
+ for(const b of s.shots) {if(b.kind==='special'){if(im)drawSpecialProjectile(c,im.special,b,s.t);}else if(b.kind==='stone'){oval(c,p.stone,b.x,b.y,5,4);box(c,p.light,b.x-2,b.y-2,2,1);}else {c.strokeStyle=p.ice;c.lineWidth=3;c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.012,b.y-b.vy*.012);c.stroke();}}
  c.strokeStyle=p.laser;c.lineWidth=4;for(const b of s.lasers){c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.045,b.y-b.vy*.045);c.stroke();}
  for(const f of s.fx){c.globalAlpha=Math.min(1,f.life);oval(c,p[f.c as keyof Palette]??p.gold,f.x,f.y,4+Math.max(0,1-f.life)*12,4+Math.max(0,1-f.life)*12);}c.globalAlpha=1;c.restore();
  c.font='13px "IBM Plex Mono", monospace';c.textBaseline='top';c.fillStyle=p.light;

@@ -12,7 +12,7 @@ export type Screen = "title" | "play" | "paused" | "win" | "lose";
 export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade", "jets", "aftermath", "bedroom"]);
 export function shotInterval(hp: number) { return (hp < 40 ? 0.9 : 1.4) / DIFFICULTY.frequency; }
 export function projectileDamage(b: {kind?: string}) { return b.kind === "stone" ? 3 : 4; }
-export type Shot = { x: number; y: number; vx: number; vy: number; life: number; kind?: "stone" };
+export type Shot = { x: number; y: number; vx: number; vy: number; life: number; kind?: "stone" | "special"; specialTarget?: "ufo" | "shipEnemy"; targetIndex?: number };
 type Jet = { x: number; y: number; start: number; fired: [boolean, boolean] };
 type JetShot = { x: number; y: number; vx: number; vy: number; life: number; target: "ufo" | "alien" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
@@ -23,7 +23,7 @@ export function computerAvailable(s:S){return roomIsFree(s)&&!s.chapter.night&&M
 export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=false;}
 export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'end';
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
-function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],sounds:[] as string[],labDead:0};}
+function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],sounds:[] as string[],labDead:0};}
 export function newState() {
   return {
                 t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom" | "spaceship",
@@ -37,11 +37,27 @@ export function newState() {
     shots: [] as Shot[], lasers: [] as Shot[], fx: [] as { x: number; y: number; life: number; c: string }[],
     allies: [{ x: 430, y: GROUND, hp: 100, hurt: 0, cd: 0.3, walk: 0, dead: false }, { x: 490, y: GROUND, hp: 100, hurt: 0, cd: 0.8, walk: 0, dead: false }] as [Ally, Ally],
         recruited: false, pendingHelp: false, crashX: 2820, crashStart: { x: 0, y: 0 }, jets: [{ x: 0, y: 125, start: 0.2, fired: [false, false] }, { x: 0, y: 185, start: 0.5, fired: [false, false] }] as Jet[], jetShots: [] as JetShot[], alien: { x: 2840, y: GROUND, reveal: 0, stand: 0, riseFrame: 0 }, alienHit: false, ufoHits: 0,
-    msg: "", msgT: 0, keys: {} as { l?: boolean; r?: boolean; j?: boolean; c?: boolean; e?: boolean; [k: string]: boolean | undefined }, fire: false, fireCd: 0,
+    msg: "", msgT: 0, specialCd:0, specialAnim:0, keys: {} as { l?: boolean; r?: boolean; j?: boolean; c?: boolean; e?: boolean; [k: string]: boolean | undefined }, fire: false, fireCd: 0,
   };
 }
 export type S = ReturnType<typeof newState>;
 
+export function triggerSpecial(s:S):boolean{
+ if(s.phase==='fight'){
+  if(s.specialCd>0||s.u.hp<=0||!s.u.vis)return false;
+  const p=s.p;s.shots.push({x:p.x+p.face*28,y:p.y-50,vx:p.face*180,vy:-35,life:3,kind:'special',specialTarget:'ufo'});
+  s.specialCd=5;s.specialAnim=.42;return true;
+ }
+ if(s.phase==='spaceship'&&s.ship.stage==='combat'){
+  const a=s.ship;if(a.specialCd>0)return false;
+  let index=-1,best=Infinity;
+  a.enemies.forEach((e,i)=>{if(e.hp<=0)return;const d=Math.hypot(e.x-a.x,(e.y-48)-(a.y-58));if(d<best){best=d;index=i;}});
+  if(index<0)return false;
+  a.shots.push({x:a.x+a.face*34,y:a.y-66,vx:a.face*180,vy:-25,life:3,kind:'special',specialTarget:'shipEnemy',targetIndex:index});
+  a.specialCd=5;a.specialAnim=.42;shipSound(s,'super');return true;
+ }
+ return false;
+}
 
 export function canAskHelp(s: S) { return s.phase === "fight" && !s.recruited && Math.abs(s.p.x - 460) < 150; }
 function recruit(s: S) { s.recruited = true; s.phase = "help"; s.pt = 0; s.shots = []; s.lasers = []; s.fire = false; s.keys.e = false; }
@@ -233,6 +249,10 @@ function shipAdvance(s:S,stage:ShipStage){s.ship.stage=stage;s.ship.time=0;s.fir
 function shipSound(s:S,event:string){s.ship.sounds.push(event);}
 function shipHit(s:S,damage:number){const a=s.ship;if(a.hurt>0||a.roll>0)return;a.hp=Math.max(0,a.hp-damage);a.hurt=.8;a.shake=.3;shipSound(s,'impact');}
 function defeat(s:S,e:ShipEnemy){e.hp=0;e.deadTime=.001;shipSound(s,'impact');}
+function hitUfo(s:S,damage:number,x:number,y:number){
+ const u=s.u;if(u.hp<=0)return;u.hp=Math.max(0,u.hp-damage);u.hit=.12;s.fx.push({x,y,life:.38,c:'energy'});
+ if(u.hp<=0){u.hp=0;s.pt=0;s.lasers=[];s.fire=false;if(s.recruited){s.phase='crash';s.crashStart={x:u.x,y:u.y};s.shots=[];}else s.phase='boom';for(let i=0;i<26;i++)s.fx.push({x:u.x+(Math.random()-.5)*120,y:u.y+(Math.random()-.5)*50,life:.5+Math.random(),c:i%2?'gold':'light'});}
+}
 function startShipCombat(s:S){const a=s.ship;shipAdvance(s,'combat');a.x=145;a.y=SHIP.floor;a.enemies=[340,550,700,790].map((x,i)=>({x,y:SHIP.floor,hp:32,kind:i===2?'psychic':'direct',cd:3+i*1.4,windup:0,hurt:0,deadTime:0,face:-1}));shipSound(s,'door');}
 function superShot(s:S){
   const a=s.ship;a.beam=.65;a.beamCd=1;a.charge=0;a.shake=.65;
@@ -251,7 +271,7 @@ function superShot(s:S){
   shipSound(s,'super');
 }
 function updateShip(s:S,dt:number):'continue'|'lose'|null{
-  const a=s.ship;a.time+=dt;a.hurt=Math.max(0,a.hurt-dt);a.shake=Math.max(0,a.shake-dt);a.beam=Math.max(0,a.beam-dt);a.beamCd=Math.max(0,a.beamCd-dt);a.flash=Math.max(0,a.flash-dt);a.rollCd=Math.max(0,a.rollCd-dt);a.reactorHit=Math.max(0,a.reactorHit-dt);
+  const a=s.ship;a.time+=dt;a.hurt=Math.max(0,a.hurt-dt);a.shake=Math.max(0,a.shake-dt);a.beam=Math.max(0,a.beam-dt);a.beamCd=Math.max(0,a.beamCd-dt);a.flash=Math.max(0,a.flash-dt);a.rollCd=Math.max(0,a.rollCd-dt);a.specialCd=Math.max(0,a.specialCd-dt);a.specialAnim=Math.max(0,a.specialAnim-dt);a.reactorHit=Math.max(0,a.reactorHit-dt);
   if(s.keys.e&&!a.eHeld)interactShip(s);a.eHeld=Boolean(s.keys.e);
   for(const e of a.enemies){e.hurt=Math.max(0,e.hurt-dt);if(e.hp<=0)e.deadTime+=dt;}
   const timed=(seconds:number,stage:ShipStage)=>{if(a.time>=seconds)shipAdvance(s,stage);};
@@ -287,7 +307,17 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
         if(a.armed){a.charge=Math.min(SHIP.chargeTime,a.charge+dt);if(a.charge>=SHIP.chargeTime&&a.beamCd===0)superShot(s);}
         else if(a.fireCd<=0){const target=a.enemies.filter(e=>e.hp>0).sort((l,r)=>Math.abs(l.x-a.x)-Math.abs(r.x-a.x))[0];const tx=a.aimActive&&!a.boxBroken?a.aimX:target?.x??SHIP.boxX,ty=a.aimActive&&!a.boxBroken?a.aimY:target?target.y-48:SHIP.boxY;const dx=tx-a.x,dy=ty-(a.y-58),L=Math.hypot(dx,dy)||1;a.face=dx>=0?1:-1;a.shots.push({x:a.x,y:a.y-58,vx:dx/L*700,vy:dy/L*700,life:1.5});a.fireCd=.22;a.flash=.08;shipSound(s,'pistol');}
       }else a.charge=Math.max(0,a.charge-dt*2);
-      for(const b of a.shots){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
+      for(const b of a.shots){
+        if(b.kind==='special'){
+          let target=b.targetIndex===undefined?undefined:a.enemies[b.targetIndex];
+          if(!target||target.hp<=0){let index=-1,best=Infinity;for(let i=0;i<a.enemies.length;i++){const e=a.enemies[i];if(e&&e.hp>0){const d=Math.hypot(e.x-b.x,(e.y-48)-b.y);if(d<best){best=d;index=i;target=e;}}}b.targetIndex=index;}
+          if(!target||target.hp<=0){b.life=0;continue;}
+          const dx=target.x-b.x,dy=(target.y-48)-b.y,L=Math.hypot(dx,dy)||1;b.vx=dx/L*1120;b.vy=dy/L*1120;
+          if(L<40+1120*dt){b.life=0;defeat(s,target);s.fx.push({x:target.x,y:target.y-48,life:.55,c:'energy'});}
+          else{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;}
+          continue;
+        }
+        b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
         if(!a.boxBroken&&Math.abs(b.x-SHIP.boxX)<32&&Math.abs(b.y-SHIP.boxY)<30){b.life=0;a.boxHp--;shipSound(s,'impact');if(a.boxHp<=0){a.boxBroken=true;a.aimActive=false;shipSound(s,'break');a.shake=.25;}}
         for(const e of a.enemies)if(b.life>0&&e.hp>0&&Math.abs(b.x-e.x)<25&&Math.abs(b.y-(e.y-48))<50){b.life=0;e.hp-=4;e.hurt=.2;if(e.hp<=0)defeat(s,e);}
       }
@@ -334,7 +364,7 @@ function updateIntro(s: S, dt: number) {
 
 export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
   const { p, cat, u, keys } = s;
-  s.t += dt; s.pt += dt; s.msgT -= dt;
+  s.t += dt; s.pt += dt; s.msgT -= dt;s.specialCd=Math.max(0,s.specialCd-dt);s.specialAnim=Math.max(0,s.specialAnim-dt);
   if(s.phase==='spaceship')return updateShip(s,dt);
   if(s.phase==='aftermath'||s.phase==='bedroom')return updateChapter(s,dt);
   if (s.phase === 'awka') { updateIntro(s, dt); return null; }
@@ -429,17 +459,15 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
   }
 
   for (const b of s.shots) {
+    if(b.kind==='special'&&b.specialTarget==='ufo'){
+      const dx=u.x-b.x,dy=u.y-b.y,L=Math.hypot(dx,dy)||1;b.vx=dx/L*1080;b.vy=dy/L*1080;
+      if(s.phase==='fight'&&L<48+1080*dt){b.life=0;hitUfo(s,35,b.x,b.y);}
+      else{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;}
+      continue;
+    }
     if (b.kind === "stone") b.vy += 360 * dt;
     b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
-    if (s.phase === "fight" && Math.abs(b.x - u.x) < 55 && Math.abs(b.y - u.y) < 22) {
-      b.life = 0; u.hp -= projectileDamage(b); u.hit = 0.12; s.fx.push({ x: b.x, y: b.y, life: 0.3, c: "ice" });
-      if (u.hp <= 0) {
-        u.hp = 0; s.pt = 0; s.lasers = []; s.fire = false;
-        if (s.recruited) { s.phase = "crash"; s.crashStart = { x: u.x, y: u.y }; s.shots = []; }
-        else s.phase = "boom";
-        for (let i = 0; i < 26; i++) s.fx.push({ x: u.x + (Math.random() - 0.5) * 120, y: u.y + (Math.random() - 0.5) * 50, life: 0.5 + Math.random(), c: i % 2 ? "gold" : "light" });
-      }
-    }
+    if (s.phase === "fight" && Math.abs(b.x - u.x) < 55 && Math.abs(b.y - u.y) < 22) {b.life=0;hitUfo(s,projectileDamage(b),b.x,b.y);}
   }
   for (const l of s.lasers) {
     for (const a of s.allies) if (s.recruited && a.hp > 0 && a.hurt <= 0 && l.life > 0 && Math.abs(l.x - a.x) < 16 && l.y > GROUND - 65 && l.y < GROUND) { a.hp = Math.max(0, a.hp - 12); a.hurt = 0.65; l.life = 0; }
