@@ -163,6 +163,29 @@ function military(c:CanvasRenderingContext2D,s:S,im:ChapterImages){
 }
 
 const treeCache=new WeakMap<HTMLImageElement,HTMLCanvasElement>();
+function prepareTree(im:HTMLImageElement):HTMLCanvasElement{
+ const cached=treeCache.get(im);if(cached)return cached;
+ const src=document.createElement('canvas');src.width=im.naturalWidth;src.height=im.naturalHeight;
+ const q=src.getContext('2d');if(!q)return src;
+ try{
+  q.drawImage(im,0,0);const img=q.getImageData(0,0,src.width,src.height),d=img.data,w=src.width,h=src.height;
+  const seen=new Uint8Array(w*h),stack=new Int32Array(w*h);let n=0;
+  const bg=(i:number)=>{const k=i*4;return (d[k+3]??0)<18||((d[k]??0)>242&&(d[k+1]??0)>242&&(d[k+2]??0)>242);};
+  const add=(i:number)=>{if(i>=0&&i<w*h&&!seen[i]&&bg(i)){seen[i]=1;stack[n++]=i;}};
+  for(let x=0;x<w;x++){add(x);add((h-1)*w+x);}for(let y=0;y<h;y++){add(y*w);add(y*w+w-1);}
+  while(n){const i=stack[--n];if(i===undefined)continue;const x=i%w,y=Math.floor(i/w);d[i*4+3]=0;if(x)add(i-1);if(x<w-1)add(i+1);if(y)add(i-w);if(y<h-1)add(i+w);}
+  q.putImageData(img,0,0);let l=w,t=h,rr=0,b=0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if((d[(y*w+x)*4+3]??0)>18){l=Math.min(l,x);rr=Math.max(rr,x);t=Math.min(t,y);b=Math.max(b,y);}
+  if(rr>=l&&b>=t){const out=document.createElement('canvas');out.width=rr-l+1;out.height=b-t+1;out.getContext('2d')?.drawImage(src,l,t,out.width,out.height,0,0,out.width,out.height);treeCache.set(im,out);return out;}
+ }catch(error){console.warn('No se pudo recortar arbol.png',error);}
+ treeCache.set(im,src);return src;
+}
+function drawWindTree(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,baseY:number,height:number,time:number,phase:number,alpha=1){
+ if(!ready(im))return;const tree=prepareTree(im),w=height*tree.width/tree.height;
+ const sway=Math.sin(time*1.25+phase)*.034+Math.sin(time*2.1+phase*.7)*.009;
+ c.save();c.translate(x,baseY);c.rotate(sway);c.globalAlpha=alpha;c.imageSmoothingEnabled=false;c.drawImage(tree,-w/2,-height,w,height);c.restore();
+}
+
 function drawStreetSurface(c:CanvasRenderingContext2D,p:Palette){
  const g=c.createLinearGradient(0,GROUND,0,H);g.addColorStop(0,'#373b43');g.addColorStop(.22,'#30343c');g.addColorStop(1,'#242a32');
  c.fillStyle=g;c.fillRect(-1200,GROUND,WORLD+1200,H-GROUND);
@@ -253,7 +276,6 @@ function drawReactorEffects(c:CanvasRenderingContext2D,p:Palette,hp:number,time:
  const x=SHIP.reactorX,y=SHIP.reactorY,damage=1-Math.max(0,hp)/100;
  if(damage<=0&&!overload)return;
  c.save();c.globalCompositeOperation='screen';
- const flicker=.82+.18*Math.sin(time*19);
  const glow=c.createRadialGradient(x,y,2,x,y,32+damage*28+(overload?time*18:0));
  glow.addColorStop(0,'rgba(255,245,190,.95)');glow.addColorStop(.28,'rgba(255,126,35,.72)');glow.addColorStop(1,'rgba(255,55,18,0)');
  c.fillStyle=glow;c.fillRect(x-100,y-130,200,190);
