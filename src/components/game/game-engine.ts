@@ -28,7 +28,7 @@ export function newState() {
   return {
                 t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom" | "spaceship",
     ship: newShip(),
-      chapter: { enabled: false, computer: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'exit' | 'forestFade' | 'forestRun' | 'deer' | 'burned' | 'ship' | 'beam' | 'lift' | 'vanished' | 'complete', time: 0, truckX: 0, roomX: 115, roomY: 435, roomWalk: 0, roomDirection: 'right' as 'right'|'left'|'up'|'down', moving: false, night: false, fed: false, searching: false, forestX: 0, forestY: GROUND, forestRunTime: 0, catGone: false, eHeld: false },
+      chapter: { enabled: false, computer: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'exit' | 'forestFade' | 'forestRun' | 'deer' | 'burned' | 'ship' | 'beam' | 'lift' | 'vanished' | 'complete', time: 0, truckX: 0, roomX: 115, roomY: 435, roomWalk: 0, roomDirection: 'right' as 'right'|'left'|'up'|'down', moving: false, night: false, fed: false, searching: false, forestX: 0, forestY: GROUND, forestRunTime: 0, forestFace: 1, catGone: false, eHeld: false },
      intro: { stage: 'opening' as 'opening' | 'beer' | 'drinking' | 'approach' | 'offer' | 'smoking' | 'warning' | 'rising' | 'leave' | 'depart' | 'done', time: 0, drinks: 0, npcX: -285, eHeld: false },
     pt: 0, cam: 0,
     p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0, roll: 0, rollCd: 0, rollHeld: false, rollFace: 1 },
@@ -171,7 +171,7 @@ function moveRoom(s:S,dt:number,canStand=roomCanStand){
 function updateChapter(s:S,dt:number): 'continue'|null {
   const a=s.chapter;if(a.computer)return null;a.time+=dt;s.fire=false;s.shots=[];s.lasers=[];
   a.moving=false;if(roomIsFree(s))moveRoom(s,dt);
-  if(forestIsFree(s)){const dx=Number(Boolean(s.keys.r))-Number(Boolean(s.keys.l)),dy=Number(Boolean(s.keys.c))-Number(Boolean(s.keys.j)),length=Math.hypot(dx,dy)||1;a.moving=Boolean(dx||dy);if(a.moving){a.roomDirection=dy?(dy>0?'down':'up'):(dx>0?'right':'left');a.forestX=Math.max(0,Math.min(FOREST.abduction,a.forestX+dx/length*FOREST.speed*dt));a.forestY=Math.max(FOREST.top,Math.min(FOREST.bottom,a.forestY+dy/length*FOREST.speed*dt));a.roomWalk+=dt*10;}}
+  if(forestIsFree(s)){const dx=Number(Boolean(s.keys.r))-Number(Boolean(s.keys.l)),dy=Number(Boolean(s.keys.c))-Number(Boolean(s.keys.j)),length=Math.hypot(dx,dy)||1;a.moving=Boolean(dx||dy);if(a.moving){if(dx)a.forestFace=dx<0?-1:1;a.roomDirection=dy?(dy>0?'down':'up'):(dx>0?'right':'left');a.forestX=Math.max(0,Math.min(FOREST.abduction,a.forestX+dx/length*FOREST.speed*dt));a.forestY=Math.max(FOREST.top,Math.min(FOREST.bottom,a.forestY+dy/length*FOREST.speed*dt));a.roomWalk+=dt*10;}}
   if(s.keys.e&&!a.eHeld)interactChapter(s);a.eHeld=Boolean(s.keys.e);
   const advance=(stage:typeof a.stage)=>{a.stage=stage;a.time=0;};
   switch(a.stage){
