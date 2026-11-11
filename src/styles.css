@@ -356,3 +356,93 @@
  .game-mobile-layout .game-touch-right { height:108px; width:clamp(150px,43vw,174px); }
  .game-mobile-layout .game-fire-control { min-height:108px; }
 }
+
+
+/* Presentación inicial: el título se revela entre estática y nieve, queda legible y se desvanece. */
+.game-welcome-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 5vw, 64px);
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgb(4 8 16 / 62%), rgb(2 5 12 / 78%));
+  animation: game-welcome-screen 6.4s ease both;
+}
+.game-welcome-overlay img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(88%, 1050px);
+  max-height: 72%;
+  object-fit: contain;
+  user-select: none;
+  filter: drop-shadow(0 0 16px rgb(220 238 255 / 22%));
+  animation: game-welcome-image 6.4s ease both;
+}
+.game-welcome-overlay::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: -8%;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: screen;
+  animation: game-welcome-snow 2.2s steps(9, end) both;
+}
+@keyframes game-welcome-screen {
+  0% { opacity: 0; }
+  5% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes game-welcome-image {
+  0% {
+    opacity: 0;
+    clip-path: inset(48% 0 48% 0);
+    filter: grayscale(1) contrast(3.2) brightness(1.8) blur(8px);
+    transform: scale(.985);
+  }
+  7% {
+    opacity: .55;
+    clip-path: inset(28% 0 28% 0);
+    filter: grayscale(1) contrast(2.8) brightness(1.7) blur(5px);
+  }
+  19% {
+    opacity: 1;
+    clip-path: inset(0);
+    filter: grayscale(.25) contrast(1.2) brightness(1.08) blur(0);
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+    clip-path: inset(0);
+    filter: none;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    clip-path: inset(0);
+    filter: blur(2px);
+    transform: scale(1.015);
+  }
+}
+@keyframes game-welcome-snow {
+  0% { opacity: 0; transform: translate3d(0, 0, 0); }
+  5% { opacity: .98; }
+  12% { opacity: .82; transform: translate3d(-1.5%, 1%, 0); }
+  22% { opacity: .48; transform: translate3d(1%, -1%, 0); }
+  35%, 100% { opacity: 0; transform: translate3d(0, 0, 0); }
+}
+@media(max-width: 600px) {
+  .game-welcome-overlay { padding: 14px; }
+  .game-welcome-overlay img { width: 94%; max-height: 58%; }
+}
+@media(prefers-reduced-motion: reduce) {
+  .game-welcome-overlay,
+  .game-welcome-overlay img,
+  .game-welcome-overlay::before { animation-duration: 6.4s; }
+}

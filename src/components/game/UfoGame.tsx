@@ -54,7 +54,7 @@ import shipArt from '@/assets/forest-ufo.png.asset.json';
 export function UfoGame() {
  const cv=useRef<HTMLCanvasElement>(null), host=useRef<HTMLDivElement>(null), st=useRef(newState()), images=useRef<GameImages|null>(null), palette=useRef<Palette|null>(null);
  const [screen,setScreen]=useState<Screen>('title'), [ending,setEnding]=useState<Ending|null>(null), [touch,setTouch]=useState(false),[expanded,setExpanded]=useState(false),[loading,setLoading]=useState(true),[assetError,setAssetError]=useState(false),[context,setContext]=useState(false),[combat,setCombat]=useState(false);
- const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false), [freeRoom,setFreeRoom]=useState(false);
+ const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false), [freeRoom,setFreeRoom]=useState(false), [welcomeVisible,setWelcomeVisible]=useState(false);
  const audio=useRef<GameAudio|null>(null);
  const [computer,setComputer]=useState(false),[creditsOpen,setCreditsOpen]=useState(false);
  const [masterVolume,setMasterVolume]=useState(.8),[volumeOpen,setVolumeOpen]=useState(false);
@@ -99,7 +99,7 @@ export function UfoGame() {
    raf=requestAnimationFrame(loop);
   };raf=requestAnimationFrame(loop);return()=>cancelAnimationFrame(raf);
  },[screen,loading,assetError]);
- const start=()=>{setCreditsOpen(false);setVolumeOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();audio.current.setVolume(masterVolume);}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setScreen('play');};
+ const start=()=>{setCreditsOpen(false);setVolumeOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();audio.current.setVolume(masterVolume);}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setWelcomeVisible(true);setScreen('play');};
  const pause=()=>{st.current.keys={};st.current.fire=false;setScreen('paused');};
  const fullscreen=async()=>{const el=host.current;if(!el)return;if(document.fullscreenElement){await document.exitFullscreen();return;}if(expanded){setExpanded(false);return;}try{if(el.requestFullscreen){await el.requestFullscreen();setExpanded(true);}else setExpanded(true);}catch{setExpanded(true);}};
   const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});
@@ -113,6 +113,9 @@ export function UfoGame() {
   <div className="game-stage">
    {screen==='title'&&<img className="game-title-background" src="/imagens/menu%20de%20juego.png" alt=""/>}
    <canvas ref={cv} width={W} height={H} aria-label="OVNIS EN EL BOLSÓN, escenario de juego" className="h-full w-full" onPointerDown={e=>{if(e.pointerType==='mouse'&&e.button===0)fire(e);}} onPointerMove={aim} onPointerUp={()=>{st.current.fire=false;}} onPointerCancel={()=>{st.current.fire=false;}} onContextMenu={e=>e.preventDefault()}/>
+   {screen==='play'&&welcomeVisible&&<div className="game-welcome-overlay" role="status" aria-label="Gennaro Montecino presenta OVNIS: El Bolsón" onAnimationEnd={e=>{if(e.target===e.currentTarget)setWelcomeVisible(false);}}>
+    <img src="/file_000000006b74820e95c370c7d24e7848.png" alt="Gennaro Montecino Presenta. OVNIS: El Bolsón" draggable={false}/>
+   </div>}
    {screen!=='title'&&<div className="absolute right-2 top-2 z-20 flex gap-2">
     {screen==='play'&&<Button size="icon" variant="outline" title="Pausar" aria-label="Pausar" onClick={pause}><Pause/></Button>}
     <div className="game-volume-anchor">
