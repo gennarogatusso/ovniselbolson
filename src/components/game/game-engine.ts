@@ -375,7 +375,7 @@ function updateIntro(s: S, dt: number) {
 
 export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
   const { p, cat, u, keys } = s;
-  s.t += dt; s.pt += dt; s.msgT -= dt;s.specialCd=Math.max(0,specialCd-dt);s.specialAnim=Math.max(0,s.specialAnim-dt);
+  s.t += dt; s.pt += dt; s.msgT -= dt;s.specialCd=Math.max(0,s.specialCd-dt);s.specialAnim=Math.max(0,s.specialAnim-dt);
   if(s.phase==='fight'&&s.combatTipsTime>=0){s.combatTipsTime+=dt;if(s.combatTipsTime>=COMBAT_TIP_SEQUENCE_DURATION)s.combatTipsTime=-1;}
   if(s.phase==='spaceship')return updateShip(s,dt);
   if(s.phase==='aftermath'||s.phase==='bedroom')return updateChapter(s,dt);
