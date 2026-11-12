@@ -3,6 +3,13 @@
 @import "tw-animate-css";
 @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Montserrat:wght@400;700&display=swap");
 
+/* Oculta por completo el widget de marca de Lovable en todas las páginas. */
+#lovable-badge {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
