@@ -91,7 +91,7 @@ function drawCombatTips(c:CanvasRenderingContext2D,s:S,im:GameImages){
  const localTime=s.combatTipsTime-index*COMBAT_TIP_CARD_DURATION;
  const image=im.combatTips[index];
  if(!ready(image))return;
- const scale=Math.min((W-120)/image.naturalWidth,230/image.naturalHeight)*.2;
+ const scale=Math.min((W-120)/image.naturalWidth,230/image.naturalHeight)*.5;
  const width=image.naturalWidth*scale,height=image.naturalHeight*scale;
  const enterEnd=COMBAT_TIP_SLIDE_DURATION,holdEnd=enterEnd+COMBAT_TIP_HOLD_DURATION;
  const restingY=18;

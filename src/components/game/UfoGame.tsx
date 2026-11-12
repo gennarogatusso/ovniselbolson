@@ -102,7 +102,7 @@ export function UfoGame() {
  const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false), [freeRoom,setFreeRoom]=useState(false), [welcomeVisible,setWelcomeVisible]=useState(false), [specialCooldown,setSpecialCooldown]=useState(0);
  const welcomeActiveRef=useRef(false);
  const audio=useRef<GameAudio|null>(null);
- const [computer,setComputer]=useState(false),[creditsOpen,setCreditsOpen]=useState(false);
+ const [computer,setComputer]=useState(false),[creditsOpen,setCreditsOpen]=useState(false),[controlsOpen,setControlsOpen]=useState(false);
  const [masterVolume,setMasterVolume]=useState(.8),[volumeOpen,setVolumeOpen]=useState(false);
  const screenRef=useRef(screen);screenRef.current=screen;
  useEffect(()=>{
@@ -147,7 +147,7 @@ export function UfoGame() {
    raf=requestAnimationFrame(loop);
   };raf=requestAnimationFrame(loop);return()=>cancelAnimationFrame(raf);
  },[screen,loading,assetError]);
- const start=()=>{setCreditsOpen(false);setVolumeOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();audio.current.setVolume(masterVolume);audio.current.resetForestAudio();}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();welcomeActiveRef.current=true;setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setWelcomeVisible(true);setScreen('play');};
+ const start=()=>{setCreditsOpen(false);setControlsOpen(false);setVolumeOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();audio.current.setVolume(masterVolume);audio.current.resetForestAudio();}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();welcomeActiveRef.current=true;setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setWelcomeVisible(true);setScreen('play');};
  const pause=()=>{st.current.keys={};st.current.fire=false;setScreen('paused');};
  const fullscreen=async()=>{const el=host.current;if(!el)return;if(document.fullscreenElement){await document.exitFullscreen();return;}if(expanded){setExpanded(false);return;}try{if(el.requestFullscreen){await el.requestFullscreen();setExpanded(true);}else setExpanded(true);}catch{setExpanded(true);}};
   const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});
@@ -194,9 +194,24 @@ export function UfoGame() {
    {screen==='play'&&computer&&<GameComputer onClose={()=>{closeComputer(st.current);setComputer(false);}}/>}
     {screen==='title'&&<nav className="game-menu" aria-label="Menú principal de UFOCAT">
      <button type="button" className="game-menu-hit game-menu-play" aria-label="Jugar" onClick={start} disabled={loading||assetError}/>
-     <span className="game-menu-hide-options" aria-hidden="true"/>
+     <button type="button" className="game-menu-hit game-menu-controls" aria-label="Controles" aria-expanded={controlsOpen} aria-controls="game-controls-dialog" onClick={()=>setControlsOpen(true)}>CONTROLES</button>
      <button type="button" className="game-menu-hit game-menu-credits" aria-label="Créditos" onClick={()=>setCreditsOpen(true)}/>
      <Link to="/" className="game-menu-hit game-menu-exit" aria-label="Salir de UFOCAT"/>
+     {controlsOpen&&<div className="game-credits-backdrop" onClick={()=>setControlsOpen(false)}>
+      <section id="game-controls-dialog" className="game-credits-card game-controls-card" role="dialog" aria-modal="true" aria-labelledby="game-controls-title" onClick={e=>e.stopPropagation()}>
+       <h2 id="game-controls-title">CONTROLES</h2>
+       <div className="game-controls-list">
+        <p><kbd>W A S D</kbd><span>Moverse. A/D para los lados; W/S para subir y bajar según la escena.</span></p>
+        <p><kbd>W / ESPACIO</kbd><span>Saltar durante la aventura y los combates.</span></p>
+        <p><kbd>SHIFT / <RotateCcw aria-hidden="true"/></kbd><span>Rodar para esquivar. En móvil, botón con icono de girar.</span></p>
+        <p><kbd>R / <Zap aria-hidden="true"/></kbd><span>Usar la habilidad especial.</span></p>
+        <p><kbd>E / TAP / <Hand aria-hidden="true"/></kbd><span>Interactuar, aceptar opciones o pedir ayuda.</span></p>
+        <p><kbd>CLIC IZQ. / <Crosshair aria-hidden="true"/></kbd><span>Disparar durante los combates. En móvil, botón de disparo.</span></p>
+        <p><kbd>JOYSTICK</kbd><span>Moverse en celulares y dispositivos táctiles.</span></p>
+       </div>
+       <button type="button" className="game-credits-close" onClick={()=>setControlsOpen(false)}>VOLVER</button>
+      </section>
+     </div>}
      {creditsOpen&&<div className="game-credits-backdrop" onClick={()=>setCreditsOpen(false)}>
       <section className="game-credits-card" role="dialog" aria-modal="true" aria-labelledby="game-credits-title" onClick={e=>e.stopPropagation()}>
        <h2 id="game-credits-title">CRÉDITOS</h2>
