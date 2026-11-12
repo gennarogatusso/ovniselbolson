@@ -6,6 +6,10 @@ export const SPECIAL_PROJECTILE_SPEED = 300;
 export const SPECIAL_ATTACK_DAMAGE_FACTOR = 0.5;
 export const SPECIAL_ATTACK_UFO_DAMAGE = 35 * SPECIAL_ATTACK_DAMAGE_FACTOR;
 export const SPECIAL_ATTACK_SHIP_DAMAGE = 32 * SPECIAL_ATTACK_DAMAGE_FACTOR;
+export const COMBAT_TIP_SLIDE_DURATION = 1;
+export const COMBAT_TIP_HOLD_DURATION = 3.4;
+export const COMBAT_TIP_CARD_DURATION = COMBAT_TIP_SLIDE_DURATION * 2 + COMBAT_TIP_HOLD_DURATION;
+export const COMBAT_TIP_SEQUENCE_DURATION = COMBAT_TIP_CARD_DURATION * 2;
 export const ALIEN_MESSAGE = "#%3# indescifrable.... GATO....#%3 ME PERTENECE ... #%indescifrable";
 export const ENDINGS = {
   revenge: { title: "¡FELICIDADES! MATASTE AL OVNI PERO NO RECUPERASTE TU GATO", sub: "FINAL N.º 1 — BAD ENDING" },
@@ -36,7 +40,7 @@ export function newState() {
     ship: newShip(),
       chapter: { enabled: false, computer: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'exit' | 'forestFade' | 'forestRun' | 'deer' | 'burned' | 'ship' | 'beam' | 'lift' | 'vanished' | 'complete', time: 0, truckX: 0, roomX: 115, roomY: 435, roomWalk: 0, roomDirection: 'right' as 'right'|'left'|'up'|'down', moving: false, night: false, fed: false, searching: false, forestX: 0, forestY: GROUND, forestRunTime: 0, forestFace: 1, catGone: false, eHeld: false },
      intro: { stage: 'opening' as 'opening' | 'beer' | 'drinking' | 'approach' | 'offer' | 'smoking' | 'warning' | 'rising' | 'leave' | 'depart' | 'done', time: 0, drinks: 0, npcX: -285, eHeld: false },
-    pt: 0, cam: 0,
+    pt: 0, combatTipsTime: -1, cam: 0,
     p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0, roll: 0, rollCd: 0, rollHeld: false, rollFace: 1 },
     cat: { x: 150, y: GROUND, gone: false, walk: 0 },
     u: { x: 600, y: -80, hp: 100, hit: 0, tx: 600, cd: 2, vis: false },
@@ -371,7 +375,8 @@ function updateIntro(s: S, dt: number) {
 
 export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
   const { p, cat, u, keys } = s;
-  s.t += dt; s.pt += dt; s.msgT -= dt;s.specialCd=Math.max(0,s.specialCd-dt);s.specialAnim=Math.max(0,s.specialAnim-dt);
+  s.t += dt; s.pt += dt; s.msgT -= dt;s.specialCd=Math.max(0,specialCd-dt);s.specialAnim=Math.max(0,s.specialAnim-dt);
+  if(s.phase==='fight'&&s.combatTipsTime>=0){s.combatTipsTime+=dt;if(s.combatTipsTime>=COMBAT_TIP_SEQUENCE_DURATION)s.combatTipsTime=-1;}
   if(s.phase==='spaceship')return updateShip(s,dt);
   if(s.phase==='aftermath'||s.phase==='bedroom')return updateChapter(s,dt);
   if (s.phase === 'awka') { updateIntro(s, dt); return null; }
@@ -423,7 +428,7 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
       break;
     case "draw":
       p.armed = Math.min(1, s.pt / 1.2);
-      if (s.pt > 2.2) { s.phase = "fight"; s.pt = 0; u.tx = p.x + 200; say(s, "RECUPERÁ A TU GATO", 1.6); }
+      if (s.pt > 2.2) { s.phase = "fight"; s.pt = 0; s.combatTipsTime = 0; u.tx = p.x + 200; say(s, "RECUPERÁ A TU GATO", 1.6); }
       break;
     case "fight": {
       // IA OVNI

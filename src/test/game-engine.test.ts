@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { DIFFICULTY, GROUND, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, triggerSpecial, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, triggerSpecial, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
+  it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
+    const s=newState();s.phase='draw';s.pt=2.19;
+    update(s,.02);
+    expect(s.phase).toBe('fight');expect(s.combatTipsTime).toBe(0);
+    expect(COMBAT_TIP_HOLD_DURATION).toBe(3.4);expect(COMBAT_TIP_SLIDE_DURATION).toBe(1);expect(COMBAT_TIP_CARD_DURATION).toBe(5.4);expect(COMBAT_TIP_SEQUENCE_DURATION).toBe(10.8);
+    update(s,COMBAT_TIP_SLIDE_DURATION+COMBAT_TIP_HOLD_DURATION);
+    expect(s.combatTipsTime).toBeCloseTo(4.4);
+    update(s,COMBAT_TIP_SLIDE_DURATION);
+    expect(s.combatTipsTime).toBeCloseTo(COMBAT_TIP_CARD_DURATION);
+    update(s,COMBAT_TIP_SLIDE_DURATION+COMBAT_TIP_HOLD_DURATION);
+    expect(s.combatTipsTime).toBeCloseTo(9.8);
+    update(s,COMBAT_TIP_SLIDE_DURATION);
+    expect(s.combatTipsTime).toBe(-1);
+    update(s,1);
+    expect(s.combatTipsTime).toBe(-1);
+  });
   it('uses a quick original-sprite attack, a moderate homing speed and half damage',()=>{expect(SPECIAL_ATTACK_ANIM_DURATION).toBe(1.2);expect(SPECIAL_ATTACK_RELEASE_DELAY).toBe(0.8);expect(SPECIAL_PROJECTILE_SPEED).toBe(300);expect(SPECIAL_ATTACK_DAMAGE_FACTOR).toBe(0.5);expect(SPECIAL_ATTACK_UFO_DAMAGE).toBe(17.5);expect(SPECIAL_ATTACK_SHIP_DAMAGE).toBe(16);});
   it('increases movement by exactly 20 percent',()=>expect(DIFFICULTY.movement).toBe(1.20));
   it('increases real firing frequency by 20 percent',()=>{expect(shotInterval(100)).toBeCloseTo(1.4/1.20);expect(shotInterval(30)).toBeCloseTo(.9/1.20);});

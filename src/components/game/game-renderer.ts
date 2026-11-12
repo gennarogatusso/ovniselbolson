@@ -1,9 +1,9 @@
-import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
+import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement };
 export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
-export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
+export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
 function drawTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,w:number,h:number){if(!ready(im))return;let b=trims.get(im);if(!b){const t=document.createElement('canvas');t.width=im.naturalWidth;t.height=im.naturalHeight;const q=t.getContext('2d');if(!q)return;q.drawImage(im,0,0);const d=q.getImageData(0,0,t.width,t.height).data;let l=t.width,r=0,top=t.height,bot=0;for(let yy=0;yy<t.height;yy++)for(let xx=0;xx<t.width;xx++){const i=(yy*t.width+xx)*4;if((d[i+3]??0)>16&&((d[i]??255)<245||(d[i+1]??255)<245||(d[i+2]??255)<245)){l=Math.min(l,xx);r=Math.max(r,xx);top=Math.min(top,yy);bot=Math.max(bot,yy);}}b=l<=r&&top<=bot?[l,top,r-l+1,bot-top+1]:[0,0,t.width,t.height];trims.set(im,b);}c.drawImage(im,b[0],b[1],b[2],b[3],x,y,w,h);}
 export type Palette = Record<'turquoise'|'sky'|'rose'|'gold'|'sunset'|'light'|'ice'|'panel'|'ink'|'forest'|'trunk'|'wall'|'roof'|'leaf'|'road'|'curb'|'lane'|'shadow'|'hill'|'metal'|'glass'|'laser'|'smoke'|'stone'|'skin'|'red'|'alien'|'energy',string>;
@@ -19,6 +19,27 @@ function bubble(c:CanvasRenderingContext2D,text:string,x:number,y:number,p:Palet
  const cx=Math.max(width/2+10,Math.min(W-width/2-10,x)); y=Math.max(height+8,y);
  c.fillStyle=p.panel;c.beginPath();c.roundRect(cx-width/2,y-height,width,height,6);c.fill();c.strokeStyle=p.light;c.lineWidth=1;c.stroke();
  c.fillStyle=p.light; lines.forEach((l,i)=>c.fillText(l,cx,y-height+23+i*25));c.beginPath();c.moveTo(x-6,y);c.lineTo(x,y+8);c.lineTo(x+6,y);c.fill();c.restore();
+}
+function drawCombatTips(c:CanvasRenderingContext2D,s:S,im:GameImages){
+ if(s.phase!=='fight'||s.combatTipsTime<0||s.combatTipsTime>=COMBAT_TIP_SEQUENCE_DURATION)return;
+ const index=s.combatTipsTime>=COMBAT_TIP_CARD_DURATION?1:0;
+ const localTime=s.combatTipsTime-index*COMBAT_TIP_CARD_DURATION;
+ const image=im.combatTips[index];
+ if(!ready(image))return;
+ const scale=Math.min((W-120)/image.naturalWidth,230/image.naturalHeight);
+ const width=image.naturalWidth*scale,height=image.naturalHeight*scale;
+ const enterEnd=COMBAT_TIP_SLIDE_DURATION,holdEnd=enterEnd+COMBAT_TIP_HOLD_DURATION;
+ const restingY=18;
+ let y=restingY;
+ if(localTime<enterEnd){
+  const q=Math.max(0,Math.min(1,localTime/enterEnd)),ease=1-Math.pow(1-q,3);
+  y=-height-8+(restingY+height+8)*ease;
+ }else if(localTime>=holdEnd){
+  const q=Math.max(0,Math.min(1,(localTime-holdEnd)/COMBAT_TIP_SLIDE_DURATION)),ease=q*q*q;
+  y=restingY-(restingY+height+12)*ease;
+ }
+ c.save();c.imageSmoothingEnabled=false;c.shadowColor='rgba(0,0,0,.5)';c.shadowBlur=12;c.shadowOffsetY=5;
+ c.drawImage(image,(W-width)/2,y,width,height);c.restore();
 }
 function sprite(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,h:number,face:number,walk:number,crouch=false) {
  if(!ready(im)) return;
@@ -761,4 +782,5 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  }
   
  if(s.phase==='fade'){c.globalAlpha=Math.min(1,s.pt/3.5);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+ if(im)drawCombatTips(c,s,im);
 }
