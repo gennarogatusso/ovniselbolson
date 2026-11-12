@@ -20,13 +20,78 @@ function bubble(c:CanvasRenderingContext2D,text:string,x:number,y:number,p:Palet
  c.fillStyle=p.panel;c.beginPath();c.roundRect(cx-width/2,y-height,width,height,6);c.fill();c.strokeStyle=p.light;c.lineWidth=1;c.stroke();
  c.fillStyle=p.light; lines.forEach((l,i)=>c.fillText(l,cx,y-height+23+i*25));c.beginPath();c.moveTo(x-6,y);c.lineTo(x,y+8);c.lineTo(x+6,y);c.fill();c.restore();
 }
+function drawSuperWeaponCharge(c:CanvasRenderingContext2D,s:S){
+ const a=s.ship,q=Math.max(0,Math.min(1,a.charge/SHIP.chargeTime));
+ if(q<=0)return;
+ const x=a.x+a.face*50,y=a.y-65,pulse=.78+.22*Math.sin(s.t*17);
+ c.save();c.globalCompositeOperation='screen';c.globalAlpha=.35+.65*q;
+ c.save();c.translate(x,y);c.scale(1,.55);
+ const glow=c.createRadialGradient(0,0,1,0,0,18+q*16);
+ glow.addColorStop(0,'rgba(246,255,255,.92)');glow.addColorStop(.22,'rgba(111,242,255,.78)');glow.addColorStop(.62,'rgba(35,172,255,.25)');glow.addColorStop(1,'rgba(20,120,255,0)');
+ c.fillStyle=glow;c.beginPath();c.arc(0,0,18+q*16,0,Math.PI*2);c.fill();c.restore();
+ // Filamentos eléctricos que se contraen hacia la boca del arma: sin anillo ni círculo rosa.
+ for(let i=0;i<9;i++){
+  const phase=s.t*3.4+i*2.399,distance=22+(i%3)*12;
+  const sx=x+Math.cos(phase)*distance,sy=y+Math.sin(phase)*distance*.66;
+  const tx=x+Math.cos(phase+.9)*4,ty=y+Math.sin(phase+.9)*3;
+  c.globalAlpha=(.24+.58*q)*(.65+.35*pulse);
+  c.strokeStyle=i%3===0?'#ffffff':i%2?'#a8fbff':'#45cfff';
+  c.lineWidth=1+q*1.6;c.beginPath();c.moveTo(sx,sy);
+  c.quadraticCurveTo((sx+tx)/2+a.face*5,sy-Math.sin(phase*2)*7,tx,ty);c.stroke();
+  if(i%2===0){c.globalAlpha=.55+.4*q;oval(c,'#eaffff',sx,sy,1.2+q,1.2+q);}
+ }
+ // Destellos alargados en dirección de disparo.
+ c.globalAlpha=.28+.62*q;c.strokeStyle='#c8fbff';c.lineWidth=1.5+q*2;
+ for(let i=0;i<3;i++){
+  const offset=(i-1)*7,reach=10+q*18+(i===1?8:0);
+  c.beginPath();c.moveTo(x-a.face*5,y+offset);c.lineTo(x+a.face*reach,y+offset*.35);c.stroke();
+ }
+ c.restore();
+}
+function drawSuperWeaponBeam(c:CanvasRenderingContext2D,s:S){
+ const a=s.ship;if(a.beam<=0)return;
+ const dx=a.beamTx-a.beamX,dy=a.beamTy-a.beamY,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
+ const edgeX=ux>0?(W-a.beamX)/ux:ux<0?-a.beamX/ux:Infinity;
+ const edgeY=uy>0?(H-a.beamY)/uy:uy<0?-a.beamY/uy:Infinity;
+ const length=Math.max(24,Math.min(1300,edgeX,edgeY));
+ const sx=a.beamX,sy=a.beamY,ex=sx+ux*length,ey=sy+uy*length,nx=-uy,ny=ux;
+ const power=Math.max(0,Math.min(1,a.beam/.65)),pulse=.82+.18*Math.sin(s.t*34);
+ c.save();c.globalCompositeOperation='screen';c.globalAlpha=power;c.lineCap='round';c.lineJoin='round';
+ const beamGradient=c.createLinearGradient(sx,sy,ex,ey);
+ beamGradient.addColorStop(0,'rgba(101,246,255,.42)');beamGradient.addColorStop(.18,'rgba(44,205,255,.78)');beamGradient.addColorStop(.72,'rgba(65,185,255,.52)');beamGradient.addColorStop(1,'rgba(205,255,255,.28)');
+ c.shadowColor='#52eaff';c.shadowBlur=34;
+ c.strokeStyle=beamGradient;c.lineWidth=43*pulse;c.beginPath();c.moveTo(sx,sy);c.lineTo(ex,ey);c.stroke();
+ c.shadowBlur=16;c.strokeStyle='rgba(84,227,255,.92)';c.lineWidth=20;c.beginPath();c.moveTo(sx,sy);c.lineTo(ex,ey);c.stroke();
+ c.shadowBlur=8;c.strokeStyle='rgba(255,255,255,.98)';c.lineWidth=6;c.beginPath();c.moveTo(sx,sy);c.lineTo(ex,ey);c.stroke();
+ // Corrientes luminosas que corren por dentro del rayo.
+ c.shadowBlur=5;c.strokeStyle='rgba(231,255,255,.95)';c.lineWidth=2.2;c.setLineDash([18,22]);c.lineDashOffset=-s.t*190;
+ c.beginPath();c.moveTo(sx,sy);c.lineTo(ex,ey);c.stroke();c.setLineDash([]);
+ // Pequeñas descargas laterales para darle volumen y movimiento.
+ for(let i=0;i<8;i++){
+  const q=.12+i*.105,bx=sx+(ex-sx)*q,by=sy+(ey-sy)*q,side=i%2?1:-1,reach=8+(i%3)*5;
+  const bend=Math.sin(s.t*19+i*2.1)*4;
+  c.globalAlpha=power*(.42+.38*Math.sin(s.t*26+i));
+  c.strokeStyle=i%2?'#d9ffff':'#5deaff';c.lineWidth=1.5;
+  c.beginPath();c.moveTo(bx,by);c.lineTo(bx+nx*reach*side+ux*bend,by+ny*reach*side+uy*bend);c.lineTo(bx+nx*reach*1.55*side+ux*5,by+ny*reach*1.55*side+uy*5);c.stroke();
+ }
+ // Fogonazo en el origen y explosión breve en el punto de impacto.
+ const sourceGlow=c.createRadialGradient(sx,sy,1,sx,sy,42);
+ sourceGlow.addColorStop(0,'rgba(255,255,255,.98)');sourceGlow.addColorStop(.18,'rgba(134,248,255,.9)');sourceGlow.addColorStop(1,'rgba(40,170,255,0)');
+ c.globalAlpha=power;c.fillStyle=sourceGlow;c.fillRect(sx-45,sy-45,90,90);
+ const hitX=a.beamTx,hitY=a.beamTy,hitRadius=24+Math.sin(s.t*32)*4;
+ const impact=c.createRadialGradient(hitX,hitY,1,hitX,hitY,hitRadius*2.5);
+ impact.addColorStop(0,'rgba(255,255,255,1)');impact.addColorStop(.18,'rgba(183,255,255,.95)');impact.addColorStop(.48,'rgba(65,214,255,.48)');impact.addColorStop(1,'rgba(34,148,255,0)');
+ c.fillStyle=impact;c.fillRect(hitX-hitRadius*2.5,hitY-hitRadius*2.5,hitRadius*5,hitRadius*5);
+ c.globalAlpha=power*.8;c.strokeStyle='rgba(207,255,255,.95)';c.lineWidth=2.5;c.beginPath();c.ellipse(hitX,hitY,hitRadius*1.35,hitRadius*.72,s.t*2,0,Math.PI*2);c.stroke();
+ c.restore();
+}
 function drawCombatTips(c:CanvasRenderingContext2D,s:S,im:GameImages){
  if(s.phase!=='fight'||s.combatTipsTime<0||s.combatTipsTime>=COMBAT_TIP_SEQUENCE_DURATION)return;
  const index=s.combatTipsTime>=COMBAT_TIP_CARD_DURATION?1:0;
  const localTime=s.combatTipsTime-index*COMBAT_TIP_CARD_DURATION;
  const image=im.combatTips[index];
  if(!ready(image))return;
- const scale=Math.min((W-120)/image.naturalWidth,230/image.naturalHeight);
+ const scale=Math.min((W-120)/image.naturalWidth,230/image.naturalHeight)*.2;
  const width=image.naturalWidth*scale,height=image.naturalHeight*scale;
  const enterEnd=COMBAT_TIP_SLIDE_DURATION,holdEnd=enterEnd+COMBAT_TIP_HOLD_DURATION;
  const restingY=18;
@@ -658,8 +723,8 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   actor(a.x,a.y);still(c,art.cat,a.catX,SHIP.floor,70);
   for(const b of a.shots){if(b.kind==='special'){if((b.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,b,s.t);}else line(p.ice,b.x,b.y,b.x-b.vx*.025,b.y-b.vy*.025,3);}
   for(const b of a.bolts)line(p.laser,b.x,b.y,b.x-b.vx*.04,b.y-b.vy*.04,4);
-  if(a.beam>0){const dx=a.beamTx-a.beamX,dy=a.beamTy-a.beamY,L=Math.hypot(dx,dy)||1;line(p.energy,a.beamX,a.beamY,a.beamX+dx/L*1300,a.beamY+dy/L*1300,36);line(p.light,a.beamX,a.beamY,a.beamX+dx/L*1300,a.beamY+dy/L*1300,9);}
-  if(a.charge>0)oval(c,p.energy,a.x+a.face*45,a.y-65,5+a.charge*9,5+a.charge*9);
+  if(a.beam>0)drawSuperWeaponBeam(c,s);
+  if(a.charge>0)drawSuperWeaponCharge(c,s);
   if(a.aimActive&&a.stage==='combat'){const x=a.aimX,y=a.aimY;line(p.light,x-12,y,x+12,y,2);line(p.light,x,y-12,x,y+12,2);}
   if(a.stage==='combat'&&a.reactorHp<100){drawReactorEffects(c,p,a.reactorHp,s.t,false,a.reactorHit);}
   if(a.stage==='overload'){drawReactorEffects(c,p,0,s.t,true,a.reactorHit);}
