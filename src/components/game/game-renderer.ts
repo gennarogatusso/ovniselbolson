@@ -945,6 +945,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const background=road?art.road:battle?art.afterCross:cross?art.cross:lab?art.laboratory:art.main;
  const scale=Math.max(W/background.naturalWidth,H/background.naturalHeight),bw=background.naturalWidth*scale,bh=background.naturalHeight*scale;
  c.drawImage(background,(W-bw)/2,(H-bh)/2,bw,bh);
+ if(road||battle){c.save();c.globalAlpha=road?.17:.23;box(c,'#392754',0,0,W,H);c.restore();}
  const actor=(x:number,y:number,h=112)=>{
   c.save();c.translate(x,y);c.scale(a.face,1);
   const walkingStage=['crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierEnd'].includes(a.stage);

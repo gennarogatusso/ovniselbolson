@@ -33,7 +33,7 @@ export function computerAvailable(s:S){return roomIsFree(s)&&!s.chapter.night&&M
 export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=false;}
 export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierEnd'|'end';
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
-type GroundSoldier = {id:number;x:number;y:number;hp:number;maxHp:number;role:'bazooka'|'shield';cd:number;walk:number;hurt:number;deadTime:number;state:'cover'|'advance'|'fire'|'hit'};
+type GroundSoldier = {id:number;x:number;y:number;hp:number;maxHp:number;role:'bazooka'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose?:number;state:'cover'|'advance'|'fire'|'hit'};
 function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],sounds:[] as string[],labDead:0};}
 export function newState() {
   return {
@@ -388,21 +388,21 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
       a.catX=approach(a.catX,a.x-55,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);
       for(const e of a.soldiers){
         if(e.hp<=0){e.state='cover';e.deadTime+=dt;continue;}
-        e.hurt=Math.max(0,e.hurt-dt);e.cd-=dt;
+        e.hurt=Math.max(0,e.hurt-dt);e.firePose=Math.max(0,(e.firePose??0)-dt);e.cd-=dt;
         if(e.role==='shield'){
           const stop=a.x+175+(e.id===2?56:0);
           if(e.x>stop){e.x=approach(e.x,stop,48*dt);e.walk+=dt*7;e.state=e.hurt>0?'hit':'advance';}
           else if(e.cd<=0){
             const dx=a.x-e.x,dy=(a.y-44)-(e.y-52),L=Math.hypot(dx,dy)||1;
             a.bolts.push({x:e.x-22,y:e.y-52,vx:dx/L*390,vy:dy/L*390,life:3,kind:'rifle'});
-            e.cd=1.75+(e.id===2 ? 0.35 : 0);e.state='fire';shipSound(s,'laser');
-          }else e.state=e.hurt>0?'hit':e.cd>1.4?'fire':'cover';
+            e.cd=1.75+(e.id===2 ? 0.35 : 0);e.firePose=.42;e.state='fire';shipSound(s,'laser');
+          }else e.state=e.hurt>0?'hit':(e.firePose??0)>0?'fire':'cover';
         }else{
           if(e.cd<=0){
             const dx=a.x-e.x,dy=(a.y-42)-(e.y-50),L=Math.hypot(dx,dy)||1;
             a.bolts.push({x:e.x-32,y:e.y-54,vx:dx/L*245,vy:dy/L*245,life:3.5,kind:'rocket'});
-            e.cd=3.6+(e.id===3 ? 0.45 : 0);e.state='fire';shipSound(s,'explosion');
-          }else e.state=e.hurt>0?'hit':e.cd>1.4?'fire':'cover';
+            e.cd=3.6+(e.id===3 ? 0.45 : 0);e.firePose=.55;e.state='fire';shipSound(s,'explosion');
+          }else e.state=e.hurt>0?'hit':(e.firePose??0)>0?'fire':'cover';
         }
       }
       a.fireCd-=dt;
