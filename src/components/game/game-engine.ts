@@ -279,7 +279,7 @@ function beginSoldierEncounter(s:S){
  shipAdvance(s,'militaryIntro');
 }
 export function respawnAtSoldierCheckpoint(s:S){
- const a=s.ship;a.hp=100;a.hurt=0;a.roll=0;a.rollCd=0;a.push='none';a.shots=[];a.bolts=[];a.specialCd=0;a.specialAnim=0;a.x=132;a.y=SHIP.floor;a.face=1;a.catX=78;a.catY=SHIP.floor;
+ const a=s.ship;a.hp=100;a.hurt=0;a.roll=0;a.rollCd=0;a.push='none';a.shots=[];a.bolts=[];a.specialCd=0;a.specialAnim=0;a.fireCd=0;a.flash=0;a.aimActive=false;a.armed=false;a.x=132;a.y=SHIP.floor;a.face=1;a.catX=78;a.catY=SHIP.floor;
  a.soldiers=[
   {id:0,x:710,y:SHIP.floor,hp:170,maxHp:170,role:'shield',cd:1.4,walk:0,hurt:0,deadTime:0,state:'advance'},
   {id:1,x:790,y:SHIP.floor,hp:155,maxHp:155,role:'bazooka',cd:2.7,walk:0,hurt:0,deadTime:0,state:'cover'},
@@ -396,7 +396,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
             const dx=a.x-e.x,dy=(a.y-44)-(e.y-52),L=Math.hypot(dx,dy)||1;
             a.bolts.push({x:e.x-22,y:e.y-52,vx:dx/L*390,vy:dy/L*390,life:3,kind:'rifle'});
             e.cd=1.75+(e.id===2 ? 0.35 : 0);e.state='fire';shipSound(s,'laser');
-          }else e.state=e.hurt>0?'hit':'cover';
+          }else e.state=e.hurt>0?'hit':e.cd>1.4?'fire':'cover';
         }else{
           if(e.cd<=0){
             const dx=a.x-e.x,dy=(a.y-42)-(e.y-50),L=Math.hypot(dx,dy)||1;
@@ -432,7 +432,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
       if(a.soldiers.every(e=>e.hp<=0))shipAdvance(s,'soldierEnd');
       break;
     }
-    case 'soldierEnd':if(a.time>=4)return 'continue';break;
+    case 'soldierEnd':for(const e of a.soldiers)e.deadTime+=dt;if(a.time>=4)return 'continue';break;
   }
   return null;
 }

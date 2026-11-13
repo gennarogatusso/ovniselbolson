@@ -61,7 +61,7 @@ describe('OVNI difficulty and narrative', () => {
   it('lets the player damage a soldier and makes bazooka impacts much stronger',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.x=132;s.ship.y=452;
     s.ship.soldiers=[{id:0,x:250,y:452,hp:170,maxHp:170,role:'bazooka',cd:10,walk:0,hurt:0,deadTime:0,state:'cover'}];
-    s.ship.shots=[{x:170,y:394,vx:760,vy:0,life:1}];update(s,.15);
+    s.ship.shots=[{x:170,y:394,vx:760,vy:0,life:1}];update(s,.1);
     expect(s.ship.soldiers[0]!.hp).toBe(158);
     s.ship.hurt=0;s.ship.bolts=[{x:s.ship.x,y:s.ship.y-46,vx:0,vy:0,life:1,kind:'rocket'}];
     update(s,.016);expect(s.ship.hp).toBe(68);
