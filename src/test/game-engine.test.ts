@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIFFICULTY, GROUND, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, triggerSpecial, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
@@ -46,5 +46,43 @@ describe('OVNI difficulty and narrative', () => {
         expect(phases).toEqual(['crash','arrive','reunion','alien','speech','attack','jets','fade']);expect(result).toBe('continue');expect(s.allies.every(a=>a.dead&&a.hp===0)).toBe(true);expect(s.cat.gone).toBe(false);
   });
   it('respawns at the laboratory bed checkpoint after ship combat defeat',()=>{const s=newState();s.phase='spaceship';s.ship.stage='combat';s.ship.hp=0;s.ship.reactorHp=25;s.ship.boxBroken=true;expect(update(s,.016)).toBe('lose');respawnAtShipCheckpoint(s);expect(s.phase).toBe('spaceship');expect(s.ship.stage).toBe('awakening');expect(s.ship.hp).toBe(100);expect(s.ship.reactorHp).toBe(100);expect(s.ship.boxBroken).toBe(false);});
+
+  it('continues from the cross contemplation into the road and military scene',()=>{
+    const s=newState();enterShip(s);s.ship.stage='contemplate';s.ship.time=5.9;
+    update(s,.2);expect(s.ship.stage).toBe('crossSunset');
+    s.ship.time=6.9;update(s,.2);expect(s.ship.stage).toBe('crossWalkIntro');
+    for(let i=0;i<100&&s.ship.stage==='crossWalkIntro';i++)update(s,.05);
+    expect(s.ship.stage).toBe('crossWalk');expect(shipAction(s)).toBe('Irse de La Cruz');
+    interactShip(s);expect(s.ship.stage).toBe('militaryIntro');expect(s.ship.soldiers).toHaveLength(4);
+    expect(s.ship.soldiers.filter(e=>e.role==='bazooka')).toHaveLength(2);
+    expect(s.ship.soldiers.filter(e=>e.role==='shield')).toHaveLength(2);
+    update(s,2.3);expect(s.ship.stage).toBe('soldierFight');expect(shipIsCombat(s)).toBe(true);
+  });
+  it('lets the player damage a soldier and makes bazooka impacts much stronger',()=>{
+    const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.x=132;s.ship.y=452;
+    s.ship.soldiers=[{id:0,x:250,y:452,hp:170,maxHp:170,role:'bazooka',cd:10,walk:0,hurt:0,deadTime:0,state:'cover'}];
+    s.ship.shots=[{x:170,y:394,vx:760,vy:0,life:1}];update(s,.15);
+    expect(s.ship.soldiers[0]!.hp).toBe(158);
+    s.ship.hurt=0;s.ship.bolts=[{x:s.ship.x,y:s.ship.y-46,vx:0,vy:0,life:1,kind:'rocket'}];
+    update(s,.016);expect(s.ship.hp).toBe(68);
+  });
+  it('targets a living soldier with the special attack and keeps the five-second cooldown',()=>{
+    const s=newState();enterShip(s);s.ship.stage='soldierFight';
+    s.ship.soldiers=[{id:0,x:320,y:452,hp:170,maxHp:170,role:'shield',cd:10,walk:0,hurt:0,deadTime:0,state:'cover'}];
+    expect(triggerSpecial(s)).toBe(true);expect(s.ship.specialCd).toBe(5);
+    expect(s.ship.shots[0]?.specialTarget).toBe('soldier');
+    expect(triggerSpecial(s)).toBe(false);
+  });
+  it('shows CONTINUARÁ after the four soldiers have been defeated',()=>{
+    const s=newState();enterShip(s);s.ship.stage='soldierFight';
+    s.ship.soldiers=[0,1,2,3].map((id)=>({id,x:700+id*35,y:452,hp:0,maxHp:160,role:id%2?'bazooka':'shield',cd:3,walk:0,hurt:0,deadTime:0,state:'cover'}));
+    expect(update(s,.016)).toBe(null);expect(s.ship.stage).toBe('soldierEnd');
+    expect(update(s,4.1)).toBe('continue');
+  });
+  it('restarts the military encounter at full health if the player is defeated',()=>{
+    const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.hp=0;
+    respawnAtSoldierCheckpoint(s);expect(s.ship.stage).toBe('soldierFight');
+    expect(s.ship.hp).toBe(100);expect(s.ship.soldiers).toHaveLength(4);
+  });
   it('restart resets allies, cat, cinematic and recruitment',()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
 });
