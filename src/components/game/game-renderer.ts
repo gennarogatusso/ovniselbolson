@@ -2,7 +2,7 @@ import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_D
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement };
 export type SoldierImages = { cover: HTMLImageElement; bazooka: HTMLImageElement; advancing: HTMLImageElement; underFire: HTMLImageElement; shieldFire: HTMLImageElement; proneFire: HTMLImageElement };
-export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement };
+export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
 export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
@@ -738,6 +738,7 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    c.drawImage(art.forest,0,H-h,w,h);c.restore();
   }
  }
+ drawMoonGlow(c,W*.79,105-cameraLift,112,s.t,.68);
  // Bloom atmosférico frío, niebla pegada al bosque y destellos lejanos.
  c.save();c.globalCompositeOperation='screen';
  const haze=c.createRadialGradient(W*.52,GROUND-145,25,W*.52,GROUND-145,480);
@@ -1009,22 +1010,77 @@ function drawCatUltimateExplosion(c:CanvasRenderingContext2D,s:S){
  c.restore();
 }
 
+function drawAurora(c:CanvasRenderingContext2D,time:number,strength=1){
+ c.save();c.beginPath();c.rect(0,0,W,H*.54);c.clip();c.globalCompositeOperation='screen';
+ for(let band=0;band<4;band++){
+  const phase=time*.22+band*1.47,offset=band*19;
+  const gradient=c.createLinearGradient(0,24,0,H*.52);
+  gradient.addColorStop(0,'rgba(105,53,220,0)');
+  gradient.addColorStop(.24,'rgba(142,83,255,'+(.055*strength)+')');
+  gradient.addColorStop(.58,'rgba(112,75,255,'+(.12*strength)+')');
+  gradient.addColorStop(1,'rgba(92,60,220,0)');
+  c.fillStyle=gradient;c.beginPath();c.moveTo(-24,34+offset);
+  for(let x=-24;x<=W+24;x+=24){
+   const y=58+offset+Math.sin(x*.008+phase)*17+Math.sin(x*.0035-phase*1.35)*15;c.lineTo(x,y);
+  }
+  for(let x=W+24;x>=-24;x-=24){
+   const y=132+offset+Math.sin(x*.006+phase+1.7)*22+Math.sin(x*.0028-phase)*18;c.lineTo(x,y);
+  }
+  c.closePath();c.fill();
+ }
+ for(let i=0;i<11;i++){
+  const phase=time*.32+i*1.17,x=((i*103+time*(9+i%4*2))%(W+100))-50;
+  const top=35+Math.sin(phase)*19,bottom=H*.48+(i%3)*13,width=24+(i%4)*9;
+  const curtain=c.createLinearGradient(x,top,x+width,bottom);
+  curtain.addColorStop(0,'rgba(115,65,255,0)');
+  curtain.addColorStop(.28,'rgba(155,105,255,'+(.045*strength)+')');
+  curtain.addColorStop(.62,'rgba(176,128,255,'+(.13*strength)+')');
+  curtain.addColorStop(1,'rgba(95,60,225,0)');
+  c.fillStyle=curtain;c.shadowColor='rgba(173,117,255,.72)';c.shadowBlur=17;
+  c.beginPath();c.moveTo(x,top);c.bezierCurveTo(x+width*.7,top+48+Math.sin(phase)*15,x-width*.35,bottom-48,x+width*.4,bottom);
+  c.lineTo(x+width*1.25,bottom);c.bezierCurveTo(x+width*.95,bottom-58,x+width*1.5,top+52,x+width*.75,top);c.closePath();c.fill();
+ }
+ c.shadowBlur=0;
+ for(let i=0;i<4;i++){
+  const phase=time*.28+i*1.6,x=((i*249+time*7)%(W+260))-130;
+  c.strokeStyle='rgba(213,187,255,'+(.12*strength)+')';c.lineWidth=1.5+i%2;c.shadowColor='#a875ff';c.shadowBlur=12;
+  c.beginPath();c.moveTo(x,70+i*17);c.bezierCurveTo(x+75,42+Math.sin(phase)*20,x+135,120+Math.cos(phase)*17,x+245,81+i*15);c.stroke();
+ }
+ c.restore();
+}
+function drawMoonGlow(c:CanvasRenderingContext2D,x:number,y:number,radius:number,time:number,intensity=1){
+ c.save();c.globalCompositeOperation='screen';
+ const pulse=.94+.06*Math.sin(time*1.15),halo=c.createRadialGradient(x,y,2,x,y,radius*2.6);
+ halo.addColorStop(0,'rgba(239,239,255,'+(.2*intensity*pulse)+')');
+ halo.addColorStop(.2,'rgba(202,178,255,'+(.19*intensity*pulse)+')');
+ halo.addColorStop(.52,'rgba(135,105,255,'+(.1*intensity)+')');
+ halo.addColorStop(1,'rgba(110,85,245,0)');
+ c.fillStyle=halo;c.fillRect(x-radius*2.6,y-radius*2.6,radius*5.2,radius*5.2);
+ const wash=c.createRadialGradient(x,y+radius*.65,2,x,y+radius*.65,radius*2.1);
+ wash.addColorStop(0,'rgba(211,220,255,'+(.095*intensity)+')');
+ wash.addColorStop(.4,'rgba(154,139,255,'+(.055*intensity)+')');
+ wash.addColorStop(1,'rgba(132,115,255,0)');
+ c.fillStyle=wash;c.fillRect(x-radius*2.1,y-radius*.3,radius*4.2,radius*4.2);
+ c.restore();
+}
+
 function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.ship,art=im.ship;
  const trail=a.stage==='trailWalk'||a.stage==='trailEnd';
+ const baseScene=['baseFade','baseApproach','baseEnd'].includes(a.stage);
  const cross=['impact','crossRise','crossFree','contemplate','crossSunset','end'].includes(a.stage);
  const road=['crossWalkIntro','crossWalk'].includes(a.stage);
  const battle=['militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd','soldierExit'].includes(a.stage);
  const lab=['awakening','verdict','catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage);
  c.save();box(c,p.ink,0,0,W,H);
  if(a.shake>0)c.translate(Math.sin(s.t*61)*a.shake*8,Math.cos(s.t*49)*a.shake*5);
- const background=trail?art.trail:road?art.road:battle?art.afterCross:cross?art.cross:lab?art.laboratory:art.main;
+ const background=baseScene?art.base:trail?art.trail:road?art.road:battle?art.afterCross:cross?art.cross:lab?art.laboratory:art.main;
  const scale=Math.max(W/background.naturalWidth,H/background.naturalHeight),bw=background.naturalWidth*scale,bh=background.naturalHeight*scale;
  c.drawImage(background,(W-bw)/2,(H-bh)/2,bw,bh);
  if(road||battle){c.save();c.globalAlpha=road ? 0.17 : 0.23;box(c,'#392754',0,0,W,H);c.restore();}
  const actor=(x:number,y:number,h=112)=>{
   c.save();c.translate(x,y);c.scale(a.face,1);
-  const walkingStage=['crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierEnd','soldierExit'].includes(a.stage);
+  const walkingStage=['crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierEnd','soldierExit','baseFade','baseApproach','baseEnd'].includes(a.stage);
   if(a.stage==='soldierUltimateThrow'){
    const progress=a.stage==='soldierUltimateThrow'?Math.min(.999,a.time/CAT_ULTIMATE_THROW_DURATION):.999;
    const frameIndex=Math.min(art.catThrow.length-1,Math.floor(progress*art.catThrow.length));
@@ -1041,11 +1097,13 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   c.restore();
  };
  const line=(col:string,x:number,y:number,tx:number,ty:number,width:number)=>{c.strokeStyle=col;c.lineWidth=width;c.beginPath();c.moveTo(x,y);c.lineTo(tx,ty);c.stroke();};
- if(trail){
-  const q=Math.max(0,Math.min(1,a.trailProgress)),scale=.13+q*1.02,y=H*.55+q*H*.43,x=W*.5,height=112*scale;
+ if(baseScene){
+  const q=Math.max(0,Math.min(1,a.baseProgress)),x=18+q*W*.6,y=H*.84;
+  actor(x,y,168);catSprite(c,im.cat,x-86,y,Math.floor(a.walk*1.1),1,60+q*14);
+ }else if(trail){
+  const q=Math.max(0,Math.min(1,a.trailProgress)),depth=.38+q*.62,scale=(.13+depth*1.02)*1.5,y=H*(.55+depth*.43),x=W*.5,height=112*scale;
   c.save();c.translate(x,y);pose(c,art.walkDown,Math.floor(a.walk)%4,4,0,0,height);c.restore();
   catSprite(c,im.cat,x-height*.46,y,Math.floor(a.walk*1.15),-1,Math.max(8,42*scale));
-  if(q>=1){c.save();c.fillStyle='rgba(8,7,22,.68)';c.fillRect(0,0,W,H);c.fillStyle='#fff';c.textAlign='center';c.font='bold 42px monospace';c.shadowColor='#a77bff';c.shadowBlur=18;c.fillText('CONTINUARÁ...',W/2,H/2);c.restore();}
  }else if(cross){
   drawCrossWreckSmoke(c,s);
   if(a.stage==='contemplate'||a.stage==='crossSunset'||a.stage==='end')pose(c,art.contemplate,0,2,305,334,118);
@@ -1134,6 +1192,14 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(a.stage==='combat'){box(c,p.panel,14,14,240,43);box(c,p.ink,85,30,155,10);box(c,a.hp>30?p.ice:p.red,85,30,a.hp*1.55,10);c.font='13px monospace';c.fillStyle=p.light;c.fillText('SALUD',24,40);
    box(c,p.panel,706,14,240,43);box(c,p.ink,780,30,155,10);box(c,a.reactorHp>30?'#ff9b45':p.red,780,30,a.reactorHp*1.55,10);c.fillStyle=p.light;c.fillText('NÚCLEO',716,40);
   }
+ }
+ const auroraStages=['crossSunset','crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd','soldierExit','trailWalk','baseFade','baseApproach','baseEnd'];
+ if(auroraStages.includes(a.stage))drawAurora(c,s.t,a.stage==='crossSunset'?Math.min(.95,a.time/3.6):.92);
+ const moonStages=['crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd','soldierExit','trailWalk','baseFade','baseApproach','baseEnd'];
+ if(moonStages.includes(a.stage))drawMoonGlow(c,W*.79,H*.16,112,s.t,a.stage.startsWith('base')?1:.68);
+ if(a.stage==='baseFade'){c.save();c.globalAlpha=1-Math.min(1,a.time/1.6);box(c,p.ink,0,0,W,H);c.restore();}
+ if(a.stage==='baseEnd'){
+  c.save();c.fillStyle='rgba(8,7,22,.68)';c.fillRect(0,0,W,H);c.fillStyle='#fff';c.textAlign='center';c.textBaseline='middle';c.font='bold 42px monospace';c.shadowColor='#a77bff';c.shadowBlur=18;c.fillText('CONTINUARÁ...',W/2,H/2);c.restore();
  }
  if(a.stage==='awakening'){
   const fade=1-Math.min(1,a.time/1.35);
