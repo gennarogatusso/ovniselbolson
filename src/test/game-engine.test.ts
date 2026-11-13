@@ -86,7 +86,7 @@ describe('OVNI difficulty and narrative', () => {
   });
 
   it('reduces rifle and bazooka damage by exactly 35 percent',()=>{
-    const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.x=132;s.ship.y=452;
+    const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.x=132;s.ship.y=452;s.ship.soldiers=[{id:0,x:900,y:452,hp:160,maxHp:160,role:'bazooka',cd:100,walk:0,hurt:0,deadTime:0,state:'cover'}];
     s.ship.bolts=[{x:s.ship.x,y:s.ship.y-46,vx:0,vy:0,life:1,kind:'rifle'}];
     update(s,.016);expect(s.ship.hp).toBeCloseTo(89.6);
     s.ship.hurt=0;s.ship.bolts=[{x:s.ship.x,y:s.ship.y-46,vx:0,vy:0,life:1,kind:'rocket'}];
@@ -94,7 +94,7 @@ describe('OVNI difficulty and narrative', () => {
     expect(SOLDIER_DAMAGE_FACTOR).toBe(.65);
   });
   it('jumps vertically during the soldier fight and lands back on the floor',()=>{
-    const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.soldiers=[];
+    const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.soldiers=[{id:0,x:900,y:452,hp:160,maxHp:160,role:'bazooka',cd:100,walk:0,hurt:0,deadTime:0,state:'cover'}];
     s.keys.j=true;update(s,.1);expect(s.ship.y).toBeLessThan(452);
     const firstY=s.ship.y;update(s,.1);expect(s.ship.y).toBeLessThan(firstY);
     s.keys.j=false;update(s,1);expect(s.ship.y).toBe(452);expect(s.ship.vy).toBe(0);

@@ -936,7 +936,7 @@ function drawCatEyeLaser(c:CanvasRenderingContext2D,from:CatEyePoint,to:CatEyePo
  c.restore();
 }
 function drawCatUltimateBeam(c:CanvasRenderingContext2D,s:S){
- const a=s.ship,catX=a.x+42,catY=72+Math.sin(s.t*13)*4,power=Math.min(1,a.time/.22);
+ const a=s.ship,catX=a.x+42,catY=135+Math.sin(s.t*13)*4,power=Math.min(1,a.time/.22);
  c.save();c.globalCompositeOperation='lighter';
  const aura=c.createRadialGradient(catX,catY,2,catX,catY,96);
  aura.addColorStop(0,'rgba(255,255,255,.95)');aura.addColorStop(.16,'rgba(231,170,255,.8)');aura.addColorStop(.48,'rgba(172,52,255,.36)');aura.addColorStop(1,'rgba(125,35,255,0)');
@@ -1026,7 +1026,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(a.stage==='soldierUltimateBeam')drawCatUltimateBeam(c,s);
   actor(a.x,a.y,112);
   if(a.stage==='soldierUltimateAscend'||a.stage==='soldierUltimateBeam'){
-   const rise=Math.min(1,a.time/.72),catY=a.stage==='soldierUltimateBeam'?72:SHIP.floor-115-rise*265;
+   const rise=Math.min(1,a.time/.72),catY=a.stage==='soldierUltimateBeam'?135:SHIP.floor-115-rise*202;
    stillTrimmed(c,art.catFlying,a.x+42,catY,86);
   }else if(a.stage!=='soldierUltimateThrow'&&a.stage!=='soldierEnd')catSprite(c,im.cat,a.catX,a.catY,Math.floor(a.walk*1.2),a.x>=a.catX?1:-1,46);
   for(const b of a.shots){if(b.kind==='special'){if((b.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,b,s.t);}else line(p.ice,b.x,b.y,b.x-b.vx*.025,b.y-b.vy*.025,3);}
