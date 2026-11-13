@@ -1011,10 +1011,10 @@ function drawCatUltimateExplosion(c:CanvasRenderingContext2D,s:S){
 
 function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.ship,art=im.ship;
- const trail=a.stage==='trailWalk';
+ const trail=a.stage==='trailWalk'||a.stage==='trailEnd';
  const cross=['impact','crossRise','crossFree','contemplate','crossSunset','end'].includes(a.stage);
  const road=['crossWalkIntro','crossWalk'].includes(a.stage);
- const battle=['militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd'].includes(a.stage);
+ const battle=['militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd','soldierExit'].includes(a.stage);
  const lab=['awakening','verdict','catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage);
  c.save();box(c,p.ink,0,0,W,H);
  if(a.shake>0)c.translate(Math.sin(s.t*61)*a.shake*8,Math.cos(s.t*49)*a.shake*5);
@@ -1024,7 +1024,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  if(road||battle){c.save();c.globalAlpha=road ? 0.17 : 0.23;box(c,'#392754',0,0,W,H);c.restore();}
  const actor=(x:number,y:number,h=112)=>{
   c.save();c.translate(x,y);c.scale(a.face,1);
-  const walkingStage=['crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierEnd'].includes(a.stage);
+  const walkingStage=['crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierEnd','soldierExit'].includes(a.stage);
   if(a.stage==='soldierUltimateThrow'){
    const progress=a.stage==='soldierUltimateThrow'?Math.min(.999,a.time/CAT_ULTIMATE_THROW_DURATION):.999;
    const frameIndex=Math.min(art.catThrow.length-1,Math.floor(progress*art.catThrow.length));
@@ -1066,7 +1066,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   actor(a.x,a.y,114);catSprite(c,im.cat,a.catX,a.catY,Math.floor(a.walk*1.2),a.x>=a.catX?1:-1,46);
   if(a.stage==='crossWalkIntro'){const q=Math.min(1,a.time/3.5);c.globalAlpha=Math.max(0,1-q);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
  }else if(battle){
-  if(a.stage==='soldierUltimateBeam'||a.stage==='soldierEnd')drawCatUltimateScorch(c,s);
+  if(a.stage==='soldierUltimateBeam'||a.stage==='soldierEnd'||a.stage==='soldierExit')drawCatUltimateScorch(c,s);
   for(const e of a.soldiers){
    const artSoldier=e.role==='bazooka'?(e.state==='fire'?art.soldiers.bazooka:art.soldiers.proneFire):e.state==='advance'?art.soldiers.advancing:e.state==='fire'?art.soldiers.shieldFire:e.state==='hit'?art.soldiers.underFire:art.soldiers.cover;
    if(e.hp<=0&&e.deadTime>1.8)continue;
@@ -1095,9 +1095,6 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    c.font='bold 17px monospace';c.fillText('ULTI LISTA EN '+remaining,W/2,panelY+19);
    if(ready){c.font='11px monospace';c.shadowBlur=4;c.fillStyle='#e8d3ff';c.fillText('Pulsa X para usar la Ultimate',W/2,panelY+43);}
    c.restore();
-  }
-  if(a.stage==='soldierEnd'){
-   c.save();c.globalAlpha=Math.min(1,a.time/.7);c.fillStyle='rgba(8,7,22,.72)';c.fillRect(0,0,W,H);c.fillStyle='#fff';c.textAlign='center';c.font='bold 42px monospace';c.shadowColor='#a77bff';c.shadowBlur=18;c.fillText('CONTINUARÁ...',W/2,H/2);c.restore();
   }
  }else if(lab){
   const dead=['rescue','rise','labFree','door'].includes(a.stage);

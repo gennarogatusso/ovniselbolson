@@ -31,7 +31,7 @@ export const FOREST = { deer: 1820, ship: 3640, abduction: 3900, top: 410, botto
 export function forestIsFree(s:S){return s.phase==='bedroom'&&['forestRun','burned','ship'].includes(s.chapter.stage);}
 export function computerAvailable(s:S){return roomIsFree(s)&&!s.chapter.night&&Math.hypot(s.chapter.roomX-350,s.chapter.roomY-418)<80;}
 export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=false;}
-export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'trailWalk'|'end';
+export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'soldierExit'|'trailWalk'|'trailEnd'|'end';
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
 type GroundSoldier = {id:number;x:number;y:number;hp:number;maxHp:number;role:'bazooka'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose?:number;state:'cover'|'advance'|'fire'|'hit'};
 function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,vy:0,jumpHeld:false,catUltimateUsed:false,trailProgress:0,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],sounds:[] as string[],labDead:0};}
@@ -252,7 +252,7 @@ export function triggerCatUltimate(s:S):boolean{
  a.catUltimateUsed=true;a.shots=[];a.bolts=[];a.roll=0;a.vy=0;a.jumpHeld=false;a.fireCd=0;a.flash=0;a.specialAnim=0;
  s.fire=false;s.keys={};shipAdvance(s,'soldierUltimateThrow');shipSound(s,'super');return true;
 }
-export function shipIsFree(s:S){return s.phase==='spaceship'&&['labFree','crossFree','crossWalk'].includes(s.ship.stage);}
+export function shipIsFree(s:S){return s.phase==='spaceship'&&['labFree','crossFree','crossWalk','soldierExit','trailWalk'].includes(s.ship.stage);}
 export function crossCanStand(x:number,y:number){
   const path=y>=443&&y<=516&&x>=85&&x<=860;
   const stairs=x>=143&&x<=290&&y>=333&&y<=478;
@@ -265,6 +265,7 @@ export function shipAction(s:S):string|null{
   if(a.stage==='combat'&&a.boxBroken&&!a.armed&&a.weaponY>=SHIP.floor&&Math.abs(a.x-SHIP.boxX)<75)return 'RECOGER SUPERARMA';
   if(a.stage==='crossFree'&&s.chapter.roomX<430&&s.chapter.roomY<347)return 'CONTEMPLAR LA CRUZ';
   if(a.stage==='crossWalk'&&a.x>=650)return 'Irse de La Cruz';
+  if(a.stage==='soldierExit'&&a.x>=650)return 'SEGUIR EL CAMINO';
   return null;
 }
 export function interactShip(s:S){
@@ -274,6 +275,7 @@ export function interactShip(s:S){
   else if(a.stage==='combat'){a.stage='pickup';a.x=SHIP.boxX;a.charge=0;}
   else if(a.stage==='crossFree'){a.stage='contemplate';s.chapter.roomX=305;s.chapter.roomY=334;}
   else if(a.stage==='crossWalk')beginSoldierEncounter(s);
+  else if(a.stage==='soldierExit'){a.trailProgress=0;a.walk=0;shipAdvance(s,'trailWalk');}
   a.time=0;s.keys={};s.fire=false;
 }
 function shipAdvance(s:S,stage:ShipStage){s.ship.stage=stage;s.ship.time=0;s.fire=false;}
@@ -450,8 +452,16 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     case 'soldierUltimateThrow':if(a.time>=CAT_ULTIMATE_THROW_DURATION)shipAdvance(s,'soldierUltimateAscend');break;
     case 'soldierUltimateAscend':if(a.time>=.72){for(const e of a.soldiers){if(e.hp>0){e.hp=0;e.deadTime=.001;e.state='hit';}}a.bolts=[];a.shots=[];shipAdvance(s,'soldierUltimateBeam');shipSound(s,'laser');shipSound(s,'ultimateExplosion');}break;
     case 'soldierUltimateBeam':for(const e of a.soldiers)e.deadTime+=dt;if(a.time>=CAT_ULTIMATE_BEAM_DURATION)shipAdvance(s,'soldierEnd');break;
-    case 'soldierEnd':for(const e of a.soldiers)e.deadTime+=dt;if(a.time>=4){a.trailProgress=0;a.x=480;a.y=SHIP.floor;a.catX=438;a.walk=0;shipAdvance(s,'trailWalk');}break;
-    case 'trailWalk':if(s.keys.j){a.trailProgress=Math.min(1,a.trailProgress+dt*.12);a.walk+=dt*9;}if(a.trailProgress>=1)return 'continue';break;
+    case 'soldierEnd':for(const e of a.soldiers)e.deadTime+=dt;if(a.time>=4){a.x=480;a.y=SHIP.floor;a.face=1;a.catX=425;a.walk=0;shipAdvance(s,'soldierExit');}break;
+    case 'soldierExit':{
+      const move=(s.keys.r?1:0)-(s.keys.l?1:0);
+      a.x=Math.max(55,Math.min(875,a.x+move*175*dt));
+      if(move){a.face=move;a.walk+=dt*9;}
+      a.catX=approach(a.catX,a.x-a.face*55,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);
+      break;
+    }
+    case 'trailWalk':if(s.keys.j&&a.trailProgress<1){a.trailProgress=Math.min(1,a.trailProgress+dt*.12);a.walk+=dt*9;}if(a.trailProgress>=1)shipAdvance(s,'trailEnd');break;
+    case 'trailEnd':break;
   }
   return null;
 }

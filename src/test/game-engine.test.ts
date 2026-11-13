@@ -73,12 +73,16 @@ describe('OVNI difficulty and narrative', () => {
     expect(s.ship.shots[0]?.specialTarget).toBe('soldier');
     expect(triggerSpecial(s)).toBe(false);
   });
-  it('shows CONTINUARÁ after the four soldiers have been defeated',()=>{
+  it('requires moving right and choosing SEGUIR EL CAMINO before the final approach',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';
     s.ship.soldiers=[0,1,2,3].map((id)=>({id,x:700+id*35,y:452,hp:0,maxHp:160,role:id%2?'bazooka':'shield',cd:3,walk:0,hurt:0,deadTime:0,state:'cover'}));
     expect(update(s,.016)).toBe(null);expect(s.ship.stage).toBe('soldierEnd');
-    update(s,4.1);expect(s.ship.stage).toBe('trailWalk');
-    s.keys.j=true;for(let i=0;i<100&&s.ship.stage==='trailWalk';i++)update(s,.1);expect(update(s,.016)).toBe('continue');
+    update(s,4.1);expect(s.ship.stage).toBe('soldierExit');expect(shipAction(s)).toBe(null);
+    s.keys.r=true;update(s,1);s.keys.r=false;
+    expect(shipAction(s)).toBe('SEGUIR EL CAMINO');
+    interactShip(s);expect(s.ship.stage).toBe('trailWalk');
+    s.keys.j=true;for(let i=0;i<100&&s.ship.stage==='trailWalk';i++)update(s,.1);
+    expect(s.ship.stage).toBe('trailEnd');expect(s.ship.trailProgress).toBe(1);expect(update(s,.016)).toBe(null);
   });
   it('restarts the military encounter at full health if the player is defeated',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.hp=0;
@@ -100,7 +104,7 @@ describe('OVNI difficulty and narrative', () => {
     const firstY=s.ship.y;update(s,.1);expect(s.ship.y).toBeLessThan(firstY);
     s.keys.j=false;update(s,1);expect(s.ship.y).toBe(452);expect(s.ship.vy).toBe(0);
   });
-  it('waits five seconds, plays the nine-frame 1.5-second throw, then kills all four soldiers',()=>{
+  it('waits ten seconds, plays the nine-frame 1.8-second throw, then kills all four soldiers',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.soldiers=[0,1,2,3].map((id)=>({id,x:700+id*35,y:452,hp:160,maxHp:160,role:id%2?'bazooka':'shield',cd:100,walk:0,hurt:0,deadTime:0,state:'cover'}));
     s.ship.bolts=[{x:s.ship.x,y:s.ship.y-46,vx:0,vy:0,life:1,kind:'rocket'}];
     expect(CAT_ULTIMATE_READY_DELAY).toBe(10);expect(CAT_ULTIMATE_THROW_DURATION).toBe(1.8);expect(CAT_ULTIMATE_BEAM_DURATION).toBe(4.5);
@@ -115,9 +119,13 @@ describe('OVNI difficulty and narrative', () => {
     update(s,.9);expect(s.ship.stage).toBe('soldierUltimateAscend');
     update(s,.72);expect(s.ship.stage).toBe('soldierUltimateBeam');expect(s.ship.soldiers.every(e=>e.hp===0)).toBe(true);
     update(s,4.5);expect(s.ship.stage).toBe('soldierEnd');
-    update(s,4.1);expect(s.ship.stage).toBe('trailWalk');expect(update(s,1)).toBe(null);
+    update(s,4.1);expect(s.ship.stage).toBe('soldierExit');expect(shipAction(s)).toBe(null);
+    s.keys.r=true;update(s,1);s.keys.r=false;
+    expect(s.ship.x).toBeGreaterThanOrEqual(650);expect(shipAction(s)).toBe('SEGUIR EL CAMINO');
+    interactShip(s);expect(s.ship.stage).toBe('trailWalk');
+    s.keys.r=true;update(s,1);s.keys.r=false;expect(s.ship.trailProgress).toBe(0);
     s.keys.j=true;for(let i=0;i<100&&s.ship.stage==='trailWalk';i++)update(s,.1);
-    expect(s.ship.trailProgress).toBe(1);expect(update(s,.016)).toBe('continue');
+    expect(s.ship.trailProgress).toBe(1);expect(s.ship.stage).toBe('trailEnd');expect(update(s,.016)).toBe(null);
   });
   it('resets the cat ultimate when retrying the military encounter',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.catUltimateUsed=true;
