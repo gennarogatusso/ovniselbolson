@@ -1196,7 +1196,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    if(e.hp>0){const barW=62,bx=e.x-barW/2,by=e.y-scaleH-17;c.fillStyle='rgba(8,8,18,.9)';c.fillRect(bx-2,by-3,barW+4,9);c.fillStyle='#5b171f';c.fillRect(bx,by,barW,4);c.fillStyle=e.hp/e.maxHp>.35?'#b9f2cf':'#ff6a72';c.fillRect(bx,by,barW*e.hp/e.maxHp,4);}
   }
   if(a.stage==='soldierUltimateBeam'){drawCatUltimateBeam(c,s);drawCatUltimateExplosion(c,s);}
-  actor(a.x,a.y,146);
+  actor(a.x,a.y);
   if(a.stage==='soldierUltimateAscend'||a.stage==='soldierUltimateBeam'){
    const rise=Math.min(1,a.time/.72),catY=a.stage==='soldierUltimateBeam'?135:SHIP.floor-115-rise*202;
    stillTrimmed(c,art.catFlying,a.x+42,catY,86);
