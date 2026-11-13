@@ -402,13 +402,13 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
             const dx=a.x-e.x,dy=(a.y-42)-(e.y-50),L=Math.hypot(dx,dy)||1;
             a.bolts.push({x:e.x-32,y:e.y-54,vx:dx/L*245,vy:dy/L*245,life:3.5,kind:'rocket'});
             e.cd=3.6+(e.id===3?.45:0);e.state='fire';shipSound(s,'explosion');
-          }else e.state=e.hurt>0?'hit':'cover';
+          }else e.state=e.hurt>0?'hit':e.cd>1.4?'fire':'cover';
         }
       }
       a.fireCd-=dt;
       if(s.fire&&a.roll===0&&a.fireCd<=0){
         const alive=a.soldiers.filter(e=>e.hp>0);
-        const target=a.aimActive?alive.reduce((best,e)=>Math.hypot(e.x-a.aimX,(e.y-50)-a.aimY)<Math.hypot(best.x-a.aimX,(best.y-50)-a.aimY)?e:best,alive[0]??a.soldiers[0]!):alive.sort((l,r)=>Math.abs(l.x-a.x)-Math.abs(r.x-a.x))[0];
+        const target=a.aimActive&&alive.length?alive.reduce((best,e)=>Math.hypot(e.x-a.aimX,(e.y-50)-a.aimY)<Math.hypot(best.x-a.aimX,(best.y-50)-a.aimY)?e:best):alive.sort((l,r)=>Math.abs(l.x-a.x)-Math.abs(r.x-a.x))[0];
         if(target&&target.hp>0){const tx=a.aimActive?a.aimX:target.x,ty=a.aimActive?a.aimY:target.y-58,dx=tx-a.x,dy=ty-(a.y-58),L=Math.hypot(dx,dy)||1;a.face=dx>=0?1:-1;a.shots.push({x:a.x+a.face*22,y:a.y-58,vx:dx/L*760,vy:dy/L*760,life:1.5});a.flash=.08;shipSound(s,'pistol');}
         a.fireCd=.28;
       }
