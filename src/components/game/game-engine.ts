@@ -243,9 +243,12 @@ export function enterShip(s:S){s.phase='spaceship';s.ship=newShip();s.ship.stage
 export function respawnAtShipCheckpoint(s:S){enterShip(s);}
 export function shipIsCombat(s:S){return s.phase==='spaceship'&&['combat','soldierFight'].includes(s.ship.stage);}
 export const SOLDIER_DAMAGE_FACTOR=0.65;
+export const CAT_ULTIMATE_READY_DELAY=5;
+export const CAT_ULTIMATE_THROW_DURATION=1.5;
+export const CAT_ULTIMATE_BEAM_DURATION=4.5;
 export function triggerCatUltimate(s:S):boolean{
  if(s.phase!=='spaceship'||s.ship.stage!=='soldierFight')return false;
- const a=s.ship;if(a.catUltimateUsed||a.soldiers.every(e=>e.hp<=0))return false;
+ const a=s.ship;if(a.time<CAT_ULTIMATE_READY_DELAY||a.catUltimateUsed||a.soldiers.every(e=>e.hp<=0))return false;
  a.catUltimateUsed=true;a.shots=[];a.bolts=[];a.roll=0;a.vy=0;a.jumpHeld=false;a.fireCd=0;a.flash=0;a.specialAnim=0;
  s.fire=false;s.keys={};shipAdvance(s,'soldierUltimateThrow');shipSound(s,'super');return true;
 }
@@ -444,9 +447,9 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
       if(a.soldiers.every(e=>e.hp<=0))shipAdvance(s,'soldierEnd');
       break;
     }
-    case 'soldierUltimateThrow':if(a.time>=1)shipAdvance(s,'soldierUltimateAscend');break;
-    case 'soldierUltimateAscend':if(a.time>=.72){for(const e of a.soldiers){if(e.hp>0){e.hp=0;e.deadTime=.001;e.state='hit';}}a.bolts=[];a.shots=[];shipAdvance(s,'soldierUltimateBeam');shipSound(s,'laser');}break;
-    case 'soldierUltimateBeam':for(const e of a.soldiers)e.deadTime+=dt;if(a.time>=2.5)shipAdvance(s,'soldierEnd');break;
+    case 'soldierUltimateThrow':if(a.time>=CAT_ULTIMATE_THROW_DURATION)shipAdvance(s,'soldierUltimateAscend');break;
+    case 'soldierUltimateAscend':if(a.time>=.72){for(const e of a.soldiers){if(e.hp>0){e.hp=0;e.deadTime=.001;e.state='hit';}}a.bolts=[];a.shots=[];shipAdvance(s,'soldierUltimateBeam');shipSound(s,'laser');shipSound(s,'ultimateExplosion');}break;
+    case 'soldierUltimateBeam':for(const e of a.soldiers)e.deadTime+=dt;if(a.time>=CAT_ULTIMATE_BEAM_DURATION)shipAdvance(s,'soldierEnd');break;
     case 'soldierEnd':for(const e of a.soldiers)e.deadTime+=dt;if(a.time>=4)return 'continue';break;
   }
   return null;

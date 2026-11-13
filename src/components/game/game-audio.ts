@@ -411,7 +411,8 @@ export class GameAudio {
    if(event==='pistol')this.tone(380,.09,'square',60,.32);
    else if(event==='laser')this.tone(1600,.24,'sawtooth',130,.25);
    else if(event==='super'){this.tone(110,.75,'sawtooth',30,.8);this.tone(1300,.5,'triangle',50,.5);}
-   else if(event==='explosion'){this.tone(65,1.3,'sawtooth',20,.8);this.tone(230,.6,'square',20,.5);}
+   else if(event==='ultimateExplosion'){this.noise(1.2,1.15,3200,45);this.noise(.72,.55,8200,1100);this.tone(48,1.7,'sawtooth',18,1.1);this.tone(135,.92,'square',24,.68);this.tone(700,.38,'triangle',80,.26);}
+    else if(event==='explosion'){this.tone(65,1.3,'sawtooth',20,.8);this.tone(230,.6,'square',20,.5);}
    else if(event==='psychic')this.tone(85,.9,'triangle',780,.4);
    else if(event==='door')this.tone(170,.4,'sawtooth',45,.2);
    else if(event==='roll')this.tone(160,.22,'triangle',40,.2);

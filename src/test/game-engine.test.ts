@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIFFICULTY, GROUND, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, SOLDIER_DAMAGE_FACTOR, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
@@ -99,17 +99,21 @@ describe('OVNI difficulty and narrative', () => {
     const firstY=s.ship.y;update(s,.1);expect(s.ship.y).toBeLessThan(firstY);
     s.keys.j=false;update(s,1);expect(s.ship.y).toBe(452);expect(s.ship.vy).toBe(0);
   });
-  it('runs the X cat ultimate for one second, freezes enemy fire, then kills all four soldiers',()=>{
-    const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.soldiers=[0,1,2,3].map((id)=>({id,x:700+id*35,y:452,hp:160,maxHp:160,role:id%2?'bazooka':'shield',cd:.01,walk:0,hurt:0,deadTime:0,state:'cover'}));
+  it('waits five seconds, plays the nine-frame 1.5-second throw, then kills all four soldiers',()=>{
+    const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.soldiers=[0,1,2,3].map((id)=>({id,x:700+id*35,y:452,hp:160,maxHp:160,role:id%2?'bazooka':'shield',cd:100,walk:0,hurt:0,deadTime:0,state:'cover'}));
     s.ship.bolts=[{x:s.ship.x,y:s.ship.y-46,vx:0,vy:0,life:1,kind:'rocket'}];
+    expect(CAT_ULTIMATE_READY_DELAY).toBe(5);expect(CAT_ULTIMATE_THROW_DURATION).toBe(1.5);expect(CAT_ULTIMATE_BEAM_DURATION).toBe(4.5);
+    expect(triggerCatUltimate(s)).toBe(false);
+    update(s,4.9);expect(s.ship.stage).toBe('soldierFight');expect(triggerCatUltimate(s)).toBe(false);
+    update(s,.1);expect(s.ship.time).toBeCloseTo(5);
     expect(triggerCatUltimate(s)).toBe(true);expect(s.ship.stage).toBe('soldierUltimateThrow');
     expect(s.ship.catUltimateUsed).toBe(true);expect(s.ship.bolts).toHaveLength(0);
     expect(triggerCatUltimate(s)).toBe(false);
     const enemyCooldown=s.ship.soldiers[0]!.cd;
-    update(s,.5);expect(s.ship.stage).toBe('soldierUltimateThrow');expect(s.ship.bolts).toHaveLength(0);expect(s.ship.soldiers[0]!.cd).toBe(enemyCooldown);
-    update(s,.5);expect(s.ship.stage).toBe('soldierUltimateAscend');
+    update(s,.75);expect(s.ship.stage).toBe('soldierUltimateThrow');expect(s.ship.bolts).toHaveLength(0);expect(s.ship.soldiers[0]!.cd).toBe(enemyCooldown);
+    update(s,.75);expect(s.ship.stage).toBe('soldierUltimateAscend');
     update(s,.72);expect(s.ship.stage).toBe('soldierUltimateBeam');expect(s.ship.soldiers.every(e=>e.hp===0)).toBe(true);
-    update(s,2.5);expect(s.ship.stage).toBe('soldierEnd');
+    update(s,4.5);expect(s.ship.stage).toBe('soldierEnd');
     expect(update(s,4.1)).toBe('continue');
   });
   it('resets the cat ultimate when retrying the military encounter',()=>{
