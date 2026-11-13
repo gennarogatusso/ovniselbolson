@@ -279,7 +279,7 @@ function beginSoldierEncounter(s:S){
  shipAdvance(s,'militaryIntro');
 }
 export function respawnAtSoldierCheckpoint(s:S){
- const a=s.ship;a.hp=100;a.hurt=0;a.roll=0;a.rollCd=0;a.push='none';a.shots=[];a.bolts=[];a.specialCd=0;a.specialAnim=0;a.fireCd=0;a.flash=0;a.aimActive=false;a.armed=false;a.x=132;a.y=SHIP.floor;a.face=1;a.catX=78;a.catY=SHIP.floor;
+ const a=s.ship;a.hp=100;a.hurt=0;a.roll=0;a.rollCd=0;a.push='none';a.shots=[];a.bolts=[];a.specialCd=0;a.specialAnim=0;a.fireCd=0;a.flash=0;a.aimActive=false;a.armed=false;a.shake=0;a.x=132;a.y=SHIP.floor;a.face=1;a.catX=78;a.catY=SHIP.floor;s.keys={};s.fire=false;
  a.soldiers=[
   {id:0,x:710,y:SHIP.floor,hp:170,maxHp:170,role:'shield',cd:1.4,walk:0,hurt:0,deadTime:0,state:'advance'},
   {id:1,x:790,y:SHIP.floor,hp:155,maxHp:155,role:'bazooka',cd:2.7,walk:0,hurt:0,deadTime:0,state:'cover'},
@@ -377,7 +377,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     case 'contemplate':a.catX=approach(a.catX,359,95*dt);a.catY=approach(a.catY,338,95*dt);if(a.time>=6)shipAdvance(s,'crossSunset');break;
     case 'crossSunset':if(a.time>=7){a.x=112;a.y=SHIP.floor;a.face=1;a.catX=60;a.catY=SHIP.floor;shipAdvance(s,'crossWalkIntro');}break;
     case 'crossWalkIntro':a.x=approach(a.x,665,158*dt);a.face=1;a.walk+=dt*9;a.catX=approach(a.catX,a.x-58,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);if(a.x>=664)shipAdvance(s,'crossWalk');break;
-    case 'crossWalk':{const move=(s.keys.r?1:0)-(s.keys.l?1:0);a.x=Math.max(65,Math.min(875,a.x+move*175*dt));if(move){a.face=move;a.walk+=dt*9;}a.catX=approach(a.catX,a.x-58,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);break;}
+    case 'crossWalk':{const move=(s.keys.r?1:0)-(s.keys.l?1:0);a.x=Math.max(65,Math.min(875,a.x+move*175*dt));if(move){a.face=move;a.walk+=dt*9;}a.catX=approach(a.catX,a.x-a.face*58,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);break;}
     case 'militaryIntro':if(a.time>=2.2)shipAdvance(s,'soldierFight');break;
     case 'soldierFight':{
       const move=(s.keys.r?1:0)-(s.keys.l?1:0),rollKey=Boolean(s.keys['roll']);
@@ -385,7 +385,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
       a.rollHeld=rollKey;
       if(a.roll>0){a.roll=Math.max(0,a.roll-dt);a.x=Math.max(55,Math.min(610,a.x+a.rollFace*420*dt));a.face=a.rollFace;}
       else{a.x=Math.max(55,Math.min(610,a.x+move*205*dt));if(move){a.face=move;a.walk+=dt*10;}}
-      a.catX=approach(a.catX,a.x-55,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);
+      a.catX=approach(a.catX,a.x-a.face*55,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);
       for(const e of a.soldiers){
         if(e.hp<=0){e.state='cover';e.deadTime+=dt;continue;}
         e.hurt=Math.max(0,e.hurt-dt);e.firePose=Math.max(0,(e.firePose??0)-dt);e.cd-=dt;
