@@ -452,7 +452,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     case 'soldierUltimateThrow':if(a.time>=CAT_ULTIMATE_THROW_DURATION)shipAdvance(s,'soldierUltimateAscend');break;
     case 'soldierUltimateAscend':if(a.time>=.72){for(const e of a.soldiers){if(e.hp>0){e.hp=0;e.deadTime=.001;e.state='hit';}}a.bolts=[];a.shots=[];shipAdvance(s,'soldierUltimateBeam');shipSound(s,'laser');shipSound(s,'ultimateExplosion');}break;
     case 'soldierUltimateBeam':for(const e of a.soldiers)e.deadTime+=dt;if(a.time>=CAT_ULTIMATE_BEAM_DURATION)shipAdvance(s,'soldierEnd');break;
-    case 'soldierEnd':for(const e of a.soldiers)e.deadTime+=dt;if(a.time>=4){a.x=480;a.y=SHIP.floor;a.face=1;a.catX=425;a.walk=0;shipAdvance(s,'soldierExit');}break;
+    case 'soldierEnd':for(const e of a.soldiers)e.deadTime+=dt;if(a.time>=1){a.x=480;a.y=SHIP.floor;a.face=1;a.catX=425;a.walk=0;shipAdvance(s,'soldierExit');}break;
     case 'soldierExit':{
       const move=(s.keys.r?1:0)-(s.keys.l?1:0);
       a.x=Math.max(55,Math.min(875,a.x+move*175*dt));

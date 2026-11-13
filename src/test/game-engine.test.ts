@@ -77,7 +77,7 @@ describe('OVNI difficulty and narrative', () => {
     const s=newState();enterShip(s);s.ship.stage='soldierFight';
     s.ship.soldiers=[0,1,2,3].map((id)=>({id,x:700+id*35,y:452,hp:0,maxHp:160,role:id%2?'bazooka':'shield',cd:3,walk:0,hurt:0,deadTime:0,state:'cover'}));
     expect(update(s,.016)).toBe(null);expect(s.ship.stage).toBe('soldierEnd');
-    update(s,4.1);expect(s.ship.stage).toBe('soldierExit');expect(shipAction(s)).toBe(null);
+    update(s,.8);expect(s.ship.stage).toBe('soldierEnd');update(s,.2);expect(s.ship.stage).toBe('soldierExit');expect(shipAction(s)).toBe(null);
     s.keys.r=true;update(s,1);s.keys.r=false;
     expect(shipAction(s)).toBe('SEGUIR EL CAMINO');
     interactShip(s);expect(s.ship.stage).toBe('trailWalk');
@@ -119,7 +119,7 @@ describe('OVNI difficulty and narrative', () => {
     update(s,.9);expect(s.ship.stage).toBe('soldierUltimateAscend');
     update(s,.72);expect(s.ship.stage).toBe('soldierUltimateBeam');expect(s.ship.soldiers.every(e=>e.hp===0)).toBe(true);
     update(s,4.5);expect(s.ship.stage).toBe('soldierEnd');
-    update(s,4.1);expect(s.ship.stage).toBe('soldierExit');expect(shipAction(s)).toBe(null);
+    update(s,.8);expect(s.ship.stage).toBe('soldierEnd');update(s,.2);expect(s.ship.stage).toBe('soldierExit');expect(shipAction(s)).toBe(null);
     s.keys.r=true;update(s,1);s.keys.r=false;
     expect(s.ship.x).toBeGreaterThanOrEqual(650);expect(shipAction(s)).toBe('SEGUIR EL CAMINO');
     interactShip(s);expect(s.ship.stage).toBe('trailWalk');
@@ -129,6 +129,11 @@ describe('OVNI difficulty and narrative', () => {
     update(s,1.6);expect(s.ship.stage).toBe('baseApproach');
     for(let i=0;i<100&&s.ship.stage==='baseApproach';i++)update(s,.1);
     expect(s.ship.baseProgress).toBe(1);expect(s.ship.stage).toBe('baseEnd');expect(update(s,.1)).toBe(null);
+  });
+  it('keeps the post-ultimate transition under one second after the beam has ended',()=>{
+    const s=newState();enterShip(s);s.ship.stage='soldierEnd';s.ship.soldiers=[];
+    update(s,.85);expect(s.ship.stage).toBe('soldierEnd');
+    update(s,.16);expect(s.ship.stage).toBe('soldierExit');
   });
   it('resets the cat ultimate when retrying the military encounter',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.catUltimateUsed=true;
