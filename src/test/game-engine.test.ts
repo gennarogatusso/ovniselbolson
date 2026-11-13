@@ -77,7 +77,8 @@ describe('OVNI difficulty and narrative', () => {
     const s=newState();enterShip(s);s.ship.stage='soldierFight';
     s.ship.soldiers=[0,1,2,3].map((id)=>({id,x:700+id*35,y:452,hp:0,maxHp:160,role:id%2?'bazooka':'shield',cd:3,walk:0,hurt:0,deadTime:0,state:'cover'}));
     expect(update(s,.016)).toBe(null);expect(s.ship.stage).toBe('soldierEnd');
-    expect(update(s,4.1)).toBe('continue');
+    update(s,4.1);expect(s.ship.stage).toBe('trailWalk');
+    s.keys.j=true;for(let i=0;i<100&&s.ship.stage==='trailWalk';i++)update(s,.1);expect(update(s,.016)).toBe('continue');
   });
   it('restarts the military encounter at full health if the player is defeated',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.hp=0;
@@ -102,19 +103,21 @@ describe('OVNI difficulty and narrative', () => {
   it('waits five seconds, plays the nine-frame 1.5-second throw, then kills all four soldiers',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.soldiers=[0,1,2,3].map((id)=>({id,x:700+id*35,y:452,hp:160,maxHp:160,role:id%2?'bazooka':'shield',cd:100,walk:0,hurt:0,deadTime:0,state:'cover'}));
     s.ship.bolts=[{x:s.ship.x,y:s.ship.y-46,vx:0,vy:0,life:1,kind:'rocket'}];
-    expect(CAT_ULTIMATE_READY_DELAY).toBe(5);expect(CAT_ULTIMATE_THROW_DURATION).toBe(1.5);expect(CAT_ULTIMATE_BEAM_DURATION).toBe(4.5);
+    expect(CAT_ULTIMATE_READY_DELAY).toBe(10);expect(CAT_ULTIMATE_THROW_DURATION).toBe(1.8);expect(CAT_ULTIMATE_BEAM_DURATION).toBe(4.5);
     expect(triggerCatUltimate(s)).toBe(false);
-    update(s,4.9);expect(s.ship.stage).toBe('soldierFight');expect(triggerCatUltimate(s)).toBe(false);
-    update(s,.1);expect(s.ship.time).toBeCloseTo(5);
+    update(s,9.9);expect(s.ship.stage).toBe('soldierFight');expect(triggerCatUltimate(s)).toBe(false);
+    update(s,.1);expect(s.ship.time).toBeCloseTo(10);
     expect(triggerCatUltimate(s)).toBe(true);expect(s.ship.stage).toBe('soldierUltimateThrow');
     expect(s.ship.catUltimateUsed).toBe(true);expect(s.ship.bolts).toHaveLength(0);
     expect(triggerCatUltimate(s)).toBe(false);
     const enemyCooldown=s.ship.soldiers[0]!.cd;
-    update(s,.75);expect(s.ship.stage).toBe('soldierUltimateThrow');expect(s.ship.bolts).toHaveLength(0);expect(s.ship.soldiers[0]!.cd).toBe(enemyCooldown);
-    update(s,.75);expect(s.ship.stage).toBe('soldierUltimateAscend');
+    update(s,.9);expect(s.ship.stage).toBe('soldierUltimateThrow');expect(s.ship.bolts).toHaveLength(0);expect(s.ship.soldiers[0]!.cd).toBe(enemyCooldown);
+    update(s,.9);expect(s.ship.stage).toBe('soldierUltimateAscend');
     update(s,.72);expect(s.ship.stage).toBe('soldierUltimateBeam');expect(s.ship.soldiers.every(e=>e.hp===0)).toBe(true);
     update(s,4.5);expect(s.ship.stage).toBe('soldierEnd');
-    expect(update(s,4.1)).toBe('continue');
+    update(s,4.1);expect(s.ship.stage).toBe('trailWalk');expect(update(s,1)).toBe(null);
+    s.keys.j=true;for(let i=0;i<100&&s.ship.stage==='trailWalk';i++)update(s,.1);
+    expect(s.ship.trailProgress).toBe(1);expect(update(s,.016)).toBe('continue');
   });
   it('resets the cat ultimate when retrying the military encounter',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.catUltimateUsed=true;

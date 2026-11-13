@@ -269,7 +269,7 @@ export class GameAudio {
    if(['awakening','verdict','catEntry','eyeCharge','rescue','rise','labFree','door'].includes(s.ship.stage))return 'lab';
    if(s.ship.stage==='combat'||s.ship.stage==='overload')return 'battle';
    if(s.ship.stage==='emergency')return 'aftermath';
-   if(['crossRise','crossFree','contemplate','end'].includes(s.ship.stage))return 'finale';
+   if(['crossRise','crossFree','contemplate','end','trailWalk'].includes(s.ship.stage))return 'finale';
    // Los sonidos del laboratorio y del resto de la nave no se modifican.
    return null;
   }
