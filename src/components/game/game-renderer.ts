@@ -735,7 +735,7 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   for(let i=0;i<2;i++){
    const x=i*w-offset;c.save();c.translate(x,0);
    if((tile+i)%2){c.translate(w,0);c.scale(-1,1);}
-   c.drawImage(art.forest,0,H-h,w,h);c.restore();
+   c.drawImage(art.forest,0,H-h,w,h);enhanceExistingVioletMoon(c,art.forest,{x:0,y:H-h,w,h},s.t);c.restore();
   }
  }
  // Bloom atmosférico frío, niebla pegada al bosque y destellos lejanos.
@@ -1257,8 +1257,6 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  }
  const auroraStages=['crossSunset','crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd','soldierExit','trailWalk','baseFade','baseApproach','baseEnd'];
  if(auroraStages.includes(a.stage))drawAurora(c,s.t,a.stage==='crossSunset'?Math.min(.95,a.time/3.6):.92);
- const moonStages=['crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd','soldierExit','trailWalk','baseFade','baseApproach','baseEnd'];
- if(moonStages.includes(a.stage))drawMoonGlow(c,W*.79,H*.16,112,s.t,a.stage.startsWith('base')?1:.68);
  if(a.stage==='baseFade'){c.save();c.globalAlpha=1-Math.min(1,a.time/1.6);box(c,p.ink,0,0,W,H);c.restore();}
  if(a.stage==='baseEnd'){
   c.save();c.fillStyle='rgba(8,7,22,.68)';c.fillRect(0,0,W,H);c.fillStyle='#fff';c.textAlign='center';c.textBaseline='middle';c.font='bold 42px monospace';c.shadowColor='#a77bff';c.shadowBlur=18;c.fillText('CONTINUARÁ...',W/2,H/2);c.restore();
