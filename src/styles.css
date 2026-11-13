@@ -398,6 +398,25 @@
 }
 
 /* Indicador circular de recarga del ataque especial R, visible en PC y móviles. */
+/* Habilidad definitiva del gato: tecla X, independiente del ataque especial R. */
+.game-cat-ultimate-hud,
+.game-cat-ultimate-control {
+ display:flex !important;flex-direction:column;align-items:center;justify-content:center;
+ gap:0 !important;border:1px solid rgb(211 147 255 / 86%) !important;
+ color:#fff !important;background:radial-gradient(circle at 32% 24%,#7435ad,#1a1538 78%) !important;
+ box-shadow:0 4px 18px rgb(0 0 0 / 48%),0 0 23px rgb(181 81 255 / 42%);
+ text-shadow:0 0 10px #e3b0ff;
+}
+.game-cat-ultimate-hud {
+ position:absolute !important;right:clamp(8px,2vw,22px);top:calc(50% + 82px);
+ z-index:25;width:66px !important;height:66px !important;min-width:66px !important;
+ padding:0 !important;border-radius:50% !important;
+}
+.game-cat-ultimate-hud span {font:bold 25px monospace;line-height:1;}
+.game-cat-ultimate-hud small {font:700 8px monospace;letter-spacing:.08em;margin-top:3px;}
+.game-cat-ultimate-control {width:50px;height:46px;min-width:50px;padding:0;font:bold 20px monospace;}
+.game-cat-ultimate-hud:disabled,.game-cat-ultimate-control:disabled {opacity:.35;filter:grayscale(1);}
+
 .game-special-hud {
  position:absolute !important;right:clamp(8px,2vw,22px);top:50%;transform:translateY(-50%);
  z-index:25;display:flex !important;flex-direction:column;align-items:center;justify-content:center;gap:0 !important;
