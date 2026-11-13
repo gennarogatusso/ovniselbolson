@@ -395,13 +395,13 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
           else if(e.cd<=0){
             const dx=a.x-e.x,dy=(a.y-44)-(e.y-52),L=Math.hypot(dx,dy)||1;
             a.bolts.push({x:e.x-22,y:e.y-52,vx:dx/L*390,vy:dy/L*390,life:3,kind:'rifle'});
-            e.cd=1.75+(e.id===2?.35:0);e.state='fire';shipSound(s,'laser');
+            e.cd=1.75+(e.id===2 ? 0.35 : 0);e.state='fire';shipSound(s,'laser');
           }else e.state=e.hurt>0?'hit':'cover';
         }else{
           if(e.cd<=0){
             const dx=a.x-e.x,dy=(a.y-42)-(e.y-50),L=Math.hypot(dx,dy)||1;
             a.bolts.push({x:e.x-32,y:e.y-54,vx:dx/L*245,vy:dy/L*245,life:3.5,kind:'rocket'});
-            e.cd=3.6+(e.id===3?.45:0);e.state='fire';shipSound(s,'explosion');
+            e.cd=3.6+(e.id===3 ? 0.45 : 0);e.state='fire';shipSound(s,'explosion');
           }else e.state=e.hurt>0?'hit':e.cd>1.4?'fire':'cover';
         }
       }

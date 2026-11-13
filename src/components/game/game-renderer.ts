@@ -976,7 +976,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(a.stage==='impact'){c.globalAlpha=Math.max(0,1-a.time/1.8);box(c,p.light,0,0,W,H);c.globalAlpha=1;}
  }else if(road){
   actor(a.x,a.y,114);catSprite(c,im.cat,a.catX,a.catY,Math.floor(a.walk*1.2),1,46);
-  if(a.stage==='crossWalkIntro'){const q=Math.min(1,a.time/4.2);c.globalAlpha=Math.max(0,1-q);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+  if(a.stage==='crossWalkIntro'){const q=Math.min(1,a.time/3.5);c.globalAlpha=Math.max(0,1-q);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
  }else if(battle){
   for(const e of a.soldiers){
    const artSoldier=e.role==='bazooka'?(e.state==='fire'?art.soldiers.bazooka:art.soldiers.proneFire):e.state==='advance'?art.soldiers.advancing:e.state==='fire'?art.soldiers.shieldFire:e.state==='hit'?art.soldiers.underFire:art.soldiers.cover;
