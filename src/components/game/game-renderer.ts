@@ -450,7 +450,7 @@ function bedPose(c:CanvasRenderingContext2D,im:HTMLImageElement,alpha=1){
  if(!ready(im))return;
  // The original lying silhouette follows the mattress's down-right diagonal.
  const width=143,height=width*im.naturalHeight/im.naturalWidth;
- c.save();c.globalAlpha=alpha;c.translate(531,236);c.rotate(.36);c.drawImage(im,-width/2,-height/2,width,height);c.restore();
+ c.save();c.globalAlpha=alpha;c.translate(531,202);c.rotate(.36);c.drawImage(im,-width/2,-height/2,width,height);c.restore();
 }
 function bedroom(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.chapter,art=im.chapter;box(c,p.ink,0,0,W,H);
@@ -648,6 +648,24 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  }
  const actorX=a.stage==='lift'?330+110*ease(a.time/6):330;
  drawForestAbductionBeam(c,s,p,actorX);
+ const abductionFlash=a.stage==='lift'?Math.max(0,Math.min(1,(a.time-4.8)/1.2)):0;
+ if(abductionFlash>0){
+  const pulse=.76+.24*Math.sin(s.t*44),centerY=a.forestY-48;
+  c.save();c.globalCompositeOperation='screen';c.globalAlpha=(.18+.72*abductionFlash)*pulse;
+  const glow=c.createRadialGradient(actorX,centerY,2,actorX,centerY,58+abductionFlash*78);
+  glow.addColorStop(0,'rgba(255,255,255,.98)');
+  glow.addColorStop(.22,'rgba(204,247,255,.82)');
+  glow.addColorStop(.56,'rgba(87,190,255,.34)');
+  glow.addColorStop(1,'rgba(70,160,255,0)');
+  c.fillStyle=glow;c.fillRect(actorX-150,centerY-150,300,300);
+  c.strokeStyle='rgba(239,252,255,.9)';c.lineWidth=1.5+abductionFlash*2;
+  for(let i=0;i<9;i++){
+   const angle=i*Math.PI*2/9+s.t*.8,outer=34+abductionFlash*42,inner=8+abductionFlash*7;
+   c.beginPath();c.moveTo(actorX+Math.cos(angle)*outer,centerY+Math.sin(angle)*outer);
+   c.lineTo(actorX+Math.cos(angle)*inner,centerY+Math.sin(angle)*inner);c.stroke();
+  }
+  c.restore();
+ }
  if(!['vanished','complete'].includes(a.stage)){
   const forestMovementStage=['forestFade','forestRun','burned','ship'].includes(a.stage);
   const face=a.forestFace<0?-1:1;
@@ -659,6 +677,8 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    const frame=Math.floor(a.roomWalk)%4;
    c.save();c.translate(actorX,a.forestY);c.scale(face,1);
    pose(c,art.run,frame,4,0,0,100);c.restore();
+  }else if(a.stage==='lift'){
+   still(c,im.player,actorX,a.forestY,100,1-forestEase(abductionFlash));
   }else still(c,im.player,actorX,a.forestY,100);
  }
  // Reflejo del OVNI en agua: aparece junto con el paneo y el haz.
@@ -771,6 +791,10 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(a.stage==='combat'){box(c,p.panel,14,14,240,43);box(c,p.ink,85,30,155,10);box(c,a.hp>30?p.ice:p.red,85,30,a.hp*1.55,10);c.font='13px monospace';c.fillStyle=p.light;c.fillText('SALUD',24,40);
    box(c,p.panel,706,14,240,43);box(c,p.ink,780,30,155,10);box(c,a.reactorHp>30?'#ff9b45':p.red,780,30,a.reactorHp*1.55,10);c.fillStyle=p.light;c.fillText('NÚCLEO',716,40);
   }
+ }
+ if(a.stage==='awakening'){
+  const fade=1-Math.min(1,a.time/1.35);
+  if(fade>0){c.save();c.globalAlpha=fade;box(c,p.ink,0,0,W,H);c.restore();}
  }
  c.restore();
 }

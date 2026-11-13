@@ -397,10 +397,28 @@
   to { opacity: 0; }
 }
 
-/* Ataque especial violeta: botón independiente en el extremo derecho del control móvil. */
+/* Indicador circular de recarga del ataque especial R, visible en PC y móviles. */
+.game-special-hud {
+ position:absolute !important;right:clamp(8px,2vw,22px);top:50%;transform:translateY(-50%);
+ z-index:25;display:flex !important;flex-direction:column;align-items:center;justify-content:center;gap:0 !important;
+ width:66px !important;height:66px !important;min-width:66px !important;padding:0 !important;
+ border:1px solid rgb(214 172 255 / 68%) !important;border-radius:50% !important;
+ background:radial-gradient(circle at 35% 26%,rgb(76 43 110 / 96%),rgb(18 22 44 / 97%) 74%) !important;
+ color:#fff !important;box-shadow:0 4px 17px rgb(0 0 0 / 48%),0 0 22px rgb(172 92 255 / 30%);
+}
+.game-special-ring {position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);overflow:visible;pointer-events:none;}
+.game-special-ring-track {fill:none;stroke:rgb(220 206 240 / 22%);stroke-width:3.5;}
+.game-special-ring-progress {fill:none;stroke:#d8aaff;stroke-width:3.5;stroke-linecap:round;filter:drop-shadow(0 0 3px rgb(207 145 255 / 85%));transition:stroke-dashoffset .12s linear;}
+.game-special-icon {width:24px;height:24px;stroke-width:2.7;margin-top:1px;filter:drop-shadow(0 0 5px rgb(220 174 255 / 75%));}
+.game-special-count {font:700 10px/1 var(--font-mono);letter-spacing:.08em;margin-top:1px;color:#eee0ff;text-shadow:0 1px 5px #000;}
+.game-special-hud:not(:disabled):hover {border-color:rgb(229 199 255 / 95%) !important;box-shadow:0 4px 18px rgb(0 0 0 / 50%),0 0 25px rgb(172 92 255 / 52%);}
+.game-special-hud:disabled {opacity:.9;cursor:default;filter:saturate(.78);}
+.game-special-hud:focus-visible {outline:2px solid #fff;outline-offset:3px;}
 @media(max-width:767px){
- .game-mobile-layout .game-special-control{position:absolute;right:0;top:-56px;width:54px;height:54px;min-width:54px;padding:3px;border:2px solid rgb(222 182 255 / 88%);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;background:radial-gradient(circle at 35% 26%,rgb(210 164 255 / 95%),rgb(105 34 187 / 94%) 72%);color:#fff;box-shadow:0 4px 16px rgb(0 0 0 / 45%),0 0 19px rgb(172 92 255 / 42%);z-index:8;}
- .game-mobile-layout .game-special-control svg{width:24px;height:24px;stroke-width:2.8;}
- .game-mobile-layout .game-special-control span{font:700 10px/1 monospace;}
- .game-mobile-layout .game-special-control:disabled{opacity:.48;filter:grayscale(.28);}
+ .game-special-hud {right:7px;width:58px !important;height:58px !important;min-width:58px !important;}
+ .game-special-icon {width:22px;height:22px;}
+}
+@media(max-height:450px){
+ .game-special-hud {width:52px !important;height:52px !important;min-width:52px !important;}
+ .game-special-icon {width:20px;height:20px;}
 }

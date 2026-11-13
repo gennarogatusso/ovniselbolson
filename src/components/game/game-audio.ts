@@ -81,6 +81,7 @@ export class GameAudio {
  private rainActive=false;
  private gamePaused=false;
  private musicActive=false;
+ private lastSpecialActive=false;
  private volume=0.8;
 
  // Música procedural: no necesita descargar archivos ni servicios externos.
@@ -367,6 +368,15 @@ export class GameAudio {
    else if(this.music){this.music.pause();this.music.currentTime=0;}
   }
   if(this.music)this.music.volume=AWKA_VOLUME*this.volume*awkaMusicVolume(s);
+  const specialActive=s.phase==='spaceship'?s.ship.specialAnim>0:s.specialAnim>0;
+  if(playing&&specialActive&&!this.lastSpecialActive){
+   // Pulso grave, barrido ascendente y cola cristalina para el ataque violeta.
+   this.noise(.55,.13,2800,140);
+   this.tone(82,.82,'sawtooth',620,.24);
+   this.tone(440,.62,'triangle',1320,.18);
+   this.tone(1320,.48,'sine',210,.13);
+  }
+  this.lastSpecialActive=specialActive;
   const a=s.ship;
   if(!playing){
    a.sounds=[];

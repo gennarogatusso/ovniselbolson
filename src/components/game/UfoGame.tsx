@@ -114,7 +114,7 @@ export function UfoGame() {
  useEffect(()=>{
   const map:Record<string,string>={a:'l',arrowleft:'l',d:'r',arrowright:'r',w:'j',arrowup:'j',' ':'j',s:'c',arrowdown:'c',e:'e',shift:'roll'};
   const clear=()=>{st.current.keys={};st.current.fire=false;};
-  const down=(e:KeyboardEvent)=>{if(st.current.chapter.computer)return;const key=e.key.toLowerCase();if(key==='r'&&screenRef.current==='play'&&!e.repeat){e.preventDefault();triggerSpecial(st.current);return;}if(key==='escape'&&welcomeActiveRef.current)return;if(key==='escape'){clear();setCreditsOpen(false);setScreen(s=>s==='play'?'paused':s==='paused'?'play':s);return;}if(map[key]&&screenRef.current==='play'){e.preventDefault();st.current.keys[map[key]]=true;}};
+  const down=(e:KeyboardEvent)=>{if(st.current.chapter.computer)return;const key=e.key.toLowerCase();if(key==='r'&&screenRef.current==='play'&&!e.repeat){e.preventDefault();if(triggerSpecial(st.current))setSpecialCooldown(5);return;}if(key==='escape'&&welcomeActiveRef.current)return;if(key==='escape'){clear();setCreditsOpen(false);setScreen(s=>s==='play'?'paused':s==='paused'?'play':s);return;}if(map[key]&&screenRef.current==='play'){e.preventDefault();st.current.keys[map[key]]=true;}};
   const up=(e:KeyboardEvent)=>{const k=map[e.key.toLowerCase()];if(k)st.current.keys[k]=false;};
   const blur=()=>{clear();setScreen(s=>s==='play'?'paused':s);};
   window.addEventListener('keydown',down);window.addEventListener('keyup',up);window.addEventListener('blur',blur);window.addEventListener('pointerup',clear);
@@ -156,6 +156,8 @@ export function UfoGame() {
  const aim=(e:PointerEvent)=>{if(!shipIsCombat(st.current)||!cv.current)return;const r=cv.current.getBoundingClientRect();st.current.ship.aimX=(e.clientX-r.left)/r.width*W;st.current.ship.aimY=(e.clientY-r.top)/r.height*H;st.current.ship.aimActive=true;};
  const fire=(e:PointerEvent)=>{if(screen!=='play'||!(st.current.phase==='fight'||shipIsCombat(st.current)))return;e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);if(e.currentTarget===cv.current)aim(e);st.current.fire=true;};
  const controlClass='game-control rounded-full border border-silver/50 bg-background/70 text-foreground touch-none';
+ const specialProgress=Math.max(0,Math.min(1,1-specialCooldown/5));
+ const specialLabel=specialCooldown>0?Math.ceil(specialCooldown):'R';
  return <div ref={host} className={`ufo-game ${expanded?'game-expanded':''}`} data-screen={screen}>
   <div className="game-stage">
    {screen==='title'&&<img className="game-title-background" src="/imagens/menu%20de%20juego.png" alt=""/>}
@@ -185,9 +187,16 @@ export function UfoGame() {
          {!shipIsCombat(st.current)&&<Button className={`${controlClass} game-jump-control pointer-events-auto`} aria-label={freeRoom?"Caminar hacia arriba":"Saltar"} {...hold('j')}><ArrowUp/></Button>}
          {combat&&<Button className={`${controlClass} game-roll-control pointer-events-auto`} aria-label="Rodar" {...hold('roll')}><RotateCcw/></Button>}
          {combat&&<Button className={`${controlClass} game-fire-control pointer-events-auto`} aria-label="Disparar" onPointerDown={fire} onPointerUp={()=>{st.current.fire=false;}} onPointerCancel={()=>{st.current.fire=false;}}><Crosshair/></Button>}
-          {combat&&<Button className={`${controlClass} game-special-control pointer-events-auto`} aria-label={specialCooldown>0?`Ataque especial, disponible en ${specialCooldown.toFixed(1)} segundos`:'Ataque especial · R'} title={specialCooldown>0?`Recargando ${specialCooldown.toFixed(1)} s`:'Ataque especial'} disabled={specialCooldown>0} onClick={()=>triggerSpecial(st.current)}><Zap/><span>{specialCooldown>0?specialCooldown.toFixed(1):'R'}</span></Button>}
         </div>
    </div>}
+    {screen==='play'&&combat&&!computer&&<Button type="button" variant="outline" className="game-special-hud" aria-label={specialCooldown>0?`Ataque especial, disponible en ${Math.ceil(specialCooldown)} segundos`:'Ataque especial disponible · R'} title={specialCooldown>0?`Recargando: ${Math.ceil(specialCooldown)} s`:'Ataque especial · R'} disabled={specialCooldown>0} onClick={()=>{if(triggerSpecial(st.current))setSpecialCooldown(5);}}>
+      <svg className="game-special-ring" viewBox="0 0 64 64" aria-hidden="true">
+       <circle className="game-special-ring-track" cx="32" cy="32" r="25"/>
+       <circle className="game-special-ring-progress" cx="32" cy="32" r="25" strokeDasharray="157.08" strokeDashoffset={157.08*(1-specialProgress)}/>
+      </svg>
+      <Zap className="game-special-icon" aria-hidden="true"/>
+      <span className="game-special-count">{specialLabel}</span>
+     </Button>}
    {screen==='play'&&!computer&&action&&<Button className={`game-intro-action ${(freeRoom||shipIsCombat(st.current))&&touch?'game-room-action':''} absolute bottom-3 left-1/2 z-20 -translate-x-1/2`} onClick={()=>{if(st.current.phase==='awka')interactIntro(st.current);else interactChapter(st.current);setAction(null);}}><Hand/>{action}</Button>}
    {screen==='play'&&!computer&&!touch&&context&&<Button className="absolute bottom-4 left-1/2 -translate-x-1/2" onClick={()=>{st.current.keys.e=true;}}><Hand/> PEDIR AYUDA A LOS PIBES · E</Button>}
    {screen==='play'&&computer&&<GameComputer onClose={()=>{closeComputer(st.current);setComputer(false);}}/>}
