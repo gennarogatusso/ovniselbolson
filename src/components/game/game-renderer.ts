@@ -142,9 +142,9 @@ function sprite(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number
  for(let i=0;i<2;i++){c.save();c.translate((i?1:-1)*w/4,-lowerH+bob);c.rotate((i?1:-1)*step*.018);c.drawImage(im,i*im.naturalWidth/2,legY,im.naturalWidth/2,im.naturalHeight-legY,-w/4,0,w/2,lowerH);c.restore();}
  c.restore();
 }
-function catSprite(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,walk:number,face:number) {
- if(!ready(im)) return; const h=40,w=h*im.naturalWidth/im.naturalHeight;
- c.save();c.translate(x,y+6+Math.sin(walk)*1);c.scale(face,1);c.drawImage(im,-w/2,-h,w,h);c.restore();
+function catSprite(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,walk:number,face:number,height=40) {
+ if(!ready(im)) return; const h=height,w=h*im.naturalWidth/im.naturalHeight;
+ c.save();c.translate(x,y+6+Math.sin(walk)*1);c.scale(face,1);c.imageSmoothingEnabled=false;c.drawImage(im,-w/2,-h,w,h);c.restore();
 }
 function person(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,t:number,i:number,dead=false) {
  c.save();c.translate(x,y);if(dead){c.rotate(-Math.PI/2);c.translate(15,0);}const b=dead?0:Math.sin(t*2+i)*1.5;
@@ -731,6 +731,92 @@ function drawReactorEffects(c:CanvasRenderingContext2D,p:Palette,hp:number,time:
  c.restore();
 }
 
+type CatEyePoint = { x: number; y: number };
+const catEyeCache = new WeakMap<HTMLImageElement,CatEyePoint>();
+function catEyePosition(im:HTMLImageElement,x:number,y:number,height:number):CatEyePoint{
+ let point=catEyeCache.get(im);
+ if(!point){
+  const bounds=trimBounds(im);
+  point={x:bounds[0]+bounds[2]*.56,y:bounds[1]+bounds[3]*.27};
+  try{
+   const canvas=document.createElement('canvas');canvas.width=im.naturalWidth;canvas.height=im.naturalHeight;
+   const context=canvas.getContext('2d');
+   if(context){
+    context.drawImage(im,0,0);
+    const pixels=context.getImageData(0,0,canvas.width,canvas.height).data;
+    const left=Math.floor(bounds[0]+bounds[2]*.12),right=Math.ceil(bounds[0]+bounds[2]*.88);
+    const top=Math.floor(bounds[1]+bounds[3]*.04),bottom=Math.ceil(bounds[1]+bounds[3]*.46);
+    let weightTotal=0,weightedX=0,weightedY=0;
+    for(let py=top;py<bottom;py++)for(let px=left;px<right;px++){
+     const index=(py*canvas.width+px)*4,r=pixels[index]??0,g=pixels[index+1]??0,b=pixels[index+2]??0,alpha=pixels[index+3]??0;
+     if(alpha<150)continue;
+     const pale=r>178&&g>178&&b>178,cyan=r>105&&g>160&&b>185&&b-r>42;
+     if(!pale&&!cyan)continue;
+     const weight=Math.max(1,(r+g+b)/3-110);
+     weightTotal+=weight;weightedX+=px*weight;weightedY+=py*weight;
+    }
+    if(weightTotal>18)point={x:weightedX/weightTotal,y:weightedY/weightTotal};
+   }
+  }catch{
+   // Si no se puede leer el PNG, se conserva el punto aproximado calculado desde el recorte visible.
+  }
+  catEyeCache.set(im,point);
+ }
+ const scale=height/im.naturalHeight,spriteWidth=height*im.naturalWidth/im.naturalHeight;
+ return {x:x-spriteWidth/2+point.x*scale,y:y-height+point.y*scale};
+}
+function drawCatEyeCharge(c:CanvasRenderingContext2D,eye:CatEyePoint,time:number,p:Palette){
+ const pulse=.72+.28*Math.sin(time*19),radius=13+pulse*6;
+ c.save();c.globalCompositeOperation='screen';
+ const glow=c.createRadialGradient(eye.x,eye.y,1,eye.x,eye.y,radius*2.4);
+ glow.addColorStop(0,'rgba(255,255,255,.98)');glow.addColorStop(.22,'rgba(119,255,255,.92)');
+ glow.addColorStop(.58,'rgba(58,205,255,.34)');glow.addColorStop(1,'rgba(58,205,255,0)');
+ c.fillStyle=glow;c.fillRect(eye.x-radius*2.4,eye.y-radius*2.4,radius*4.8,radius*4.8);
+ c.strokeStyle=p.light;c.lineWidth=1.2;c.globalAlpha=.7+.25*pulse;
+ c.beginPath();c.arc(eye.x,eye.y,radius*.82+Math.sin(time*25)*2,0,Math.PI*2);c.stroke();
+ c.restore();
+}
+function drawCatEyeLaser(c:CanvasRenderingContext2D,from:CatEyePoint,to:CatEyePoint,time:number,power:number,index:number){
+ if(power<=0)return;
+ const dx=to.x-from.x,dy=to.y-from.y;
+ c.save();c.globalCompositeOperation='screen';c.globalAlpha=power;c.lineCap='round';c.lineJoin='round';
+ const gradient=c.createLinearGradient(from.x,from.y,to.x,to.y);
+ gradient.addColorStop(0,'rgba(255,255,255,.98)');gradient.addColorStop(.16,'rgba(133,255,255,.96)');
+ gradient.addColorStop(.56,'rgba(64,220,255,.88)');gradient.addColorStop(1,'rgba(190,250,255,.96)');
+ c.shadowColor='#63edff';c.shadowBlur=28;c.strokeStyle='rgba(61,210,255,.28)';c.lineWidth=19;
+ c.beginPath();c.moveTo(from.x,from.y);c.lineTo(to.x,to.y);c.stroke();
+ c.shadowBlur=15;c.strokeStyle=gradient;c.lineWidth=7.5;
+ c.beginPath();c.moveTo(from.x,from.y);c.lineTo(to.x,to.y);c.stroke();
+ c.shadowBlur=5;c.strokeStyle='rgba(255,255,255,.98)';c.lineWidth=2.4;
+ c.beginPath();c.moveTo(from.x,from.y);c.lineTo(to.x,to.y);c.stroke();
+ c.shadowBlur=7;c.strokeStyle='rgba(226,255,255,.95)';c.lineWidth=1.4;
+ c.setLineDash([13,10]);c.lineDashOffset=-time*185-index*7;
+ c.beginPath();c.moveTo(from.x,from.y);c.lineTo(to.x,to.y);c.stroke();c.setLineDash([]);
+ for(let i=0;i<5;i++){
+  const q=(i/5+(time*.72+index*.23)%1)%1,sx=from.x+dx*q,sy=from.y+dy*q;
+  const flicker=.55+.45*Math.sin(time*31+i*4+index);
+  c.globalAlpha=power*flicker;c.fillStyle='#efffff';c.beginPath();c.arc(sx,sy,1.3+(i%2)*.8,0,Math.PI*2);c.fill();
+ }
+ c.globalAlpha=power;
+ const eyeGlow=c.createRadialGradient(from.x,from.y,1,from.x,from.y,21);
+ eyeGlow.addColorStop(0,'rgba(255,255,255,1)');eyeGlow.addColorStop(.25,'rgba(133,255,255,.82)');eyeGlow.addColorStop(1,'rgba(60,205,255,0)');
+ c.fillStyle=eyeGlow;c.fillRect(from.x-22,from.y-22,44,44);
+ const radius=20+Math.sin(time*33+index)*3;
+ const impact=c.createRadialGradient(to.x,to.y,1,to.x,to.y,radius*2);
+ impact.addColorStop(0,'rgba(255,255,255,.98)');impact.addColorStop(.22,'rgba(180,255,255,.88)');
+ impact.addColorStop(.6,'rgba(61,213,255,.42)');impact.addColorStop(1,'rgba(61,213,255,0)');
+ c.fillStyle=impact;c.fillRect(to.x-radius*2,to.y-radius*2,radius*4,radius*4);
+ c.globalAlpha=power*.78;c.strokeStyle='rgba(230,255,255,.95)';c.lineWidth=1.6;
+ c.beginPath();c.arc(to.x,to.y,radius*(.78+.12*Math.sin(time*26+index)),0,Math.PI*2);c.stroke();
+ for(let i=0;i<7;i++){
+  const angle=i*2.399+time*2.2+index,reach=radius*(.9+(i%3)*.3);
+  c.globalAlpha=power*(.5+.35*Math.sin(time*21+i+index));
+  c.strokeStyle=i%2?'rgba(137,246,255,.95)':'rgba(255,255,255,.95)';c.lineWidth=1.4;
+  c.beginPath();c.moveTo(to.x+Math.cos(angle)*radius*.35,to.y+Math.sin(angle)*radius*.35);
+  c.lineTo(to.x+Math.cos(angle)*reach,to.y+Math.sin(angle)*reach);c.stroke();
+ }
+ c.restore();
+}
 function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.ship,art=im.ship;
  const cross=['impact','crossRise','crossFree','contemplate','end'].includes(a.stage);
@@ -762,12 +848,16 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   for(const x of [610,735])pose(c,art.grey,dead?Math.min(8,3+Math.floor(a.labDead*5)):0,9,x,SHIP.floor,115);
   if(['awakening','verdict','catEntry','eyeCharge','rescue'].includes(a.stage)){
    stillTrimmed(c,art.lying,480,364,64);
-  }else if(a.stage==='rise')stillTrimmed(c,im.chapter.waking,480,380,112);
+  }else if(a.stage==='rise')stillTrimmed(c,im.chapter.waking,480,380,132);
   else actor(a.x,a.y);
-  if(['catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage))still(c,art.cat,a.catX,SHIP.floor,78);
-  if(a.stage==='eyeCharge'||(a.stage==='rescue'&&a.time<1.6)){
-   oval(c,p.turquoise,a.catX-3,SHIP.floor-64,5,4);
-   if(a.stage==='rescue')for(const x of [610,735])line(p.turquoise,a.catX,SHIP.floor-64,x,SHIP.floor-85,5);
+  if(['catEntry','eyeCharge','rescue'].includes(a.stage))still(c,art.cat,a.catX,SHIP.floor,78);
+  else if(['rise','labFree','door'].includes(a.stage))catSprite(c,im.cat,a.catX,a.catY,0,1,52);
+  const catEye=catEyePosition(art.cat,a.catX,SHIP.floor,78);
+  if(a.stage==='eyeCharge')drawCatEyeCharge(c,catEye,a.time,p);
+  if(a.stage==='rescue'){
+   const beamPower=Math.max(0,Math.min(1,(2.8-a.time)/1.35));
+   drawCatEyeLaser(c,catEye,{x:610,y:SHIP.floor-83},s.t,beamPower,0);
+   drawCatEyeLaser(c,catEye,{x:735,y:SHIP.floor-83},s.t,beamPower,1);
   }
   if(a.stage==='verdict')bubble(c,'Los gatos son la especie más peligrosa del universo. Deben ser erradicados',675,240,p,700);
   if(a.stage==='door'){c.globalAlpha=Math.min(1,a.time/1.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
@@ -775,7 +865,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(!a.boxBroken){line(p.metal,SHIP.boxX,70,SHIP.boxX,SHIP.boxY-25,3);box(c,p.panel,SHIP.boxX-27,SHIP.boxY-22,54,44);c.strokeStyle=p.metal;c.lineWidth=2;c.strokeRect(SHIP.boxX-27,SHIP.boxY-22,54,44);still(c,art.weapon,SHIP.boxX,SHIP.boxY+8,25);}
   else if(!a.armed&&a.stage!=='pickup')still(c,art.weapon,SHIP.boxX,a.weaponY,28);
   for(const e of a.enemies){const f=e.hp<=0?Math.min(8,3+Math.floor(e.deadTime*5)):e.hurt>0?1:e.windup>0?2:0;c.save();c.translate(e.x,e.y);c.scale(e.face,1);pose(c,art.grey,f,9,0,0,115);c.restore();if(e.windup>0)oval(c,p.energy,e.x,e.y-84,8,8);}
-  actor(a.x,a.y);still(c,art.cat,a.catX,SHIP.floor,70);
+  actor(a.x,a.y);catSprite(c,im.cat,a.catX,a.catY,0,1,52);
   for(const b of a.shots){if(b.kind==='special'){if((b.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,b,s.t);}else line(p.ice,b.x,b.y,b.x-b.vx*.025,b.y-b.vy*.025,3);}
   for(const b of a.bolts)line(p.laser,b.x,b.y,b.x-b.vx*.04,b.y-b.vy*.04,4);
   if(a.beam>0)drawSuperWeaponBeam(c,s);
