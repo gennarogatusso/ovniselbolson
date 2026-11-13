@@ -22,7 +22,7 @@ export type Screen = "title" | "play" | "paused" | "win" | "lose";
 export const CINEMATIC = new Set(["help", "crash", "arrive", "reunion", "alien", "speech", "attack", "fade", "jets", "aftermath", "bedroom"]);
 export function shotInterval(hp: number) { return (hp < 40 ? 0.9 : 1.4) / DIFFICULTY.frequency; }
 export function projectileDamage(b: {kind?: string}) { return b.kind === "stone" ? 3 : 4; }
-export type Shot = { x: number; y: number; vx: number; vy: number; life: number; delay?: number; kind?: "stone" | "special"; specialTarget?: "ufo" | "shipEnemy"; targetIndex?: number };
+export type Shot = { x: number; y: number; vx: number; vy: number; life: number; delay?: number; kind?: "stone" | "special" | "rifle" | "rocket"; specialTarget?: "ufo" | "shipEnemy" | "soldier"; targetIndex?: number };
 type Jet = { x: number; y: number; start: number; fired: [boolean, boolean] };
 type JetShot = { x: number; y: number; vx: number; vy: number; life: number; target: "ufo" | "alien" };
 type Ally = {x:number;y:number;hp:number;hurt:number;cd:number;walk:number;dead:boolean};
