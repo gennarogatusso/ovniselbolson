@@ -1,8 +1,16 @@
 import type { S } from './game-engine';
 import ambience from '@/assets/awka-ambience.mp3.asset.json';
 export const AWKA_VOLUME = .30;
+const AWKA_DEPARTURE_START_X = -650;
+const AWKA_DEPARTURE_END_X = 200;
 const FOREST_RAIN_STAGES = new Set(['forestFade','forestRun','deer','burned','ship','beam','lift','vanished','complete']);
-export function awkaMusicActive(s:S,playing:boolean){return playing&&s.phase==='awka'&&s.intro.stage!=='depart'&&s.intro.stage!=='done';}
+export function awkaMusicActive(s:S,playing:boolean){return playing&&s.phase==='awka'&&s.intro.stage!=='done';}
+export function awkaMusicVolume(s:S){
+ if(s.phase!=='awka'||s.intro.stage==='done')return 0;
+ if(s.intro.stage!=='depart')return 1;
+ const progress=(s.p.x-AWKA_DEPARTURE_START_X)/(AWKA_DEPARTURE_END_X-AWKA_DEPARTURE_START_X);
+ return Math.max(0,Math.min(1,1-progress));
+}
 
 type MusicTheme = 'night'|'horror'|'battle'|'aftermath'|'bedroom'|'forest'|'lab'|'finale';
 type ThemeConfig = {
@@ -358,6 +366,7 @@ export class GameAudio {
    if(active){if(this.music)void this.music.play().catch(()=>{this.musicActive=false;});}
    else if(this.music){this.music.pause();this.music.currentTime=0;}
   }
+  if(this.music)this.music.volume=AWKA_VOLUME*this.volume*awkaMusicVolume(s);
   const a=s.ship;
   if(!playing){
    a.sounds=[];

@@ -1,11 +1,35 @@
 import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement };
-export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement };
+export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; lying: HTMLImageElement };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
 export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
-function drawTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,w:number,h:number){if(!ready(im))return;let b=trims.get(im);if(!b){const t=document.createElement('canvas');t.width=im.naturalWidth;t.height=im.naturalHeight;const q=t.getContext('2d');if(!q)return;q.drawImage(im,0,0);const d=q.getImageData(0,0,t.width,t.height).data;let l=t.width,r=0,top=t.height,bot=0;for(let yy=0;yy<t.height;yy++)for(let xx=0;xx<t.width;xx++){const i=(yy*t.width+xx)*4;if((d[i+3]??0)>16&&((d[i]??255)<245||(d[i+1]??255)<245||(d[i+2]??255)<245)){l=Math.min(l,xx);r=Math.max(r,xx);top=Math.min(top,yy);bot=Math.max(bot,yy);}}b=l<=r&&top<=bot?[l,top,r-l+1,bot-top+1]:[0,0,t.width,t.height];trims.set(im,b);}c.drawImage(im,b[0],b[1],b[2],b[3],x,y,w,h);}
+function trimBounds(im:HTMLImageElement):[number,number,number,number]{
+ let bounds=trims.get(im);
+ if(!bounds){
+  const canvas=document.createElement('canvas');canvas.width=im.naturalWidth;canvas.height=im.naturalHeight;
+  const context=canvas.getContext('2d');
+  if(!context)return [0,0,im.naturalWidth,im.naturalHeight];
+  context.drawImage(im,0,0);
+  const data=context.getImageData(0,0,canvas.width,canvas.height).data;
+  let left=canvas.width,right=0,top=canvas.height,bottom=0;
+  for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){
+   const i=(y*canvas.width+x)*4;
+   if((data[i+3]??0)>16&&((data[i]??255)<245||(data[i+1]??255)<245||(data[i+2]??255)<245)){
+    left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+   }
+  }
+  bounds=left<=right&&top<=bottom?[left,top,right-left+1,bottom-top+1]:[0,0,canvas.width,canvas.height];
+  trims.set(im,bounds);
+ }
+ return bounds;
+}
+function drawTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,w:number,h:number){
+ if(!ready(im))return;
+ const bounds=trimBounds(im);
+ c.drawImage(im,bounds[0],bounds[1],bounds[2],bounds[3],x,y,w,h);
+}
 export type Palette = Record<'turquoise'|'sky'|'rose'|'gold'|'sunset'|'light'|'ice'|'panel'|'ink'|'forest'|'trunk'|'wall'|'roof'|'leaf'|'road'|'curb'|'lane'|'shadow'|'hill'|'metal'|'glass'|'laser'|'smoke'|'stone'|'skin'|'red'|'alien'|'energy',string>;
 const ready = (im?:HTMLImageElement) => Boolean(im?.complete && im.naturalWidth);
 function box(c:CanvasRenderingContext2D,col:string,x:number,y:number,w:number,h:number) {c.fillStyle=col;c.fillRect(x,y,w,h);}
@@ -304,6 +328,13 @@ function still(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,
  if(!ready(im))return;const w=h*im.naturalWidth/im.naturalHeight;
  c.save();c.globalAlpha=alpha;c.drawImage(im,x-w/2,y-h,w,h);c.restore();
 }
+function stillTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:number,h:number,alpha=1){
+ if(!ready(im)||alpha<=0)return;
+ const bounds=trimBounds(im),w=h*bounds[2]/bounds[3];
+ c.save();c.imageSmoothingEnabled=false;c.globalAlpha=alpha;
+ c.drawImage(im,bounds[0],bounds[1],bounds[2],bounds[3],x-w/2,y-h,w,h);
+ c.restore();
+}
 
 function awkaNightAtmosphere(c:CanvasRenderingContext2D,s:S){
  const departure=s.intro.stage==='depart'?Math.max(0,1-s.intro.time/1.5):1;
@@ -419,7 +450,7 @@ function bedPose(c:CanvasRenderingContext2D,im:HTMLImageElement,alpha=1){
  if(!ready(im))return;
  // The original lying silhouette follows the mattress's down-right diagonal.
  const width=143,height=width*im.naturalHeight/im.naturalWidth;
- c.save();c.globalAlpha=alpha;c.translate(519,228);c.rotate(.36);c.drawImage(im,-width/2,-height/2,width,height);c.restore();
+ c.save();c.globalAlpha=alpha;c.translate(531,236);c.rotate(.36);c.drawImage(im,-width/2,-height/2,width,height);c.restore();
 }
 function bedroom(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.chapter,art=im.chapter;box(c,p.ink,0,0,W,H);
@@ -432,7 +463,7 @@ function bedroom(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   const q=Math.min(1,a.time/1.6);c.save();c.globalAlpha=1-q;roomActor(c,s,art);c.restore();bedPose(c,art.sleeping,q);
  }else if(a.stage==='waking'){
   const q=Math.min(1,a.time/2);bedPose(c,art.sleeping,1-q);
-  still(c,art.waking,510,283,100,q);
+  stillTrimmed(c,art.waking,510,283,100,q);
  }else roomActor(c,s,art);
  if(!a.catGone){
   if(a.fed&&['meal','sleepChoice','toBed'].includes(a.stage))still(c,art.eating,775,452,37);
@@ -618,10 +649,14 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const actorX=a.stage==='lift'?330+110*ease(a.time/6):330;
  drawForestAbductionBeam(c,s,p,actorX);
  if(!['vanished','complete'].includes(a.stage)){
-  const running=['forestRun','burned','forestFade'].includes(a.stage);
-  if(running&&ready(art.run)){
-   const frame=a.moving?Math.floor(a.roomWalk)%4:0;
-   const face=a.forestFace<0?-1:1;
+  const forestMovementStage=['forestFade','forestRun','burned','ship'].includes(a.stage);
+  const face=a.forestFace<0?-1:1;
+  if(forestMovementStage&&!a.forestHasMoved&&ready(art.walk)){
+   const frame=Math.floor(s.t*7)%4;
+   c.save();c.translate(actorX,a.forestY);c.scale(face,1);
+   pose(c,art.walk,frame,4,0,0,100);c.restore();
+  }else if(forestMovementStage&&a.moving&&ready(art.run)){
+   const frame=Math.floor(a.roomWalk)%4;
    c.save();c.translate(actorX,a.forestY);c.scale(face,1);
    pose(c,art.run,frame,4,0,0,100);c.restore();
   }else still(c,im.player,actorX,a.forestY,100);
@@ -706,8 +741,8 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   const dead=['rescue','rise','labFree','door'].includes(a.stage);
   for(const x of [610,735])pose(c,art.grey,dead?Math.min(8,3+Math.floor(a.labDead*5)):0,9,x,SHIP.floor,115);
   if(['awakening','verdict','catEntry','eyeCharge','rescue'].includes(a.stage)){
-   const sleeping=im.chapter.sleeping,w=118,h=w*sleeping.naturalHeight/sleeping.naturalWidth;c.drawImage(sleeping,480-w/2,364-h,w,h);
-  }else if(a.stage==='rise')still(c,im.chapter.waking,480,380,112);
+   stillTrimmed(c,art.lying,480,364,64);
+  }else if(a.stage==='rise')stillTrimmed(c,im.chapter.waking,480,380,112);
   else actor(a.x,a.y);
   if(['catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage))still(c,art.cat,a.catX,SHIP.floor,78);
   if(a.stage==='eyeCharge'||(a.stage==='rescue'&&a.time<1.6)){

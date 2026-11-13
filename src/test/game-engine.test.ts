@@ -25,6 +25,15 @@ describe('OVNI difficulty and narrative', () => {
   it('preserves health and weapon damage',()=>{const s=newState();expect(s.p.hp).toBe(100);expect(s.u.hp).toBe(100);expect(projectileDamage({})).toBe(4);});
   it('applies movement and firing changes in the live simulation',()=>{const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=1000;s.u.cd=0;update(s,.1);expect(s.u.x).toBeCloseTo(516.8);expect(s.u.cd).toBeCloseTo(1.4/1.2);expect(s.lasers).toHaveLength(1);});
   it('recruits nearby helpers once',()=>{const s=newState();s.phase='fight';s.p.x=460;s.keys.e=true;expect(canAskHelp(s)).toBe(true);update(s,.016);expect(s.recruited).toBe(true);expect(s.phase).toBe('help');expect(canAskHelp(s)).toBe(false);});
+  it('keeps the forest entry in walking mode until the player starts moving',()=>{
+    const s=newState();s.phase='bedroom';s.chapter.stage='forestRun';
+    update(s,.1);
+    expect(s.chapter.forestHasMoved).toBe(false);expect(s.chapter.moving).toBe(false);
+    s.keys.r=true;update(s,.1);
+    expect(s.chapter.forestHasMoved).toBe(true);expect(s.chapter.moving).toBe(true);
+    s.keys.r=false;update(s,.1);
+    expect(s.chapter.forestHasMoved).toBe(true);expect(s.chapter.moving).toBe(false);
+  });
   it('stones collide and cause actual damage',()=>{const s=newState();s.phase='fight';s.u.x=500;s.u.tx=500;s.u.y=120;s.shots.push({x:500,y:120,vx:0,vy:0,life:1,kind:'stone'});update(s,.001);expect(s.u.hp).toBe(97);});
   it('special attack homes into the UFO, hits while airborne, and locks for five seconds',()=>{const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=500;s.u.y=120;s.u.cd=100;s.p.y=GROUND-80;expect(triggerSpecial(s)).toBe(true);expect(s.specialCd).toBe(5);expect(s.specialAnim).toBe(SPECIAL_ATTACK_ANIM_DURATION);expect(triggerSpecial(s)).toBe(false);update(s,.4);expect(s.u.hp).toBe(100);expect(s.shots[0]?.delay).toBeCloseTo(.4);for(let i=0;i<220&&s.u.hp===100;i++)update(s,.016);expect(s.u.hp).toBe(82.5);expect(s.specialCd).toBeLessThan(5);});
   it('special attack tracks and defeats the nearest living ship enemy with a separate five-second cooldown',()=>{const s=newState();s.phase='spaceship';s.ship.stage='combat';s.ship.x=145;s.ship.y=452;s.ship.enemies=[{x:340,y:452,hp:32,kind:'direct',cd:100,windup:0,hurt:0,deadTime:0,face:-1},{x:700,y:452,hp:32,kind:'direct',cd:100,windup:0,hurt:0,deadTime:0,face:-1}];expect(triggerSpecial(s)).toBe(true);expect(s.ship.specialCd).toBe(5);expect(triggerSpecial(s)).toBe(false);update(s,.4);expect(s.ship.enemies[0]!.hp).toBe(32);for(let i=0;i<200;i++)update(s,.016);expect(s.ship.enemies[0]!.hp).toBe(16);expect(s.ship.enemies[0]!.deadTime).toBe(0);expect(s.ship.enemies[1]!.hp).toBe(32);});

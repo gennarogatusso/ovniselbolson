@@ -1,10 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { interactIntro, introAction, newIntroState, update } from '../components/game/game-engine';
+import { awkaMusicActive, awkaMusicVolume } from '../components/game/game-audio';
 
 function advance(s: ReturnType<typeof newIntroState>, seconds: number) {
   for (let t = 0; t < seconds; t += .05) update(s, .05);
 }
 describe('AWKA introduction', () => {
+  it('fades AWKA music progressively as the player moves away from the brewery', () => {
+    const s = newIntroState();
+    s.intro.stage = 'depart';
+    expect(awkaMusicActive(s, true)).toBe(true);
+    expect(awkaMusicVolume(s)).toBe(1);
+    s.p.x = -225;
+    expect(awkaMusicVolume(s)).toBeCloseTo(0.5);
+    s.p.x = 0;
+    expect(awkaMusicVolume(s)).toBeCloseTo(200 / 850);
+    s.p.x = 200;
+    expect(awkaMusicVolume(s)).toBe(0);
+    s.intro.stage = 'done';
+    expect(awkaMusicActive(s, true)).toBe(false);
+  });
   it('requires exactly two completed drinks and rejects overlapping interactions', () => {
     const s = newIntroState(); advance(s, 1.7);
     expect(introAction(s)).toBe('Beber cerveza');
