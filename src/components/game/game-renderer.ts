@@ -2,7 +2,7 @@ import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_D
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement };
 export type SoldierImages = { cover: HTMLImageElement; bazooka: HTMLImageElement; advancing: HTMLImageElement; underFire: HTMLImageElement; shieldFire: HTMLImageElement; proneFire: HTMLImageElement };
-export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; soldiers: SoldierImages; lying: HTMLImageElement };
+export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement; catFlying: HTMLImageElement; lying: HTMLImageElement };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
 export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
@@ -418,6 +418,7 @@ function drawSpecialProjectile(c:CanvasRenderingContext2D,frames:[HTMLImageEleme
  const width=88,height=width*im.naturalHeight/im.naturalWidth,angle=Math.atan2(b.vy,b.vx);
  c.save();c.translate(b.x,b.y);c.rotate(angle);c.imageSmoothingEnabled=false;c.globalAlpha=.98;c.drawImage(im,-width/2,-height/2,width,height);c.restore();
 }
+function horizontalFrameCount(im:HTMLImageElement){return Math.max(1,Math.min(16,Math.round(im.naturalWidth/Math.max(1,im.naturalHeight*.68))));}
 function pose(c:CanvasRenderingContext2D,im:HTMLImageElement,frame:number,count:number,x:number,y:number,h:number,alpha=1) {
  if(!ready(im)||alpha<=0)return;
  const fw=im.naturalWidth/count,w=h*fw/im.naturalHeight;
@@ -934,11 +935,42 @@ function drawCatEyeLaser(c:CanvasRenderingContext2D,from:CatEyePoint,to:CatEyePo
  }
  c.restore();
 }
+function drawCatUltimateBeam(c:CanvasRenderingContext2D,s:S){
+ const a=s.ship,catX=a.x+42,catY=72+Math.sin(s.t*13)*4,power=Math.min(1,a.time/.22);
+ c.save();c.globalCompositeOperation='lighter';
+ const aura=c.createRadialGradient(catX,catY,2,catX,catY,96);
+ aura.addColorStop(0,'rgba(255,255,255,.95)');aura.addColorStop(.16,'rgba(231,170,255,.8)');aura.addColorStop(.48,'rgba(172,52,255,.36)');aura.addColorStop(1,'rgba(125,35,255,0)');
+ c.fillStyle=aura;c.fillRect(catX-100,catY-100,200,200);
+ for(let i=0;i<a.soldiers.length;i++){
+  const soldier=a.soldiers[i],sx=catX,sy=catY+12,tx=soldier.x,ty=soldier.y-58;
+  const bend=Math.sin(s.t*19+i*2.1)*24,midX=(sx+tx)/2+bend,midY=(sy+ty)/2-55-Math.cos(s.t*15+i)*12;
+  const drawPath=()=>{c.beginPath();c.moveTo(sx,sy);c.quadraticCurveTo(midX,midY,tx,ty);};
+  const gradient=c.createLinearGradient(sx,sy,tx,ty);
+  gradient.addColorStop(0,'rgba(255,255,255,.98)');gradient.addColorStop(.2,'rgba(236,192,255,.98)');gradient.addColorStop(.62,'rgba(177,61,255,.95)');gradient.addColorStop(1,'rgba(106,24,255,.88)');
+  c.globalAlpha=power*(.82+.18*Math.sin(s.t*23+i));c.strokeStyle='rgba(117,35,255,.5)';c.lineWidth=34;c.shadowColor='#a72cff';c.shadowBlur=34;drawPath();c.stroke();
+  c.strokeStyle=gradient;c.lineWidth=17;c.shadowColor='#d98aff';c.shadowBlur=25;drawPath();c.stroke();
+  c.strokeStyle='rgba(255,255,255,.98)';c.lineWidth=4.5;c.shadowColor='#fff';c.shadowBlur=18;drawPath();c.stroke();
+  c.shadowBlur=0;
+  for(let arc=0;arc<4;arc++){
+   const q=((s.t*1.7+arc*.27+i*.13)%1),px=sx+(tx-sx)*q+bend*Math.sin(q*Math.PI),py=sy+(ty-sy)*q+(midY-(sy+ty)/2)*Math.sin(q*Math.PI);
+   const wiggle=10+arc*3;c.globalAlpha=power*(.55+.4*Math.sin(s.t*31+arc+i));c.strokeStyle=arc%2?'rgba(236,193,255,.96)':'rgba(255,255,255,.94)';c.lineWidth=1.5+arc*.35;
+   c.beginPath();c.moveTo(px-wiggle,py-5);c.lineTo(px-wiggle*.25,py-13-Math.sin(s.t*27+arc)*5);c.lineTo(px+wiggle*.18,py+7);c.lineTo(px+wiggle,py-3);c.stroke();
+  }
+  for(let particle=0;particle<8;particle++){
+   const q=(particle/8+s.t*(.75+i*.035))%1,px=sx+(tx-sx)*q+bend*Math.sin(q*Math.PI),py=sy+(ty-sy)*q+(midY-(sy+ty)/2)*Math.sin(q*Math.PI);
+   c.globalAlpha=power*(.38+.55*Math.abs(Math.sin(s.t*18+particle*3+i)));c.fillStyle=particle%3?'#e9b6ff':'#ffffff';c.beginPath();c.arc(px,py,1.5+(particle%3),0,Math.PI*2);c.fill();
+  }
+  const impact=c.createRadialGradient(tx,ty,1,tx,ty,52);impact.addColorStop(0,'rgba(255,255,255,.98)');impact.addColorStop(.24,'rgba(234,181,255,.9)');impact.addColorStop(.58,'rgba(159,57,255,.5)');impact.addColorStop(1,'rgba(116,29,255,0)');
+  c.globalAlpha=power;c.fillStyle=impact;c.fillRect(tx-54,ty-54,108,108);
+  c.strokeStyle='rgba(240,206,255,.9)';c.lineWidth=2;c.beginPath();c.arc(tx,ty,20+Math.sin(s.t*26+i)*7,0,Math.PI*2);c.stroke();
+ }
+ c.restore();
+}
 function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.ship,art=im.ship;
  const cross=['impact','crossRise','crossFree','contemplate','crossSunset','end'].includes(a.stage);
  const road=['crossWalkIntro','crossWalk'].includes(a.stage);
- const battle=['militaryIntro','soldierFight','soldierEnd'].includes(a.stage);
+ const battle=['militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd'].includes(a.stage);
  const lab=['awakening','verdict','catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage);
  c.save();box(c,p.ink,0,0,W,H);
  if(a.shake>0)c.translate(Math.sin(s.t*61)*a.shake*8,Math.cos(s.t*49)*a.shake*5);
@@ -949,7 +981,11 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const actor=(x:number,y:number,h=112)=>{
   c.save();c.translate(x,y);c.scale(a.face,1);
   const walkingStage=['crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierEnd'].includes(a.stage);
-  if(a.specialAnim>0&&a.stage==='soldierFight')specialPose(c,im.specialFrames,SPECIAL_ATTACK_ANIM_DURATION-a.specialAnim,0,0,h);
+  if(a.stage==='soldierUltimateThrow'){
+   const count=horizontalFrameCount(art.catThrow),frame=Math.min(count-1,Math.floor(Math.min(.999,a.time/1)*count));
+   pose(c,art.catThrow,frame,count,0,0,h+14);
+  }
+  else if(a.specialAnim>0&&a.stage==='soldierFight')specialPose(c,im.specialFrames,SPECIAL_ATTACK_ANIM_DURATION-a.specialAnim,0,0,h);
   else if(a.roll>0)pose(c,art.roll,Math.min(5,Math.floor((1-a.roll/SHIP.rollTime)*6)),6,0,0,h);
   else if(a.push!=='none')pose(c,art.push,a.push==='lean'?0:a.push==='flight'?1:2,3,0,0,h);
   else if(walkingStage)pose(c,im.chapter.walk,Math.floor(a.walk)%4,4,0,0,h);
@@ -987,7 +1023,12 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    oval(c,'rgba(0,0,0,.36)',0,-2,34,7);drawTrimmed(c,artSoldier,-w/2,-scaleH,w,scaleH);c.restore();
    if(e.hp>0){const barW=62,bx=e.x-barW/2,by=e.y-scaleH-17;c.fillStyle='rgba(8,8,18,.9)';c.fillRect(bx-2,by-3,barW+4,9);c.fillStyle='#5b171f';c.fillRect(bx,by,barW,4);c.fillStyle=e.hp/e.maxHp>.35?'#b9f2cf':'#ff6a72';c.fillRect(bx,by,barW*e.hp/e.maxHp,4);}
   }
-  actor(a.x,a.y,112);catSprite(c,im.cat,a.catX,a.catY,Math.floor(a.walk*1.2),a.x>=a.catX?1:-1,46);
+  if(a.stage==='soldierUltimateBeam')drawCatUltimateBeam(c,s);
+  actor(a.x,a.y,112);
+  if(a.stage==='soldierUltimateAscend'||a.stage==='soldierUltimateBeam'){
+   const rise=Math.min(1,a.time/.72),catY=a.stage==='soldierUltimateBeam'?72:SHIP.floor-115-rise*265;
+   stillTrimmed(c,art.catFlying,a.x+42,catY,86);
+  }else if(a.stage!=='soldierUltimateThrow'&&a.stage!=='soldierEnd')catSprite(c,im.cat,a.catX,a.catY,Math.floor(a.walk*1.2),a.x>=a.catX?1:-1,46);
   for(const b of a.shots){if(b.kind==='special'){if((b.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,b,s.t);}else line(p.ice,b.x,b.y,b.x-b.vx*.025,b.y-b.vy*.025,3);}
   for(const b of a.bolts){if(b.kind==='rocket'){c.save();c.strokeStyle='#ff9d52';c.lineWidth=7;c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.065,b.y-b.vy*.065);c.stroke();oval(c,'#ffe0a0',b.x,b.y,6,5);c.restore();}else line(p.laser,b.x,b.y,b.x-b.vx*.035,b.y-b.vy*.035,4);}
   box(c,p.panel,14,14,218,42);c.font='13px monospace';c.fillStyle=p.light;c.fillText('SALUD',24,40);box(c,p.ink,82,30,138,10);box(c,a.hp>35?p.ice:p.red,82,30,1.38*a.hp,10);
