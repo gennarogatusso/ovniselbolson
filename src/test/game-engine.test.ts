@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { shouldStartCrossMusic } from '../components/game/game-audio';
 import { DIFFICULTY, GROUND, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
@@ -138,6 +139,13 @@ describe('OVNI difficulty and narrative', () => {
   it('resets the cat ultimate when retrying the military encounter',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.catUltimateUsed=true;
     respawnAtSoldierCheckpoint(s);expect(s.ship.catUltimateUsed).toBe(false);expect(s.ship.stage).toBe('soldierFight');
+  });
+  it('starts the new cross soundtrack on the landing impact and not in earlier or later scenes',()=>{
+    const s=newState();enterShip(s);
+    s.ship.stage='emergency';expect(shouldStartCrossMusic(s)).toBe(false);
+    s.ship.stage='impact';expect(shouldStartCrossMusic(s)).toBe(true);
+    s.ship.stage='crossRise';expect(shouldStartCrossMusic(s)).toBe(false);
+    s.ship.stage='baseEnd';expect(shouldStartCrossMusic(s)).toBe(false);
   });
   it('restart resets allies, cat, cinematic and recruitment',()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
 });

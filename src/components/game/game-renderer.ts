@@ -1,6 +1,6 @@
 import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
-export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement };
+export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement; abduction: [HTMLImageElement, HTMLImageElement, HTMLImageElement] };
 export type SoldierImages = { cover: HTMLImageElement; bazooka: HTMLImageElement; advancing: HTMLImageElement; underFire: HTMLImageElement; shieldFire: HTMLImageElement; proneFire: HTMLImageElement };
 export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
@@ -328,6 +328,59 @@ function drawCrossWreckSmoke(c:CanvasRenderingContext2D,s:S){
  }
  c.restore();
 }
+const OPENING_DUSK_PHASES = new Set<S['phase']>(['walk','descend','beam','rise','draw','fight','help','boom']);
+function openingDuskActive(s:S){return OPENING_DUSK_PHASES.has(s.phase);}
+function drawOpeningDuskSky(c:CanvasRenderingContext2D,s:S){
+ if(!openingDuskActive(s))return;
+ const sunX=W*.74,sunY=GROUND-176,walkBlend=s.phase==='walk'?.78:1;
+ c.save();c.globalCompositeOperation='screen';
+ const bloom=c.createRadialGradient(sunX,sunY,10,sunX,sunY,370);
+ bloom.addColorStop(0,'rgba(255,192,132,.31)');bloom.addColorStop(.28,'rgba(255,123,106,.18)');bloom.addColorStop(.62,'rgba(177,96,139,.10)');bloom.addColorStop(1,'rgba(79,77,139,0)');
+ c.globalAlpha=walkBlend;c.fillStyle=bloom;c.fillRect(sunX-390,sunY-390,780,780);
+ const horizon=c.createLinearGradient(0,GROUND-235,0,GROUND+35);
+ horizon.addColorStop(0,'rgba(115,89,137,0)');horizon.addColorStop(.46,'rgba(190,104,130,.12)');horizon.addColorStop(.78,'rgba(255,164,105,.19)');horizon.addColorStop(1,'rgba(255,193,132,0)');
+ c.fillStyle=horizon;c.fillRect(0,GROUND-235,W,270);
+ const sun=c.createRadialGradient(sunX-11,sunY-12,2,sunX,sunY,48);
+ sun.addColorStop(0,'rgba(255,247,214,.98)');sun.addColorStop(.42,'rgba(255,207,153,.94)');sun.addColorStop(.78,'rgba(255,145,111,.78)');sun.addColorStop(1,'rgba(255,113,104,0)');
+ c.globalAlpha=.86*walkBlend;c.shadowColor='#ffb879';c.shadowBlur=30;c.fillStyle=sun;
+ c.beginPath();c.ellipse(sunX,sunY,39,34,-.08,0,Math.PI*2);c.fill();c.shadowBlur=0;
+ // Rayos oblicuos muy suaves, filtrados por la bruma del horizonte.
+ for(let i=0;i<9;i++){
+  const spread=(i-4)*.105,tailX=sunX+Math.sin(spread)*265,tailY=GROUND+18;
+  c.globalAlpha=(.035+(i%3)*.012)*walkBlend;c.strokeStyle=i%2?'rgba(255,186,139,.65)':'rgba(255,222,177,.8)';
+  c.lineWidth=i%3===0?9:5;c.beginPath();c.moveTo(sunX,sunY+13);c.lineTo(tailX,tailY);c.stroke();
+ }
+ c.restore();
+}
+function drawOpeningDuskGrade(c:CanvasRenderingContext2D,s:S){
+ if(!openingDuskActive(s))return;
+ c.save();
+ // Color grading cálido-violeta, aplicado solo al escenario de la primera pelea.
+ c.globalCompositeOperation='soft-light';c.globalAlpha=.62;
+ const grade=c.createLinearGradient(s.cam,0,s.cam,H);
+ grade.addColorStop(0,'rgba(42,37,83,.48)');grade.addColorStop(.36,'rgba(119,67,105,.22)');grade.addColorStop(.7,'rgba(238,125,92,.20)');grade.addColorStop(1,'rgba(23,25,43,.35)');
+ c.fillStyle=grade;c.fillRect(s.cam-40,0,W+80,H);
+ c.globalCompositeOperation='screen';c.globalAlpha=.44;
+ const sunSpill=c.createRadialGradient(s.cam+W*.72,GROUND-65,10,s.cam+W*.72,GROUND-65,470);
+ sunSpill.addColorStop(0,'rgba(255,187,127,.22)');sunSpill.addColorStop(.42,'rgba(239,115,111,.10)');sunSpill.addColorStop(1,'rgba(180,91,143,0)');
+ c.fillStyle=sunSpill;c.fillRect(s.cam+W*.72-480,GROUND-510,960,960);
+ const roadGlow=c.createRadialGradient(s.cam+W*.64,GROUND+47,2,s.cam+W*.64,GROUND+47,360);
+ roadGlow.addColorStop(0,'rgba(255,176,114,.16)');roadGlow.addColorStop(.35,'rgba(202,105,127,.09)');roadGlow.addColorStop(1,'rgba(63,52,91,0)');
+ c.fillStyle=roadGlow;c.fillRect(s.cam+W*.64-370,GROUND-315,740,740);
+ // Grano de polvo cálido suspendido en el contraluz.
+ for(let i=0;i<18;i++){
+  const x=s.cam+((i*73+s.t*(5+i%4))%(W+80))-40;
+  const y=210+((i*47+Math.sin(s.t*.7+i)*11)%(GROUND-170));
+  c.globalAlpha=.12+(i%4)*.025;c.shadowColor='#ffd49e';c.shadowBlur=5;
+  oval(c,'rgba(255,215,169,.72)',x,y,1+(i%3)*.45,1+(i%2)*.4);
+ }
+ c.shadowBlur=0;c.globalCompositeOperation='multiply';c.globalAlpha=.31;
+ const vignette=c.createRadialGradient(s.cam+W*.5,GROUND*.47,150,s.cam+W*.5,GROUND*.47,670);
+ vignette.addColorStop(0,'rgba(8,12,28,0)');vignette.addColorStop(.62,'rgba(15,15,38,.08)');vignette.addColorStop(1,'rgba(8,10,28,.72)');
+ c.fillStyle=vignette;c.fillRect(s.cam-40,0,W+80,H);
+ c.restore();
+}
+
 function drawCatAbductionLighting(c:CanvasRenderingContext2D,s:S,p:Palette){
  if(!s.u.vis||!['descend','beam','rise'].includes(s.phase))return;
  const {u,cat}=s,clamp=(v:number)=>Math.max(0,Math.min(1,v));
@@ -786,7 +839,10 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  if(!['vanished','complete'].includes(a.stage)){
   const forestMovementStage=['forestFade','forestRun','burned','ship'].includes(a.stage);
   const face=a.forestFace<0?-1:1;
-  if(forestMovementStage&&!a.forestHasMoved&&ready(art.walk)){
+  if(a.stage==='beam'||a.stage==='lift'){
+   const abductionPose=a.stage==='beam'?art.abduction[0]:(a.time<3?art.abduction[1]:art.abduction[2]);
+   still(c,abductionPose,actorX,a.forestY,100,1-forestEase(abductionFlash));
+  }else if(forestMovementStage&&!a.forestHasMoved&&ready(art.walk)){
    const frame=Math.floor(s.t*7)%4;
    c.save();c.translate(actorX,a.forestY);c.scale(face,1);
    pose(c,art.walk,frame,4,0,0,100);c.restore();
@@ -794,8 +850,6 @@ function forest(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    const frame=Math.floor(a.roomWalk)%4;
    c.save();c.translate(actorX,a.forestY);c.scale(face,1);
    pose(c,art.run,frame,4,0,0,100);c.restore();
-  }else if(a.stage==='lift'){
-   still(c,im.player,actorX,a.forestY,100,1-forestEase(abductionFlash));
   }else still(c,im.player,actorX,a.forestY,100);
  }
  // Reflejo del OVNI en agua: aparece junto con el paneo y el haz.
@@ -1283,6 +1337,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  const mountain=im&&(s.phase==='awka'?im.intro.mountain:im.mountain);
  if(mountain && ready(mountain)){const ratio=mountain.naturalWidth/mountain.naturalHeight,h=Math.max(GROUND,(W+WORLD*.03)/ratio),w=h*ratio; c.drawImage(mountain,(W-w)/2-s.cam*.015,GROUND-h,w,h);if(isAwka){c.globalCompositeOperation='multiply';box(c,'rgba(11,17,43,.48)',0,0,W,GROUND);c.globalCompositeOperation='source-over';}else{c.globalCompositeOperation='soft-light';box(c,p.sunset,0,0,W,GROUND);c.globalCompositeOperation='source-over';}}
   c.globalAlpha=.15;for(let i=0;i<5;i++){const x=(i*243+s.t*2)%1200-100;oval(c,p.light,x,50+i*13,90,9);}c.globalAlpha=1;
+  drawOpeningDuskSky(c,s);
  
  // Bosque lejano con la nueva textura y movimiento de viento.
  c.save();c.translate(-s.cam*.35,0);for(let x=-200;x<WORLD;x+=112){if(im?.tree&&ready(im.tree))drawWindTree(c,im.tree,x,GROUND-20,92+Math.abs(Math.sin(x*.013))*20,s.t,x*.017,.58);else{box(c,p.trunk,x,360,5,90);c.fillStyle=p.forest;c.beginPath();c.moveTo(x-27,415);c.lineTo(x+3,320+(x%3)*12);c.lineTo(x+33,415);c.fill();}}c.restore();
@@ -1329,6 +1384,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  c.globalAlpha=.35;for(let i=0;i<10;i++){const x=2800+i*31,y=GROUND-24-Math.sin(i*.6)*32;box(c,p.gold,x,y,2,7);}c.globalAlpha=1;
  for(let i=0;i<25;i++){const x=(i*139+s.t*12)%WORLD;c.globalAlpha=.35;oval(c,p.gold,x,400+Math.sin(i+s.t)*25,2,1);}c.globalAlpha=1;
  drawCatAbductionLighting(c,s,p);
+ drawOpeningDuskGrade(c,s);
  for(const [i,a] of s.allies.entries()) { if(a.hurt>0 && Math.floor(a.hurt*15)%2)continue;if(im?.allies[i])person(c,im.allies[i]??im.allies[0],a.x,a.y,s.recruited?a.walk:s.t,i,a.dead||a.hp<=0);if(s.recruited && s.phase==='fight'){box(c,p.panel,a.x-18,a.y-83,36,4);box(c,p.ice,a.x-18,a.y-83,36*a.hp/100,4);}}
   const hugging=!s.cat.gone && ((s.phase==='reunion'&&Math.abs(s.cat.x-s.p.x)<45)||['alien','speech','attack','fade','aftermath'].includes(s.phase));
   if(im && !s.cat.gone && !hugging)catSprite(c,im.cat,s.cat.x,s.cat.y,s.cat.walk,s.cat.x>s.p.x?-1:1);

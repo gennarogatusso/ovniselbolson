@@ -5,6 +5,7 @@ const AWKA_DEPARTURE_START_X = -650;
 const AWKA_DEPARTURE_END_X = 200;
 const FOREST_RAIN_STAGES = new Set(['forestFade','forestRun','deer','burned','ship','beam','lift','vanished','complete']);
 export function awkaMusicActive(s:S,playing:boolean){return playing&&s.phase==='awka'&&s.intro.stage!=='done';}
+export function shouldStartCrossMusic(s:S){return s.phase==='spaceship'&&s.ship.stage==='impact';}
 export function awkaMusicVolume(s:S){
  if(s.phase!=='awka'||s.intro.stage==='done')return 0;
  if(s.intro.stage!=='depart')return 1;
@@ -77,7 +78,9 @@ export class GameAudio {
  private music:HTMLAudioElement|null=null;
  private forestTrack:HTMLAudioElement|null=null;
  private rainTrack:HTMLAudioElement|null=null;
+ private crossTrack:HTMLAudioElement|null=null;
  private forestMusicStarted=false;
+ private crossMusicStarted=false;
  private rainActive=false;
  private gamePaused=false;
  private musicActive=false;
@@ -109,6 +112,8 @@ export class GameAudio {
   this.forestTrack.loop=true;this.forestTrack.preload='auto';
   this.rainTrack??=new Audio('/imagens/lluvia.mp3');
   this.rainTrack.loop=true;this.rainTrack.preload='auto';
+  this.crossTrack??=new Audio('/imagens/cancion%20cruz%20en%20adelante.mp3');
+  this.crossTrack.loop=true;this.crossTrack.preload='auto';
  }
 
  setVolume(value:number){
@@ -117,11 +122,12 @@ export class GameAudio {
   if(this.music)this.music.volume=AWKA_VOLUME*this.volume;
   if(this.forestTrack)this.forestTrack.volume=.72*this.volume;
   if(this.rainTrack)this.rainTrack.volume=.42*this.volume;
+  if(this.crossTrack)this.crossTrack.volume=.72*this.volume;
  }
 
  resetForestAudio(){
-  this.forestMusicStarted=false;this.rainActive=false;this.gamePaused=false;
-  for(const track of [this.forestTrack,this.rainTrack]){
+  this.forestMusicStarted=false;this.crossMusicStarted=false;this.rainActive=false;this.gamePaused=false;
+  for(const track of [this.forestTrack,this.rainTrack,this.crossTrack]){
    if(!track)continue;
    track.pause();track.currentTime=0;
   }
@@ -380,22 +386,31 @@ export class GameAudio {
   const a=s.ship;
   if(!playing){
    a.sounds=[];
-   this.forestTrack?.pause();this.rainTrack?.pause();this.gamePaused=true;
+   this.forestTrack?.pause();this.rainTrack?.pause();this.crossTrack?.pause();this.gamePaused=true;
    this.setMusic(null);
    this.lastPhase=s.phase;this.lastIntroStage=s.intro.stage;this.lastChapterStage=s.chapter.stage;
    return;
   }
 
+  if(!this.crossMusicStarted&&shouldStartCrossMusic(s)){
+   this.crossMusicStarted=true;
+   // La canción de la cruz reemplaza la música del bosque y la lluvia desde este punto hasta el cierre.
+   if(this.forestTrack){this.forestTrack.pause();this.forestTrack.currentTime=0;}
+   if(this.rainTrack){this.rainTrack.pause();this.rainTrack.currentTime=0;}
+   this.rainActive=false;
+   if(this.crossTrack){this.crossTrack.currentTime=0;void this.crossTrack.play().catch(()=>{});}
+  }
   if(this.gamePaused){
    this.gamePaused=false;
-   if(this.forestMusicStarted&&this.forestTrack?.paused)void this.forestTrack.play().catch(()=>{});
+   const activeTrack=this.crossMusicStarted?this.crossTrack:this.forestMusicStarted?this.forestTrack:null;
+   if(activeTrack?.paused)void activeTrack.play().catch(()=>{});
   }
-  // La banda sonora del bosque comienza al salir de la habitación y permanece activa hasta el final.
+  // La música del bosque comienza al salir de la casa y suena hasta el impacto en La Cruz.
   if(!this.forestMusicStarted&&s.phase==='bedroom'&&s.chapter.stage==='exit'){
    this.forestMusicStarted=true;
    if(this.forestTrack){this.forestTrack.currentTime=0;void this.forestTrack.play().catch(()=>{});}
   }
-  const rainInForest=this.forestMusicStarted&&s.phase==='bedroom'&&FOREST_RAIN_STAGES.has(s.chapter.stage);
+  const rainInForest=!this.crossMusicStarted&&this.forestMusicStarted&&s.phase==='bedroom'&&FOREST_RAIN_STAGES.has(s.chapter.stage);
   if(rainInForest){
    this.rainActive=true;
    if(this.rainTrack?.paused)void this.rainTrack.play().catch(()=>{});
@@ -403,7 +418,7 @@ export class GameAudio {
    this.rainActive=false;
    if(this.rainTrack){this.rainTrack.pause();this.rainTrack.currentTime=0;}
   }
-  this.setMusic(this.forestMusicStarted?null:this.chooseTheme(s,playing));
+  this.setMusic(this.crossMusicStarted||this.forestMusicStarted?null:this.chooseTheme(s,playing));
   this.updateSceneSounds(s);
 
   if(s.phase!=='spaceship'){a.sounds=[];return;}
@@ -439,7 +454,8 @@ export class GameAudio {
   this.music?.pause();this.music=null;this.musicActive=false;
   this.forestTrack?.pause();this.forestTrack=null;
   this.rainTrack?.pause();this.rainTrack=null;
-  this.forestMusicStarted=false;this.rainActive=false;this.gamePaused=false;
+  this.crossTrack?.pause();this.crossTrack=null;
+  this.forestMusicStarted=false;this.crossMusicStarted=false;this.rainActive=false;this.gamePaused=false;
   this.stopMusic();
   for(const oscillator of this.musicNodes){try{oscillator.stop();}catch{/* Ya estaba detenido. */}}
   this.musicNodes.clear();
