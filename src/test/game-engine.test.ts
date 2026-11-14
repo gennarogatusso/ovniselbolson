@@ -177,10 +177,9 @@ describe('OVNI difficulty and narrative', () => {
   });
   it('restart resets allies, cat, cinematic and recruitment',()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
 
-  it('adds an impact burst, hit stop and camera response when the UFO is hit',()=>{
+  it('keeps the original UFO hit flash while retaining impact particles',()=>{
     const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=500;s.u.y=120;s.shots.push({x:500,y:120,vx:0,vy:0,life:1});update(s,.016);
-    expect(s.u.hp).toBe(96);expect(s.u.hit).toBeGreaterThan(0);expect(s.hitStop).toBeGreaterThan(0);expect(s.cameraShake).toBeGreaterThan(0);expect(s.fx.some(f=>f.shape==='ring')).toBe(true);
-    const frozen=s.t;update(s,.01);expect(s.t).toBeCloseTo(frozen);
+    expect(s.u.hp).toBe(96);expect(s.u.hit).toBeCloseTo(.12);expect(s.fx.some(f=>f.shape==='ring')).toBe(true);
   });
   it('unlocks burst and orbital attacks as the UFO loses health',()=>{
     const s=newState();s.phase='fight';s.u.vis=true;s.u.hp=60;s.u.x=500;s.u.tx=500;s.u.cd=0;update(s,.016);expect(s.u.phase).toBe(2);expect(s.u.attack).toBe('burst');
@@ -192,9 +191,9 @@ describe('OVNI difficulty and narrative', () => {
     const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=500;s.u.cd=0;update(s,.016);expect(s.u.windup).toBeGreaterThan(0);expect(s.u.windupDuration).toBeGreaterThan(0);
     const target=s.u.attackX;update(s,.2);expect(s.u.attackX).toBe(target);expect(s.u.windup).toBeLessThan(.70);
   });
-  it('adds camera feedback without changing the player input state',()=>{
-    const s=newState();s.phase='fight';s.u.vis=true;s.u.hp=70;s.u.x=500;s.u.tx=500;s.shots.push({x:500,y:120,vx:0,vy:0,life:1});update(s,.016);
-    expect(s.cameraPulse).toBeGreaterThan(0);expect(s.p.hp).toBe(100);s.keys.r=true;update(s,.016);expect(s.keys.r).toBe(true);
+  it('restores the original cinematic camera focus on the UFO during its crash',()=>{
+    const s=newState();s.phase='crash';s.u.x=1800;s.p.x=300;update(s,.1);
+    expect(s.cam).toBeGreaterThan(300);
   });
 
 });

@@ -43,10 +43,10 @@ export function newState() {
     ship: newShip(),
       chapter: { enabled: false, computer: false, stage: 'truck' as 'truck' | 'unload' | 'trump' | 'approach' | 'milei' | 'leave' | 'roomFade' | 'feed' | 'meal' | 'sleepChoice' | 'toBed' | 'settle' | 'quiet' | 'light' | 'wakeChoice' | 'waking' | 'missing' | 'search' | 'exit' | 'forestFade' | 'forestRun' | 'deer' | 'burned' | 'ship' | 'beam' | 'lift' | 'vanished' | 'complete', time: 0, truckX: 0, roomX: 115, roomY: 435, roomWalk: 0, roomDirection: 'right' as 'right'|'left'|'up'|'down', moving: false, night: false, fed: false, searching: false, forestX: 0, forestY: GROUND, forestRunTime: 0, forestFace: 1, forestHasMoved: false, catGone: false, eHeld: false },
      intro: { stage: 'opening' as 'opening' | 'beer' | 'drinking' | 'approach' | 'offer' | 'smoking' | 'warning' | 'rising' | 'leave' | 'depart' | 'done', time: 0, drinks: 0, npcX: -285, eHeld: false },
-    pt: 0, combatTipsTime: -1, cam: 0, hitStop: 0, cameraShake: 0, cameraPulse: 0,
+    pt: 0, combatTipsTime: -1, cam: 0,
     p: { x: 200, y: GROUND, vy: 0, face: 1, hp: 100, hurt: 0, crouch: false, armed: 0, flash: 0, walk: 0, roll: 0, rollCd: 0, rollHeld: false, rollFace: 1 },
     cat: { x: 150, y: GROUND, gone: false, walk: 0 },
-    u: { x: 600, y: -80, hp: 100, hit: 0, tx: 600, cd: 2, vis: false, attack: 'idle' as UfoAttack, windup: 0, windupDuration: 0, attackX: 600, attackY: GROUND-30, patternIndex: 0, phase: 1, recoil: 0 },
+    u: { x: 600, y: -80, hp: 100, hit: 0, tx: 600, cd: 2, vis: false, attack: 'idle' as UfoAttack, windup: 0, windupDuration: 0, attackX: 600, attackY: GROUND-30, patternIndex: 0, phase: 1 },
     shots: [] as Shot[], lasers: [] as Shot[], fx: [] as CombatFx[],
     allies: [{ x: 430, y: GROUND, hp: 100, hurt: 0, cd: 0.3, walk: 0, dead: false }, { x: 490, y: GROUND, hp: 100, hurt: 0, cd: 0.8, walk: 0, dead: false }] as [Ally, Ally],
         recruited: false, pendingHelp: false, crashX: 2820, crashStart: { x: 0, y: 0 }, jets: [{ x: 0, y: 125, start: 0.2, fired: [false, false] }, { x: 0, y: 185, start: 0.5, fired: [false, false] }] as Jet[], jetShots: [] as JetShot[], alien: { x: 2840, y: GROUND, reveal: 0, stand: 0, riseFrame: 0 }, alienHit: false, ufoHits: 0,
@@ -59,7 +59,7 @@ export function triggerSpecial(s:S):boolean{
  if(s.phase==='fight'){
   if(s.specialCd>0||s.u.hp<=0||!s.u.vis)return false;
   const p=s.p;s.shots.push({x:p.x+p.face*28,y:p.y-50,vx:p.face*SPECIAL_PROJECTILE_SPEED,vy:0,life:3,delay:SPECIAL_ATTACK_RELEASE_DELAY,kind:'special',specialTarget:'ufo'});
-  s.specialCd=5;s.specialAnim=SPECIAL_ATTACK_ANIM_DURATION;s.cameraPulse=Math.max(s.cameraPulse,.025);return true;
+  s.specialCd=5;s.specialAnim=SPECIAL_ATTACK_ANIM_DURATION;return true;
  }
  if(s.phase==='spaceship'&&s.ship.stage==='combat'){
   const a=s.ship;if(a.specialCd>0)return false;
@@ -89,7 +89,7 @@ function updateCinematic(s: S, dt: number): "continue" | null {
   s.shots = []; s.lasers = []; s.fire = false;
     let cameraTarget = p.x - W * 0.4;
     if (["crash","arrive","reunion","alien","speech","attack","jets","fade"].includes(s.phase)) cameraTarget = (s.phase === "crash" ? u.x : s.crashX - 70) - W * 0.55;
-  s.cam += (Math.max(0, Math.min(WORLD - W, p.x - W * 0.4)) - s.cam) * (1-Math.exp(-dt*5));
+  s.cam += (Math.max(0, Math.min(WORLD-W, cameraTarget)) - s.cam) * Math.min(1,dt*3);
   for (const a of s.allies) a.hurt = Math.max(0,a.hurt-dt);
     switch(s.phase) {
     
@@ -341,18 +341,18 @@ function spawnCombatImpact(s:S,x:number,y:number,power=1){
  for(let i=0;i<Math.round(power*4);i++){const angle=i*2.399+s.t*2,r=8+(i%3)*8,duration=.36+(i%3)*.08;s.fx.push({x:x+Math.cos(angle)*r,y:y+Math.sin(angle)*r,life:duration,maxLife:duration,c:'gold',shape:'dust',size:2+i%3});}
 }
 function syncUfoPhase(s:S){
- const u=s.u,next=u.hp>66?1:u.hp>33?2:3;if(next===u.phase)return;
- u.phase=next;u.attack='idle';u.windup=0;u.windupDuration=0;u.patternIndex=0;u.cd=Math.min(u.cd,.35);
- s.cameraShake=Math.max(s.cameraShake,.52);s.cameraPulse=Math.max(s.cameraPulse,.055);
- say(s,next===2?'¡EL OVNI ESTÁ CAMBIANDO!':'¡EL OVNI SE DESCONTROLA!',1.6);spawnCombatImpact(s,u.x,u.y,2);
+ const u=s.u,next=u.hp>66?1:u.hp>33?2:3;
+ if(next!==u.phase){u.phase=next;u.patternIndex=0;}
 }
 function hitUfo(s:S,damage:number,x:number,y:number){
- const u=s.u;if(u.hp<=0)return;u.hp=Math.max(0,u.hp-damage);u.hit=Math.max(u.hit,.16);u.recoil=Math.min(.28,u.recoil+(damage>=10?.20:.10));
- s.hitStop=Math.max(s.hitStop,damage>=10?.075:.038);s.cameraShake=Math.max(s.cameraShake,damage>=10?.58:.28);s.cameraPulse=Math.max(s.cameraPulse,damage>=10?.045:.022);
- spawnCombatImpact(s,x,y,damage>=10?1.8:1);syncUfoPhase(s);
- if(u.hp<=0){u.hp=0;u.attack='idle';u.windup=0;s.hitStop=Math.max(s.hitStop,.09);s.cameraShake=Math.max(s.cameraShake,.85);s.cameraPulse=Math.max(s.cameraPulse,.065);
-  s.pt=0;s.lasers=[];s.fire=false;if(s.recruited){s.phase='crash';s.crashStart={x:u.x,y:u.y};s.shots=[];}else s.phase='boom';
-  spawnCombatImpact(s,u.x,u.y,3);for(let i=0;i<26;i++)s.fx.push({x:u.x+(Math.random()-.5)*120,y:u.y+(Math.random()-.5)*50,life:.5+Math.random(),c:i%2?'gold':'light'});
+ const u=s.u;if(u.hp<=0)return;
+ u.hp=Math.max(0,u.hp-damage);u.hit=.12;
+ s.fx.push({x,y,life:.38,c:'energy'});
+ spawnCombatImpact(s,x,y,damage>=10?1.8:1);
+ if(u.hp<=0){
+  u.hp=0;u.attack='idle';u.windup=0;s.pt=0;s.lasers=[];s.fire=false;
+  if(s.recruited){s.phase='crash';s.crashStart={x:u.x,y:u.y};s.shots=[];}else s.phase='boom';
+  for(let i=0;i<26;i++)s.fx.push({x:u.x+(Math.random()-.5)*120,y:u.y+(Math.random()-.5)*50,life:.5+Math.random(),c:i%2?'gold':'light'});
  }
 }
 function startShipCombat(s:S){const a=s.ship;shipAdvance(s,'combat');a.x=145;a.y=SHIP.floor;a.enemies=[340,550,700,790].map((x,i)=>({x,y:SHIP.floor,hp:32,kind:i===2?'psychic':'direct',cd:3+i*1.4,windup:0,hurt:0,deadTime:0,face:-1}));shipSound(s,'door');}
@@ -543,10 +543,8 @@ function updateIntro(s: S, dt: number) {
 }
 
 export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
-  if(s.hitStop>0){const paused=Math.min(dt,s.hitStop);s.hitStop=Math.max(0,s.hitStop-paused);dt-=paused;if(dt<=0)return null;}
   const { p, cat, u, keys } = s;
   s.t += dt; s.pt += dt; s.msgT -= dt;s.specialCd=Math.max(0,s.specialCd-dt);s.specialAnim=Math.max(0,s.specialAnim-dt);
-  s.cameraShake=Math.max(0,s.cameraShake-dt*2.8);s.cameraPulse=Math.max(0,s.cameraPulse-dt*.22);u.recoil=Math.max(0,u.recoil-dt*2.8);
   if(s.phase==='fight'&&s.combatTipsTime>=0){s.combatTipsTime+=dt;if(s.combatTipsTime>=COMBAT_TIP_SEQUENCE_DURATION)s.combatTipsTime=-1;}
   if(s.phase==='spaceship')return updateShip(s,dt);
   if(s.phase==='aftermath'||s.phase==='bedroom')return updateChapter(s,dt);
@@ -602,19 +600,21 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
       if (s.pt > 2.2) { s.phase = "fight"; s.pt = 0; s.combatTipsTime = 0; u.tx = p.x + 200; say(s, "RECUPERÁ A TU GATO", 1.6); }
       break;
     case "fight": {
-      // El OVNI gana velocidad y agresividad a medida que pierde vida.
+      // Movimiento y altura originales del OVNI.
       syncUfoPhase(s);
-      const phaseSpeed=1+(u.phase-1)*.12;
-      if(Math.abs(u.x-u.tx)<20)u.tx=Math.max(100,Math.min(WORLD-100,p.x+(Math.random()*2-1)*(380/DIFFICULTY.aggression)));
-      u.x+=Math.sign(u.tx-u.x)*Math.min(Math.abs(u.tx-u.x),(140+(100-u.hp))*DIFFICULTY.movement*phaseSpeed*dt);
-      u.y=120+Math.sin(s.t*(2+u.phase*.22))*(25+u.phase*3)+Math.sin(s.t*.85)*7;
+      if (Math.abs(u.x - u.tx) < 20) u.tx = Math.max(100, Math.min(WORLD - 100, p.x + (Math.random() * 2 - 1) * (380 / DIFFICULTY.aggression)));
+      u.x += Math.sign(u.tx - u.x) * Math.min(Math.abs(u.tx - u.x), (140 + (100 - u.hp)) * DIFFICULTY.movement * dt);
+      u.y = 120 + Math.sin(s.t * 2) * 25;
+      // Solo cambian los ataques: se conserva la movilidad clásica del platillo.
       if(u.attack==='idle'){
         u.cd-=dt;
         if(u.cd<=0){
           const targets=[p,...s.allies.filter(a=>s.recruited&&a.hp>0)],target=targets[Math.floor(Math.random()*targets.length)]??p,index=u.patternIndex;
           const pattern:UfoAttack=u.phase===1?'aimed':u.phase===2?(index%2===0?'burst':'aimed'):(index%3===0?'orbital':index%3===1?'burst':'aimed');
-          u.attack=pattern;u.patternIndex++;u.windupDuration=u.phase===1?.70:u.phase===2?.56:.43;u.windup=u.windupDuration;
-          const direction=target===p?(keys.r?1:keys.l?-1:0):0;u.attackX=Math.max(60,Math.min(WORLD-60,target.x+direction*36));u.attackY=Math.max(70,target.y-30);
+          u.attack=pattern;u.patternIndex++;
+          u.windupDuration=u.phase===1?.70:u.phase===2?.56:.43;u.windup=u.windupDuration;
+          const direction=target===p?(keys.r?1:keys.l?-1:0):0;
+          u.attackX=Math.max(60,Math.min(WORLD-60,target.x+direction*36));u.attackY=Math.max(70,target.y-30);
         }
       }else{
         u.windup=Math.max(0,u.windup-dt);
@@ -623,7 +623,10 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
           if(u.attack==='orbital')s.lasers.push({x:u.attackX,y:-24,vx:0,vy:500+(u.phase-1)*45,life:1.35,kind:'ufoOrbital'});
           else{
             const count=u.attack==='burst'?(u.phase===3?5:3):1,spread=u.phase===3?.19:.15,speed=330+(u.phase-1)*48;
-            for(let i=0;i<count;i++){const offset=(i-(count-1)/2)*spread,shotAngle=angle+offset;s.lasers.push({x:sx,y:sy,vx:Math.cos(shotAngle)*speed,vy:Math.sin(shotAngle)*speed,life:4,kind:count>1?'ufoBurst':undefined});}
+            for(let i=0;i<count;i++){
+              const offset=(i-(count-1)/2)*spread,shotAngle=angle+offset;
+              s.lasers.push({x:sx,y:sy,vx:Math.cos(shotAngle)*speed,vy:Math.sin(shotAngle)*speed,life:4,kind:count>1?'ufoBurst':undefined});
+            }
           }
           u.attack='idle';u.windupDuration=0;u.cd=shotInterval(u.hp)*(u.phase===1?1.3:u.phase===2?1.02:.82);
         }
@@ -673,7 +676,6 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
     const top = p.y - (p.crouch ? 36 : 62);
     if(l.life>0&&l.x>p.x-14&&l.x<p.x+14&&l.y>top&&l.y<p.y&&p.hurt<=0&&p.roll===0){
       l.life=0;p.hp-=12;p.hurt=.6;s.fx.push({x:l.x,y:l.y,life:.35,c:'laser',shape:'ring',size:7,maxLife:.35});
-      s.hitStop=Math.max(s.hitStop,.045);s.cameraShake=Math.max(s.cameraShake,.38);s.cameraPulse=Math.max(s.cameraPulse,.022);
       if(p.hp<=0){p.hp=0;return "lose";}
     }
     if(l.y>=GROUND){l.life=0;s.fx.push({x:l.x,y:GROUND,life:.3,c:'laser',shape:'dust',size:5,maxLife:.3});}

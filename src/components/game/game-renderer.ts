@@ -168,15 +168,14 @@ function drawNpc(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:numbe
 }
 function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
  const {u}=s,abduction=['descend','beam','rise'].includes(s.phase),pulse=.5+.5*Math.sin(s.t*5.2);
- const combat=s.phase==='fight',enraged=combat&&u.phase>=2;
- c.save();c.translate(u.x,u.y+(u.recoil>0?Math.sin(s.t*42)*u.recoil*2.5:0));if(combat&&u.recoil>0)c.rotate(Math.sin(s.t*34)*u.recoil*.10);
+ c.save();c.translate(u.x,u.y);
  if(s.phase==='crash')c.rotate(Math.sin(s.pt*10)*.2+s.pt*.16);
  if(['arrive','reunion','alien','speech','attack','fade'].includes(s.phase))c.rotate(.25);
  // Halo exterior: el brillo se intensifica cuando el OVNI fija al gato.
  c.globalCompositeOperation='screen';
- const halo=c.createRadialGradient(0,7,5,0,7,abduction?112:combat?82+u.phase*9:76);
- halo.addColorStop(0,abduction?'rgba(150,246,255,.34)':enraged?'rgba(207,113,255,.24)':'rgba(150,210,255,.12)');
- halo.addColorStop(.42,abduction?'rgba(75,196,255,.14)':enraged?'rgba(129,67,219,.13)':'rgba(75,160,255,.045)');
+ const halo=c.createRadialGradient(0,7,5,0,7,abduction?112:76);
+ halo.addColorStop(0,abduction?'rgba(150,246,255,.34)':'rgba(150,210,255,.12)');
+ halo.addColorStop(.42,abduction?'rgba(75,196,255,.14)':'rgba(75,160,255,.045)');
  halo.addColorStop(1,'rgba(70,160,255,0)');
  c.fillStyle=halo;c.fillRect(-120,-110,240,220);
  c.globalCompositeOperation='source-over';
@@ -201,14 +200,13 @@ function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
   c.shadowColor=abduction?'#8ff8ff':color;c.shadowBlur=abduction?10:5;
   oval(c,color,x,y,2.8,2.1);
  }
- c.shadowBlur=abduction?17:enraged?13:7;c.shadowColor=abduction?'#b4ffff':enraged?'#c58cff':p.ice;
+ c.shadowBlur=abduction?17:7;c.shadowColor=abduction?'#b4ffff':p.ice;
  const emitter=c.createRadialGradient(0,12,1,0,12,18);
  emitter.addColorStop(0,'rgba(255,255,255,.98)');emitter.addColorStop(.24,abduction?'rgba(129,249,255,.95)':'rgba(155,213,255,.55)');emitter.addColorStop(1,'rgba(47,172,255,0)');
  c.fillStyle=emitter;c.beginPath();c.ellipse(0,12,17,6,0,0,Math.PI*2);c.fill();
  c.shadowBlur=0;c.fillStyle='#172b3a';c.beginPath();c.ellipse(0,11,8,3,0,0,Math.PI*2);c.fill();
  if(['reunion','alien','speech','attack','fade'].includes(s.phase)){box(c,p.ink,-27,5,25,18);box(c,p.metal,-31,20,33,4);}
- if(combat&&u.windup>0){const charge=.35+.65*(1-u.windup/Math.max(.01,u.windupDuration));c.globalAlpha=.25+charge*.55;c.shadowColor=enraged?'#d58cff':'#9af4ff';c.shadowBlur=12+charge*16;oval(c,enraged?'#d58cff':'#aaf8ff',0,18,5+charge*7,3+charge*3);c.shadowBlur=0;c.globalAlpha=1;}
- if(u.hit>0){c.globalAlpha=Math.min(1,u.hit*6);oval(c,'#ffffff',0,0,69,18);c.globalAlpha=1;}
+ if(u.hit>0){c.globalAlpha=Math.min(1,u.hit*2);oval(c,'#ffffff',0,0,67,16);c.globalAlpha=1;}
  c.restore();
  if(['crash','arrive','reunion','alien','speech','attack','fade'].includes(s.phase)){
   for(let i=0;i<12;i++){const q=(s.t*.25+i/12)%1;c.globalAlpha=(1-q)*.5;oval(c,p.smoke,u.x+Math.sin(i*2)*22+q*40,u.y-q*145,9+q*24,10+q*20);}c.globalAlpha=1;
@@ -1358,7 +1356,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  
  // Bosque lejano con la nueva textura y movimiento de viento.
  c.save();c.translate(-s.cam*.35,0);for(let x=-200;x<WORLD;x+=112){if(im?.tree&&ready(im.tree))drawWindTree(c,im.tree,x,GROUND-20,92+Math.abs(Math.sin(x*.013))*20,s.t,x*.017,.58);else{box(c,p.trunk,x,360,5,90);c.fillStyle=p.forest;c.beginPath();c.moveTo(x-27,415);c.lineTo(x+3,320+(x%3)*12);c.lineTo(x+33,415);c.fill();}}c.restore();
- c.save();const zoom=1+Math.min(.075,s.cameraPulse),shake=Math.min(1,s.cameraShake)*5;c.translate(W/2+Math.sin(s.t*78)*shake,H/2+Math.cos(s.t*67)*shake*.65);c.scale(zoom,zoom);c.translate(-W/2,-H/2);c.translate(-s.cam,0);
+ c.save();c.translate(-s.cam,0);
  for(let x=40;x<WORLD-500;x+=300){const special=x===340, width=special?205:145;
     oval(c,p.shadow,x+width/2,GROUND+6,width*.65,9);if(im)drawTrimmed(c,im.house,x-10,GROUND-137,width+20,137);
   for(let j=0;j<3;j++)box(c,p.trunk,x+width+18+j*15,GROUND-22,3,23);box(c,p.trunk,x+width+14,GROUND-15,52,3);
