@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { shouldStartCrossMusic } from '../components/game/game-audio';
-import { DIFFICULTY, GROUND, newState, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
@@ -147,5 +147,33 @@ describe('OVNI difficulty and narrative', () => {
     s.ship.stage='crossRise';expect(shouldStartCrossMusic(s)).toBe(false);
     s.ship.stage='baseEnd';expect(shouldStartCrossMusic(s)).toBe(false);
   });
-  it('restart resets allies, cat, cinematic and recruitment',()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
+  it('skips the opening directly into a ready-to-play fight with the main UFO',()=>{
+    const s=newIntroState();
+    expect(canSkipOpeningScene(s)).toBe(true);
+    expect(skipOpeningScene(s)).toBe(true);
+    expect(s.phase).toBe('fight');expect(s.pt).toBe(0);expect(s.p.x).toBe(200);
+    expect(s.p.armed).toBe(1);expect(s.cat.gone).toBe(true);
+    expect(s.u.vis).toBe(true);expect(s.u.hp).toBe(100);expect(s.combatTipsTime).toBe(0);
+    expect(canSkipOpeningScene(s)).toBe(false);expect(skipOpeningScene(s)).toBe(false);
+  });
+  it('offers the first skip only before the main UFO fight begins',()=>{
+    const s=newState();
+    for(const phase of ['walk','descend','beam','rise','draw'] as const){s.phase=phase;expect(canSkipOpeningScene(s)).toBe(true);}
+    s.phase='fight';expect(canSkipOpeningScene(s)).toBe(false);
+    s.phase='crash';expect(canSkipOpeningScene(s)).toBe(false);
+  });
+  it('skips only the Trump and Milei aftermath sequence into the next bedroom chapter',()=>{
+    const s=newState();s.phase='aftermath';s.chapter.stage='trump';s.chapter.time=4;s.keys.r=true;s.fire=true;
+    expect(canSkipAftermathScene(s)).toBe(true);expect(skipAftermathScene(s)).toBe(true);
+    expect(s.phase).toBe('bedroom');expect(s.chapter.stage).toBe('roomFade');expect(s.chapter.time).toBe(0);
+    expect(s.keys).toEqual({});expect(s.fire).toBe(false);expect(s.chapter.computer).toBe(false);
+    expect(canSkipAftermathScene(s)).toBe(false);expect(skipAftermathScene(s)).toBe(false);
+  });
+  it('does not show the aftermath skip during the earlier UFO crash cinematics or later gameplay',()=>{
+    const s=newState();s.phase='jets';expect(canSkipAftermathScene(s)).toBe(false);
+    s.phase='aftermath';
+    for(const stage of ['truck','unload','trump','approach','milei','leave'] as const){s.chapter.stage=stage;expect(canSkipAftermathScene(s)).toBe(true);}
+    s.phase='bedroom';expect(canSkipAftermathScene(s)).toBe(false);
+  });
+  it('restart resets allies, cat, cinematic and recruitment,()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
 });

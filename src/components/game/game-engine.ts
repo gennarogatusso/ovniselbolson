@@ -149,6 +149,35 @@ function updateCinematic(s: S, dt: number): "continue" | null {
 function say(s: S, m: string, d = 2.2) { s.msg = m; s.msgT = d; }
 
 // AWKA occupies the street left of the original world; combat coordinates stay unchanged.
+export function canSkipOpeningScene(s:S){
+  return s.phase==='awka'||['walk','descend','beam','rise','draw'].includes(s.phase);
+}
+export function skipOpeningScene(s:S):boolean{
+ if(!canSkipOpeningScene(s))return false;
+ s.intro.stage='done';s.intro.time=0;
+ s.phase='fight';s.pt=0;s.cam=0;
+ s.p.x=200;s.p.y=GROUND;s.p.vy=0;s.p.face=1;s.p.hp=100;s.p.hurt=0;s.p.crouch=false;
+ s.p.armed=1;s.p.flash=0;s.p.walk=0;s.p.roll=0;s.p.rollCd=0;s.p.rollHeld=false;
+ s.cat.x=150;s.cat.y=GROUND;s.cat.gone=true;s.cat.walk=0;
+ s.u.x=550;s.u.y=120;s.u.hp=100;s.u.hit=0;s.u.tx=s.p.x+200;s.u.cd=1;s.u.vis=true;
+ s.shots=[];s.lasers=[];s.fx=[];s.fire=false;s.fireCd=0;s.keys={};
+ s.recruited=false;s.pendingHelp=false;s.combatTipsTime=0;
+ s.specialCd=0;s.specialAnim=0;s.msg='RECUPERÁ A TU GATO';s.msgT=1.6;
+ s.allies.forEach(a=>{a.hp=100;a.hurt=0;a.cd=1;a.walk=0;a.dead=false;});
+ return true;
+}
+export function canSkipAftermathScene(s:S){
+ return s.phase==='aftermath'&&['truck','unload','trump','approach','milei','leave'].includes(s.chapter.stage);
+}
+export function skipAftermathScene(s:S):boolean{
+ if(!canSkipAftermathScene(s))return false;
+ const a=s.chapter;
+ s.phase='bedroom';s.pt=0;a.stage='roomFade';a.time=0;
+ a.roomX=115;a.roomY=435;a.roomWalk=0;a.roomDirection='right';a.moving=false;a.computer=false;
+ s.keys={};s.fire=false;s.shots=[];s.lasers=[];s.msg='';s.msgT=0;
+ return true;
+}
+
 export function newIntroState(): S {
   const s = newState(); s.phase = 'awka'; s.p.x = -650; s.cat.x = -585; s.cam = -1080; s.chapter.enabled = true; return s;
 }
