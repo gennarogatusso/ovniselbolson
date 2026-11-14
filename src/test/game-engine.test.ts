@@ -24,7 +24,7 @@ describe('OVNI difficulty and narrative', () => {
   it('increases real firing frequency by 20 percent',()=>{expect(shotInterval(100)).toBeCloseTo(1.4/1.20);expect(shotInterval(30)).toBeCloseTo(.9/1.20);});
   it('increases aggression by exactly 20 percent',()=>expect(DIFFICULTY.aggression).toBe(1.20));
   it('preserves health and weapon damage',()=>{const s=newState();expect(s.p.hp).toBe(100);expect(s.u.hp).toBe(100);expect(projectileDamage({})).toBe(4);});
-  it('applies movement and firing changes in the live simulation',()=>{const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=1000;s.u.cd=0;update(s,.1);expect(s.u.x).toBeCloseTo(516.8);expect(s.u.cd).toBeCloseTo(1.4/1.2);expect(s.lasers).toHaveLength(1);});
+  it('moves the UFO and telegraphs its first aimed attack before firing',()=>{const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=1000;s.u.cd=0;update(s,.1);expect(s.u.x).toBeCloseTo(516.8);expect(s.u.attack).toBe('aimed');expect(s.u.windup).toBeGreaterThan(0);expect(s.lasers).toHaveLength(0);update(s,.72);expect(s.u.attack).toBe('idle');expect(s.lasers).toHaveLength(1);});
   it('recruits nearby helpers once',()=>{const s=newState();s.phase='fight';s.p.x=460;s.keys.e=true;expect(canAskHelp(s)).toBe(true);update(s,.016);expect(s.recruited).toBe(true);expect(s.phase).toBe('help');expect(canAskHelp(s)).toBe(false);});
   it('keeps the forest entry in walking mode until the player starts moving',()=>{
     const s=newState();s.phase='bedroom';s.chapter.stage='forestRun';
@@ -176,4 +176,25 @@ describe('OVNI difficulty and narrative', () => {
     s.phase='bedroom';expect(canSkipAftermathScene(s)).toBe(false);
   });
   it('restart resets allies, cat, cinematic and recruitment,()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
+
+  it('adds an impact burst, hit stop and camera response when the UFO is hit',()=>{
+    const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=500;s.u.y=120;s.shots.push({x:500,y:120,vx:0,vy:0,life:1});update(s,.016);
+    expect(s.u.hp).toBe(96);expect(s.u.hit).toBeGreaterThan(0);expect(s.hitStop).toBeGreaterThan(0);expect(s.cameraShake).toBeGreaterThan(0);expect(s.fx.some(f=>f.shape==='ring')).toBe(true);
+    const frozen=s.t;update(s,.01);expect(s.t).toBeCloseTo(frozen);
+  });
+  it('unlocks burst and orbital attacks as the UFO loses health',()=>{
+    const s=newState();s.phase='fight';s.u.vis=true;s.u.hp=60;s.u.x=500;s.u.tx=500;s.u.cd=0;update(s,.016);expect(s.u.phase).toBe(2);expect(s.u.attack).toBe('burst');
+    s.u.windup=.01;update(s,.02);expect(s.lasers.filter(l=>l.kind==='ufoBurst')).toHaveLength(3);
+    s.lasers=[];s.u.hp=25;s.u.attack='idle';s.u.cd=0;s.u.patternIndex=0;update(s,.016);expect(s.u.phase).toBe(3);expect(s.u.attack).toBe('orbital');
+    s.u.windup=.01;update(s,.02);expect(s.lasers.some(l=>l.kind==='ufoOrbital')).toBe(true);
+  });
+  it('keeps attack warnings visible during windup',()=>{
+    const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=500;s.u.cd=0;update(s,.016);expect(s.u.windup).toBeGreaterThan(0);expect(s.u.windupDuration).toBeGreaterThan(0);
+    const target=s.u.attackX;update(s,.2);expect(s.u.attackX).toBe(target);expect(s.u.windup).toBeLessThan(.70);
+  });
+  it('adds camera feedback without changing the player input state',()=>{
+    const s=newState();s.phase='fight';s.u.vis=true;s.u.hp=70;s.u.x=500;s.u.tx=500;s.shots.push({x:500,y:120,vx:0,vy:0,life:1});update(s,.016);
+    expect(s.cameraPulse).toBeGreaterThan(0);expect(s.p.hp).toBe(100);s.keys.r=true;update(s,.016);expect(s.keys.r).toBe(true);
+  });
+
 });
