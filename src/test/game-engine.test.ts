@@ -175,7 +175,7 @@ describe('OVNI difficulty and narrative', () => {
     for(const stage of ['truck','unload','trump','approach','milei','leave'] as const){s.chapter.stage=stage;expect(canSkipAftermathScene(s)).toBe(true);}
     s.phase='bedroom';expect(canSkipAftermathScene(s)).toBe(false);
   });
-  it('restart resets allies, cat, cinematic and recruitment,()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
+  it('restart resets allies, cat, cinematic and recruitment',()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
 
   it('adds an impact burst, hit stop and camera response when the UFO is hit',()=>{
     const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=500;s.u.y=120;s.shots.push({x:500,y:120,vx:0,vy:0,life:1});update(s,.016);
