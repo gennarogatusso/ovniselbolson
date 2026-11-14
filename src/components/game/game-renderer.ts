@@ -332,24 +332,20 @@ const OPENING_DUSK_PHASES = new Set<S['phase']>(['walk','descend','beam','rise',
 function openingDuskActive(s:S){return OPENING_DUSK_PHASES.has(s.phase);}
 function drawOpeningDuskSky(c:CanvasRenderingContext2D,s:S){
  if(!openingDuskActive(s))return;
- const sunX=W*.74,sunY=GROUND-176,walkBlend=s.phase==='walk'?.78:1;
+ const glowX=W*.76,glowY=GROUND-128,walkBlend=s.phase==='walk'?.78:1;
  c.save();c.globalCompositeOperation='screen';
- const bloom=c.createRadialGradient(sunX,sunY,10,sunX,sunY,370);
- bloom.addColorStop(0,'rgba(255,192,132,.31)');bloom.addColorStop(.28,'rgba(255,123,106,.18)');bloom.addColorStop(.62,'rgba(177,96,139,.10)');bloom.addColorStop(1,'rgba(79,77,139,0)');
- c.globalAlpha=walkBlend;c.fillStyle=bloom;c.fillRect(sunX-390,sunY-390,780,780);
- const horizon=c.createLinearGradient(0,GROUND-235,0,GROUND+35);
- horizon.addColorStop(0,'rgba(115,89,137,0)');horizon.addColorStop(.46,'rgba(190,104,130,.12)');horizon.addColorStop(.78,'rgba(255,164,105,.19)');horizon.addColorStop(1,'rgba(255,193,132,0)');
- c.fillStyle=horizon;c.fillRect(0,GROUND-235,W,270);
- const sun=c.createRadialGradient(sunX-11,sunY-12,2,sunX,sunY,48);
- sun.addColorStop(0,'rgba(255,247,214,.98)');sun.addColorStop(.42,'rgba(255,207,153,.94)');sun.addColorStop(.78,'rgba(255,145,111,.78)');sun.addColorStop(1,'rgba(255,113,104,0)');
- c.globalAlpha=.86*walkBlend;c.shadowColor='#ffb879';c.shadowBlur=30;c.fillStyle=sun;
- c.beginPath();c.ellipse(sunX,sunY,39,34,-.08,0,Math.PI*2);c.fill();c.shadowBlur=0;
- // Rayos oblicuos muy suaves, filtrados por la bruma del horizonte.
- for(let i=0;i<9;i++){
-  const spread=(i-4)*.105,tailX=sunX+Math.sin(spread)*265,tailY=GROUND+18;
-  c.globalAlpha=(.035+(i%3)*.012)*walkBlend;c.strokeStyle=i%2?'rgba(255,186,139,.65)':'rgba(255,222,177,.8)';
-  c.lineWidth=i%3===0?9:5;c.beginPath();c.moveTo(sunX,sunY+13);c.lineTo(tailX,tailY);c.stroke();
- }
+ // Bloom ambiental amplio: ilumina la bruma y la montaña sin dibujar un disco solar.
+ const bloom=c.createRadialGradient(glowX,glowY,24,glowX,glowY,560);
+ bloom.addColorStop(0,'rgba(255,177,133,.19)');bloom.addColorStop(.3,'rgba(255,123,116,.14)');bloom.addColorStop(.66,'rgba(177,96,139,.075)');bloom.addColorStop(1,'rgba(79,77,139,0)');
+ c.globalAlpha=walkBlend;c.fillStyle=bloom;c.fillRect(glowX-570,glowY-570,1140,1140);
+ // Luz rasante distribuida a lo largo del horizonte, sin un punto de origen visible.
+ const horizon=c.createLinearGradient(0,GROUND-260,0,GROUND+42);
+ horizon.addColorStop(0,'rgba(115,89,137,0)');horizon.addColorStop(.38,'rgba(190,104,130,.09)');horizon.addColorStop(.72,'rgba(255,164,105,.17)');horizon.addColorStop(1,'rgba(255,193,132,0)');
+ c.fillStyle=horizon;c.fillRect(0,GROUND-260,W,302);
+ // Bruma cálida extendida detrás de las siluetas de la montaña.
+ const haze=c.createLinearGradient(W*.18,0,W*.96,0);
+ haze.addColorStop(0,'rgba(255,155,132,0)');haze.addColorStop(.48,'rgba(255,157,130,.035)');haze.addColorStop(.78,'rgba(255,184,137,.105)');haze.addColorStop(1,'rgba(255,155,132,0)');
+ c.globalAlpha=walkBlend;c.fillStyle=haze;c.fillRect(0,GROUND-245,W,210);
  c.restore();
 }
 function drawOpeningDuskGrade(c:CanvasRenderingContext2D,s:S){
