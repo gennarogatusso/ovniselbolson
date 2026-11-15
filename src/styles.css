@@ -378,26 +378,6 @@
 }
 
 
-/* Intro de bienvenida: canvas transparente con partículas de nieve sobre el primer plano de AWKA. */
-.game-welcome-intro {
-  position: absolute;
-  inset: 0;
-  z-index: 35;
-  overflow: hidden;
-  pointer-events: none;
-  background: radial-gradient(ellipse at center, rgb(5 13 27 / 18%) 0%, rgb(2 7 16 / 42%) 100%);
-  animation: game-welcome-fade-out 1.4s ease-in 4s forwards;
-}
-.game-welcome-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-@keyframes game-welcome-fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
 /* Indicador circular de recarga del ataque especial R, visible en PC y móviles. */
 /* Habilidad definitiva del gato: tecla X, independiente del ataque especial R. */
 .game-cat-ultimate-hud,

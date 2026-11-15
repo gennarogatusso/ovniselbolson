@@ -11,7 +11,6 @@ import { W, H, ENDINGS, CINEMATIC, canAskHelp, newState, newIntroState, introAct
 import { draw, type GameImages, type Palette } from './game-renderer';
 
 import { GameComputer } from './GameComputer';
-import { GameWelcomeIntro } from './GameWelcomeIntro';
 import { GameAudio } from './game-audio';
 import greyArt from '@/assets/ship-grey.png.asset.json';
 import pickupArt from '@/assets/ship-pickup.png.asset.json';
@@ -98,9 +97,8 @@ function prepareTransparentSprite(source: HTMLImageElement, sourceX=0, regionWid
 export function UfoGame() {
  const cv=useRef<HTMLCanvasElement>(null), host=useRef<HTMLDivElement>(null), st=useRef(newState()), images=useRef<GameImages|null>(null), palette=useRef<Palette|null>(null);
  const [screen,setScreen]=useState<Screen>('title'), [ending,setEnding]=useState<Ending|null>(null), [touch,setTouch]=useState(false),[expanded,setExpanded]=useState(false),[loading,setLoading]=useState(true),[assetError,setAssetError]=useState(false),[context,setContext]=useState(false),[combat,setCombat]=useState(false);
- const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false), [freeRoom,setFreeRoom]=useState(false), [welcomeVisible,setWelcomeVisible]=useState(false), [specialCooldown,setSpecialCooldown]=useState(0),[catUltimateUsed,setCatUltimateUsed]=useState(false),[catUltimateReady,setCatUltimateReady]=useState(false);
+ const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false), [freeRoom,setFreeRoom]=useState(false), [specialCooldown,setSpecialCooldown]=useState(0),[catUltimateUsed,setCatUltimateUsed]=useState(false),[catUltimateReady,setCatUltimateReady]=useState(false);
  const [skipScene,setSkipScene]=useState<'opening'|'aftermath'|null>(null);
- const welcomeActiveRef=useRef(false);
  const audio=useRef<GameAudio|null>(null);
  const [computer,setComputer]=useState(false),[creditsOpen,setCreditsOpen]=useState(false),[controlsOpen,setControlsOpen]=useState(false);
  const [masterVolume,setMasterVolume]=useState(.8),[volumeOpen,setVolumeOpen]=useState(false);
@@ -115,7 +113,7 @@ export function UfoGame() {
  useEffect(()=>{
   const map:Record<string,string>={a:'l',arrowleft:'l',d:'r',arrowright:'r',w:'j',arrowup:'j',' ':'j',s:'c',arrowdown:'c',e:'e',shift:'roll'};
   const clear=()=>{st.current.keys={};st.current.fire=false;};
-  const down=(e:KeyboardEvent)=>{if(st.current.chapter.computer)return;const key=e.key.toLowerCase();if(st.current.phase==='spaceship'&&['trailWalk','trailEnd'].includes(st.current.ship.stage)&&key!=='w'&&key!=='escape'){e.preventDefault();return;}if(key==='r'&&screenRef.current==='play'&&!e.repeat){e.preventDefault();if(triggerSpecial(st.current))setSpecialCooldown(5);return;}if(key==='x'&&screenRef.current==='play'&&!e.repeat){e.preventDefault();if(triggerCatUltimate(st.current)){setCatUltimateUsed(true);setCatUltimateReady(false);}return;}if(key==='escape'&&welcomeActiveRef.current)return;if(key==='escape'){clear();setCreditsOpen(false);setScreen(s=>s==='play'?'paused':s==='paused'?'play':s);return;}if(map[key]&&screenRef.current==='play'){e.preventDefault();st.current.keys[map[key]]=true;}};
+  const down=(e:KeyboardEvent)=>{if(st.current.chapter.computer)return;const key=e.key.toLowerCase();if(st.current.phase==='spaceship'&&['trailWalk','trailEnd'].includes(st.current.ship.stage)&&key!=='w'&&key!=='escape'){e.preventDefault();return;}if(key==='r'&&screenRef.current==='play'&&!e.repeat){e.preventDefault();if(triggerSpecial(st.current))setSpecialCooldown(5);return;}if(key==='x'&&screenRef.current==='play'&&!e.repeat){e.preventDefault();if(triggerCatUltimate(st.current)){setCatUltimateUsed(true);setCatUltimateReady(false);}return;}if(key==='escape'){clear();setCreditsOpen(false);setScreen(s=>s==='play'?'paused':s==='paused'?'play':s);return;}if(map[key]&&screenRef.current==='play'){e.preventDefault();st.current.keys[map[key]]=true;}};
   const up=(e:KeyboardEvent)=>{const k=map[e.key.toLowerCase()];if(k)st.current.keys[k]=false;};
   const blur=()=>{clear();setScreen(s=>s==='play'?'paused':s);};
   window.addEventListener('keydown',down);window.addEventListener('keyup',up);window.addEventListener('blur',blur);window.addEventListener('pointerup',clear);
@@ -130,7 +128,7 @@ export function UfoGame() {
   const loop=(now:number)=>{const dt=Math.min(.05,(now-last)/1000);last=now;
       try{
     
-    if(screen==='play'&&!welcomeActiveRef.current){ 
+    if(screen==='play'){ 
      const result=update(st.current,dt);acc+=dt;
      if(acc>.12){acc=0;setComputer(st.current.chapter.computer);setContext(canAskHelp(st.current));setCombat(st.current.phase==='fight'||shipIsCombat(st.current));setSpecialCooldown(st.current.phase==='spaceship'?st.current.ship.specialCd:st.current.specialCd);setCatUltimateUsed(st.current.ship.catUltimateUsed);setCatUltimateReady(st.current.phase==='spaceship'&&st.current.ship.stage==='soldierFight'&&st.current.ship.time>=CAT_ULTIMATE_READY_DELAY&&!st.current.ship.catUltimateUsed&&st.current.ship.soldiers.some(soldier=>soldier.hp>0));setAction(introAction(st.current)??chapterAction(st.current));setIntro(st.current.phase==='awka'||CINEMATIC.has(st.current.phase)||st.current.phase==='spaceship'&&!shipIsCombat(st.current)&&!shipIsFree(st.current));setFreeRoom(roomIsFree(st.current)||shipIsFree(st.current)||forestIsFree(st.current));setSkipScene(canSkipOpeningScene(st.current)?'opening':canSkipAftermathScene(st.current)?'aftermath':null);}
      if(result==='lose'&&st.current.phase==='spaceship'&&st.current.ship.stage==='combat'){
@@ -143,13 +141,13 @@ export function UfoGame() {
      const s=st.current;s.t+=dt;s.fx=s.fx.filter(f=>(f.life-=dt)>0);
      if(s.phase==='over'&&Math.random()<dt*6)s.fx.push({x:s.u.x+(Math.random()-.5)*60,y:st.current.p.y-20,life:1.2,c:'smoke'});
     }
-    audio.current?.update(st.current,screen==='play'&&!welcomeActiveRef.current);
+    audio.current?.update(st.current,screen==='play');
      draw(ctx,st.current,images.current,colors);host.current?.setAttribute('data-ship-stage',st.current.ship.stage);host.current?.setAttribute('data-phase',st.current.phase);host.current?.setAttribute('data-ufo-health',String(st.current.u.hp));host.current?.setAttribute('data-intro-stage',st.current.intro.stage);host.current?.setAttribute('data-chapter-stage',st.current.chapter.stage);
    }catch(err){console.error('Error en el juego',err);}
    raf=requestAnimationFrame(loop);
   };raf=requestAnimationFrame(loop);return()=>cancelAnimationFrame(raf);
  },[screen,loading,assetError]);
- const start=()=>{setCreditsOpen(false);setControlsOpen(false);setVolumeOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();audio.current.setVolume(masterVolume);audio.current.resetForestAudio();}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();setSkipScene(null);welcomeActiveRef.current=true;setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setCatUltimateUsed(false);setCatUltimateReady(false);setWelcomeVisible(true);setScreen('play');};
+ const start=()=>{setCreditsOpen(false);setControlsOpen(false);setVolumeOpen(false);audio.current??=new GameAudio();try{audio.current.unlock();audio.current.setVolume(masterVolume);audio.current.resetForestAudio();}catch{ /* Audio must never block gameplay. */ }st.current=newIntroState();setSkipScene(null);setComputer(false);setIntro(true);setAction(null);setEnding(null);setContext(false);setCombat(false);setCatUltimateUsed(false);setCatUltimateReady(false);setScreen('play');};
  const pause=()=>{st.current.keys={};st.current.fire=false;setScreen('paused');};
  const fullscreen=async()=>{const el=host.current;if(!el)return;if(document.fullscreenElement){await document.exitFullscreen();return;}if(expanded){setExpanded(false);return;}try{if(el.requestFullscreen){await el.requestFullscreen();setExpanded(true);}else setExpanded(true);}catch{setExpanded(true);}};
   const hold=(k:string)=>({onPointerDown:(e:PointerEvent<HTMLButtonElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);st.current.keys[k]=true;},onPointerUp:()=>{st.current.keys[k]=false;},onPointerCancel:()=>{st.current.keys[k]=false;}});
@@ -165,8 +163,7 @@ export function UfoGame() {
   <div className="game-stage">
    {screen==='title'&&<img className="game-title-background" src="/imagens/menu%20de%20juego.png" alt=""/>}
    <canvas ref={cv} width={W} height={H} aria-label="OVNIS EN EL BOLSÓN, escenario de juego" className="h-full w-full" onPointerDown={e=>{if(e.pointerType==='mouse'&&e.button===0)fire(e);}} onPointerMove={aim} onPointerUp={()=>{st.current.fire=false;}} onPointerCancel={()=>{st.current.fire=false;}} onContextMenu={e=>e.preventDefault()}/>
-   {welcomeVisible&&<GameWelcomeIntro onComplete={()=>{welcomeActiveRef.current=false;setWelcomeVisible(false);}}/>}
-   {screen!=='title'&&!(screen==='play'&&welcomeVisible)&&<div className="absolute right-2 top-2 z-20 flex gap-2">
+   {screen!=='title'&&<div className="absolute right-2 top-2 z-20 flex gap-2">
     {screen==='play'&&<Button size="icon" variant="outline" title="Pausar" aria-label="Pausar" onClick={pause}><Pause/></Button>}
     <div className="game-volume-anchor">
      <Button size="icon" variant="outline" title="Control de volumen" aria-label="Control de volumen" aria-expanded={volumeOpen} aria-controls="game-volume-panel" onClick={()=>setVolumeOpen(open=>!open)}>
@@ -180,8 +177,8 @@ export function UfoGame() {
     </div>
     <Button size="icon" variant="outline" title={expanded?'Salir de pantalla completa':'Pantalla completa'} aria-label={expanded?'Salir de pantalla completa':'Pantalla completa'} onClick={fullscreen}>{expanded?<Minimize/>:<Maximize/>}</Button>
    </div>}
-          {screen==='play'&&!computer&&!welcomeVisible&&skipScene==='opening'&&<Button type="button" variant="outline" className="absolute left-1/2 top-14 z-30 -translate-x-1/2 border-white/60 bg-black/75 text-white shadow-lg hover:bg-black/90" onClick={()=>{if(skipOpeningScene(st.current)){setSkipScene(null);setIntro(false);setCombat(true);setContext(false);setAction(null);setFreeRoom(false);setSpecialCooldown(0);}}}>SALTAR ESCENA</Button>}
-    {screen==='play'&&!computer&&!welcomeVisible&&skipScene==='aftermath'&&<Button type="button" variant="outline" className="absolute left-1/2 top-14 z-30 -translate-x-1/2 border-white/60 bg-black/75 text-white shadow-lg hover:bg-black/90" onClick={()=>{if(skipAftermathScene(st.current)){setSkipScene(null);setIntro(false);setCombat(false);setContext(false);setAction(null);setComputer(false);setFreeRoom(false);}}}>SALTAR ESCENA</Button>}
+          {screen==='play'&&!computer&&skipScene==='opening'&&<Button type="button" variant="outline" className="absolute left-1/2 top-14 z-30 -translate-x-1/2 border-white/60 bg-black/75 text-white shadow-lg hover:bg-black/90" onClick={()=>{if(skipOpeningScene(st.current)){setSkipScene(null);setIntro(false);setCombat(true);setContext(false);setAction(null);setFreeRoom(false);setSpecialCooldown(0);}}}>SALTAR ESCENA</Button>}
+    {screen==='play'&&!computer&&skipScene==='aftermath'&&<Button type="button" variant="outline" className="absolute left-1/2 top-14 z-30 -translate-x-1/2 border-white/60 bg-black/75 text-white shadow-lg hover:bg-black/90" onClick={()=>{if(skipAftermathScene(st.current)){setSkipScene(null);setIntro(false);setCombat(false);setContext(false);setAction(null);setComputer(false);setFreeRoom(false);}}}>SALTAR ESCENA</Button>}
 {screen==='play'&&!computer&&touch&&st.current.ship.stage==='trailWalk'&&<div className="pointer-events-none absolute inset-x-0 bottom-5 z-10 flex justify-center"><Button className={`${controlClass} game-trail-forward-control`} aria-label="Avanzar por el sendero" {...hold('j')}><ArrowUp/><span>W</span></Button></div>}
       {screen==='play'&&!computer&&touch&&(freeRoom||combat||(!intro&&!CINEMATIC.has(st.current.phase)))&&!['trailWalk','trailEnd'].includes(st.current.ship.stage)&&<div className={`game-touch game-mobile-layout ${shipIsCombat(st.current)?'game-ship-touch':''} ${combat?'game-combat-layout':''} pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-between px-3`}>
         <div className="game-touch-left pointer-events-auto flex items-end gap-2">

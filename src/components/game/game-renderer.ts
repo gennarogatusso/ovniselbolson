@@ -1336,6 +1336,64 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  }
  c.restore();
 }
+function drawAwkaOpeningTitle(c:CanvasRenderingContext2D,s:S) {
+ const elapsed=s.t;
+ if(elapsed>=4.75)return;
+ const clamp=(value:number)=>Math.max(0,Math.min(1,value));
+ const smooth=(value:number)=>{const v=clamp(value);return v*v*(3-2*v);};
+ const enter=1-Math.pow(1-clamp(elapsed/.82),3);
+ const exit=smooth((elapsed-3.55)/1.2);
+ const alpha=enter*(1-exit);
+ if(alpha<=0)return;
+ c.save();
+ c.translate(W/2,H*.335+(1-enter)*16-exit*10);
+ c.scale(1+exit*.025,1+exit*.025);
+ const halo=c.createRadialGradient(0,4,5,0,4,205);
+ halo.addColorStop(0,'rgba(118,111,185,.20)');
+ halo.addColorStop(.58,'rgba(80,75,132,.09)');
+ halo.addColorStop(1,'rgba(35,34,66,0)');
+ c.globalAlpha=alpha*.9;
+ c.fillStyle=halo;c.fillRect(-220,-43,440,88);
+ c.textAlign='center';c.textBaseline='middle';
+ c.shadowColor='rgba(193,174,255,.72)';c.shadowBlur=11;
+ c.globalAlpha=alpha*.92;
+ c.font='500 13px "Cinzel", Georgia, serif';
+ c.fillStyle='#e9e3f2';
+ c.fillText('Gennaro Montecino Presenta',0,-12);
+ c.globalAlpha=alpha;
+ c.shadowColor='rgba(190,169,255,.82)';c.shadowBlur=15;
+ c.font='bold 29px "Cinzel", Georgia, serif';
+ c.fillStyle='#fffaf2';
+ c.fillText('Ovnis: El Bolsón',0,17);
+ c.shadowBlur=0;
+ const lineWidth=154*enter*(1-exit*.12);
+ const line=c.createLinearGradient(-lineWidth/2,0,lineWidth/2,0);
+ line.addColorStop(0,'rgba(169,151,229,0)');
+ line.addColorStop(.5,'rgba(229,220,255,.92)');
+ line.addColorStop(1,'rgba(169,151,229,0)');
+ c.globalAlpha=alpha*.95;c.strokeStyle=line;c.lineWidth=1.2;
+ c.beginPath();c.moveTo(-lineWidth/2,41);c.lineTo(lineWidth/2,41);c.stroke();
+ const shineProgress=clamp((elapsed-.95)/2.35);
+ if(elapsed>.95&&elapsed<3.65){
+  const shineX=-lineWidth/2+shineProgress*lineWidth;
+  c.globalAlpha=alpha*.8;c.shadowColor='#fff';c.shadowBlur=10;c.fillStyle='#fff';
+  c.beginPath();c.arc(shineX,41,2,0,Math.PI*2);c.fill();c.shadowBlur=0;
+ }
+ const particleAlpha=enter*exit*(1-exit)*.82;
+ if(particleAlpha>.01){
+  for(let i=0;i<12;i++){
+   const angle=i*2.399;
+   const spread=12+exit*28;
+   const x=Math.cos(angle)*(56+(i%3)*22)+Math.cos(angle*2)*spread;
+   const y=Math.sin(angle)*13-exit*(9+(i%4)*5);
+   c.globalAlpha=particleAlpha*(.55+(i%3)*.18);
+   c.fillStyle=i%3===0?'#fff4d8':'#cbbcff';
+   c.beginPath();c.arc(x,y,1+(i%2)*.45,0,Math.PI*2);c.fill();
+  }
+ }
+ c.restore();
+}
+
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
  if(im&&s.phase==='spaceship'){shipScene(c,s,im,p);return;}
  if(im&&s.phase==='bedroom'&&s.chapter.stage==='roomFade'&&s.chapter.time<1.2){
@@ -1389,6 +1447,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
   if(a.stage==='offer')bubble(c,'Eh, loco, ¿querés fumar?',s.intro.npcX-s.cam,GROUND-105,p,420);
   if(a.stage==='warning')bubble(c,'Cuidado que está fuerte, compa',s.intro.npcX-s.cam,GROUND-105,p,470);
   if(a.stage==='opening'){c.globalAlpha=1-Math.min(1,a.time/1.6);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
+  drawAwkaOpeningTitle(c,s);
   return;
  }
  // Outskirts crash hill, with a readable flat arrival area.
