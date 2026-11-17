@@ -1240,7 +1240,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  if(swordScene){
   const swordX=650,swordY=H*.84;
   if(a.stage==='swordIntro'||a.stage==='swordReady'){
-   c.save();c.translate(swordX,swordY);c.rotate(Math.PI/2);drawTrimmed(c,art.swordGround,-48,-12,96,24);c.restore();
+   c.save();c.translate(swordX,swordY);c.rotate(Math.PI/2);drawTrimmed(c,art.swordGround,-12,-48,24,96);c.restore();
    actor(a.x,a.y,142);
   }else{
    const frameIndex=a.stage==='swordEquipped'?4:Math.min(4,Math.floor(a.time/0.5));

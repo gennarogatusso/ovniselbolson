@@ -513,7 +513,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     }
     case 'trailWalk':if(s.keys.j&&a.trailProgress<1){a.trailProgress=Math.min(1,a.trailProgress+dt*.12);a.walk+=dt*9;}if(a.trailProgress>=1){a.baseProgress=0;a.walk=0;a.face=1;a.x=145;a.y=SHIP.floor;shipAdvance(s,'swordIntro');}break;
     case 'trailEnd':break;
-    case 'swordIntro':a.x=approach(a.x,520,170*dt);a.y=SHIP.floor;a.face=1;a.walk+=dt*9;if(a.x>=519)shipAdvance(s,'swordReady');break;
+    case 'swordIntro':a.x=approach(a.x,590,170*dt);a.y=SHIP.floor;a.face=1;a.walk+=dt*9;if(a.x>=589)shipAdvance(s,'swordReady');break;
     case 'swordReady':a.y=SHIP.floor;break;
     case 'swordPickup':a.y=SHIP.floor;if(a.time>=2.5)shipAdvance(s,'swordEquipped');break;
     case 'swordEquipped':a.y=SHIP.floor;break;
