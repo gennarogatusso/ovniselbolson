@@ -91,7 +91,7 @@ describe('OVNI difficulty and narrative', () => {
     expect(shipAction(s)).toBe('SEGUIR EL CAMINO');
     interactShip(s);expect(s.ship.stage).toBe('trailWalk');
     s.keys.j=true;for(let i=0;i<100&&s.ship.stage==='trailWalk';i++)update(s,.1);
-    expect(s.ship.stage).toBe('trailEnd');expect(s.ship.trailProgress).toBe(1);expect(update(s,.016)).toBe(null);
+    expect(s.ship.stage).toBe('swordIntro');expect(s.ship.trailProgress).toBe(1);expect(update(s,.016)).toBe(null);
   });
   it('restarts the military encounter at full health if the player is defeated',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.hp=0;
@@ -134,10 +134,22 @@ describe('OVNI difficulty and narrative', () => {
     interactShip(s);expect(s.ship.stage).toBe('trailWalk');
     s.keys.r=true;update(s,1);s.keys.r=false;expect(s.ship.trailProgress).toBe(0);
     s.keys.j=true;for(let i=0;i<100&&s.ship.stage==='trailWalk';i++)update(s,.1);
-    expect(s.ship.trailProgress).toBe(1);expect(s.ship.stage).toBe('baseFade');expect(update(s,.016)).toBe(null);
-    update(s,1.6);expect(s.ship.stage).toBe('baseApproach');
-    for(let i=0;i<100&&s.ship.stage==='baseApproach';i++)update(s,.1);
-    expect(s.ship.baseProgress).toBe(1);expect(s.ship.stage).toBe('baseEnd');expect(update(s,.1)).toBe(null);
+    expect(s.ship.trailProgress).toBe(1);expect(s.ship.stage).toBe('swordIntro');expect(update(s,.016)).toBe(null);
+    for(let i=0;i<100&&s.ship.stage==='swordIntro';i++)update(s,.05);
+    expect(s.ship.stage).toBe('swordReady');expect(shipAction(s)).toBe('AGARRAR ESPADA ALIENÍGENA');
+    interactShip(s);expect(s.ship.stage).toBe('swordPickup');
+    update(s,2.5);expect(s.ship.stage).toBe('swordEquipped');expect(shipAction(s)).toBe(null);
+    update(s,12);expect(s.ship.stage).toBe('swordEquipped');expect(s.ship.baseProgress).toBe(0);
+  });
+  it('inserts the alien sword pickup after the forest trail and keeps the player equipped at the scene end',()=>{
+    const s=newState();enterShip(s);s.ship.stage='trailWalk';s.ship.trailProgress=.99;s.keys.j=true;
+    update(s,.2);expect(s.ship.stage).toBe('swordIntro');expect(s.ship.baseProgress).toBe(0);
+    s.keys.j=false;for(let i=0;i<100&&s.ship.stage==='swordIntro';i++)update(s,.05);
+    expect(s.ship.stage).toBe('swordReady');expect(shipAction(s)).toBe('AGARRAR ESPADA ALIENÍGENA');
+    interactShip(s);expect(s.ship.stage).toBe('swordPickup');
+    update(s,2.49);expect(s.ship.stage).toBe('swordPickup');
+    update(s,.02);expect(s.ship.stage).toBe('swordEquipped');
+    expect(shipAction(s)).toBe(null);update(s,10);expect(s.ship.stage).toBe('swordEquipped');
   });
   it('keeps the post-ultimate transition under one second after the beam has ended',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierEnd';s.ship.soldiers=[];
