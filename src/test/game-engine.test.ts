@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { shouldStartCrossMusic } from '../components/game/game-audio';
-import { DIFFICULTY, GROUND, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
@@ -48,6 +48,14 @@ describe('OVNI difficulty and narrative', () => {
   });
   it('respawns at the laboratory bed checkpoint after ship combat defeat',()=>{const s=newState();s.phase='spaceship';s.ship.stage='combat';s.ship.hp=0;s.ship.reactorHp=25;s.ship.boxBroken=true;expect(update(s,.016)).toBe('lose');respawnAtShipCheckpoint(s);expect(s.phase).toBe('spaceship');expect(s.ship.stage).toBe('awakening');expect(s.ship.hp).toBe(100);expect(s.ship.reactorHp).toBe(100);expect(s.ship.boxBroken).toBe(false);});
 
+  it('plays the six-frame recovery after the cross impact before enabling movement',()=>{
+    const s=newState();enterShip(s);s.ship.stage='impact';s.ship.time=1.75;
+    update(s,.05);
+    expect(s.ship.stage).toBe('crossRise');expect(s.chapter.roomX).toBe(730);expect(s.chapter.roomY).toBe(480);
+    expect(CROSS_RISE_FRAME_COUNT).toBe(6);expect(CROSS_RISE_DURATION).toBe(2.4);
+    update(s,CROSS_RISE_DURATION-.05);expect(s.ship.stage).toBe('crossRise');
+    update(s,.05);expect(s.ship.stage).toBe('crossFree');
+  });
   it('continues from the cross contemplation into the road and military scene',()=>{
     const s=newState();enterShip(s);s.ship.stage='contemplate';s.ship.time=5.9;
     update(s,.2);expect(s.ship.stage).toBe('crossSunset');

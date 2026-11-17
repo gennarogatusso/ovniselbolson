@@ -1,8 +1,10 @@
-import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
+import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CROSS_RISE_FRAME_COUNT, CROSS_RISE_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement; abduction: [HTMLImageElement, HTMLImageElement, HTMLImageElement] };
 export type SoldierImages = { cover: HTMLImageElement; bazooka: HTMLImageElement; advancing: HTMLImageElement; underFire: HTMLImageElement; shieldFire: HTMLImageElement; proneFire: HTMLImageElement };
-export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement };
+export type CrossRiseFrame = { image: HTMLCanvasElement; bodyWidth: number; bodyHeight: number; padding: number };
+export type CrossRiseFrames = { player: CrossRiseFrame[]; cat: CrossRiseFrame[] };
+export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
 export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
@@ -491,6 +493,12 @@ function pose(c:CanvasRenderingContext2D,im:HTMLImageElement,frame:number,count:
  const fw=im.naturalWidth/count,w=h*fw/im.naturalHeight;
  c.save();c.imageSmoothingEnabled=false;c.globalAlpha=alpha;
  c.drawImage(im,frame*fw,0,fw,im.naturalHeight,x-w/2,y-h,w,h);c.restore();
+}
+function drawCrossRiseFrame(c:CanvasRenderingContext2D,frame:CrossRiseFrame,x:number,baseY:number,targetHeight:number,face:number){
+ const scale=targetHeight/frame.bodyHeight,pad=frame.padding*scale;
+ const width=frame.image.width*scale,height=frame.image.height*scale;
+ c.save();c.imageSmoothingEnabled=false;c.translate(x,baseY-targetHeight-pad);c.scale(face,1);
+ c.drawImage(frame.image,-width/2,0,width,height);c.restore();
 }
 function alien(c:CanvasRenderingContext2D,s:S,frames:GameImages['alienFrames']) {
  const frame=s.phase==='alien'?Math.min(3,Math.floor(Math.max(0,s.pt-1.5)/1.1)):3;
@@ -1238,9 +1246,21 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  }else if(cross){
   drawCrossWreckSmoke(c,s);
   if(a.stage==='contemplate'||a.stage==='crossSunset'||a.stage==='end')pose(c,art.contemplate,0,2,305,334,118);
-  else if(a.stage==='crossRise')pose(c,art.push,2,3,s.chapter.roomX,s.chapter.roomY,118);
-  else roomActor(c,s,im.chapter);
-  catSprite(c,im.cat,a.catX,a.catY,0,-1);
+  else if(a.stage==='crossRise'){
+   const frames=art.crossRiseFrames;
+   if(frames.player.length===CROSS_RISE_FRAME_COUNT&&frames.cat.length===CROSS_RISE_FRAME_COUNT){
+    const index=Math.min(CROSS_RISE_FRAME_COUNT-1,Math.floor(a.time/(CROSS_RISE_DURATION/CROSS_RISE_FRAME_COUNT)));
+    const playerFrame=frames.player[index],catFrame=frames.cat[index];
+    if(playerFrame)drawCrossRiseFrame(c,playerFrame,s.chapter.roomX,s.chapter.roomY,143,-1);
+    if(catFrame)drawCrossRiseFrame(c,catFrame,a.catX,a.catY,40,-1);
+   }else{
+    pose(c,art.push,2,3,s.chapter.roomX,s.chapter.roomY,118);
+    catSprite(c,im.cat,a.catX,a.catY,0,-1);
+   }
+  }else{
+   roomActor(c,s,im.chapter);
+   catSprite(c,im.cat,a.catX,a.catY,0,-1);
+  }
   if(a.stage==='crossSunset'){
    const q=Math.min(1,a.time/7),sunY=112+q*145;
    const glow=c.createRadialGradient(748,sunY,4,748,sunY,104);

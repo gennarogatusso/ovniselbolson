@@ -10,6 +10,8 @@ export const COMBAT_TIP_SLIDE_DURATION = 1;
 export const COMBAT_TIP_HOLD_DURATION = 3.4;
 export const COMBAT_TIP_CARD_DURATION = COMBAT_TIP_SLIDE_DURATION * 2 + COMBAT_TIP_HOLD_DURATION;
 export const COMBAT_TIP_SEQUENCE_DURATION = COMBAT_TIP_CARD_DURATION * 2;
+export const CROSS_RISE_FRAME_COUNT = 6;
+export const CROSS_RISE_DURATION = 2.4;
 export const ALIEN_MESSAGE = "#%3# indescifrable.... GATO....#%3 ME PERTENECE ... #%indescifrable";
 export const ENDINGS = {
   revenge: { title: "¡FELICIDADES! MATASTE AL OVNI PERO NO RECUPERASTE TU GATO", sub: "FINAL N.º 1 — BAD ENDING" },
@@ -432,7 +434,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     case 'overload':a.shake=.18+a.time*.06;if(a.time>=4){shipAdvance(s,'emergency');shipSound(s,'explosion');a.bolts=[];a.shots=[];}break;
     case 'emergency':a.shake=.2+a.time*.045;if(a.time>=9){shipAdvance(s,'impact');shipSound(s,'explosion');}break;
     case 'impact':if(a.time>=1.8){shipAdvance(s,'crossRise');s.chapter.roomX=730;s.chapter.roomY=480;s.chapter.roomDirection='left';a.catX=790;a.catY=485;}break;
-    case 'crossRise':timed(2.4,'crossFree');break;
+    case 'crossRise':timed(CROSS_RISE_DURATION,'crossFree');break;
     case 'crossFree':s.chapter.moving=false;moveRoom(s,dt,crossCanStand);a.catX=approach(a.catX,s.chapter.roomX+52,170*dt);a.catY=approach(a.catY,s.chapter.roomY+5,170*dt);break;
     case 'contemplate':a.catX=approach(a.catX,359,95*dt);a.catY=approach(a.catY,338,95*dt);if(a.time>=6)shipAdvance(s,'crossSunset');break;
     case 'crossSunset':if(a.time>=7){a.x=112;a.y=SHIP.floor;a.face=1;a.catX=60;a.catY=SHIP.floor;shipAdvance(s,'crossWalkIntro');}break;
