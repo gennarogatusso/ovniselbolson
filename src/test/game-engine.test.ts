@@ -143,7 +143,12 @@ describe('OVNI difficulty and narrative', () => {
     update(s,2.5);expect(s.ship.stage).toBe('swordEquipped');expect(shipAction(s)).toBe(null);
     update(s,12);expect(s.ship.stage).toBe('swordEquipped');expect(s.ship.baseProgress).toBe(0);
   });
-  it('inserts the alien sword pickup after the forest trail and keeps the player equipped at the scene end',()=>{
+  it('plays the five-frame primary sword attack on click, damages enemies in front, and returns to the equipped ending',()=>{
+     const s=newState();s.phase='spaceship';s.ship.stage='swordEquipped';s.ship.x=300;s.ship.y=452;s.ship.face=1;s.ship.enemies=[{x:380,y:452,hp:70,kind:'direct',cd:99,windup:0,hurt:0,deadTime:0,face:-1}];
+     s.fire=true;update(s,.016);expect(s.ship.stage).toBe('swordAttack');expect(s.ship.enemies[0]!.hp).toBe(35);
+     update(s,.3);expect(s.ship.stage).toBe('swordAttack');s.fire=false;update(s,.31);expect(s.ship.stage).toBe('swordEquipped');
+   });
+   it('inserts the alien sword pickup after the forest trail and keeps the player equipped at the scene end',()=>{
     const s=newState();enterShip(s);s.ship.stage='trailWalk';s.ship.trailProgress=.99;s.keys.j=true;
     update(s,.2);expect(s.ship.stage).toBe('swordIntro');expect(s.ship.baseProgress).toBe(0);
     s.keys.j=false;expect(s.ship.stage).toBe('swordIntro');expect(s.ship.x).toBe(145);

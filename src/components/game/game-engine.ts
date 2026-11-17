@@ -35,10 +35,10 @@ export const FOREST = { deer: 1820, ship: 3640, abduction: 3900, top: 410, botto
 export function forestIsFree(s:S){return s.phase==='bedroom'&&['forestRun','burned','ship'].includes(s.chapter.stage);}
 export function computerAvailable(s:S){return roomIsFree(s)&&!s.chapter.night&&Math.hypot(s.chapter.roomX-350,s.chapter.roomY-418)<80;}
 export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=false;}
-export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'soldierExit'|'trailWalk'|'trailEnd'|'swordIntro'|'swordReady'|'swordPickup'|'swordEquipped'|'baseFade'|'baseApproach'|'baseEnd'|'end';
+export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'soldierExit'|'trailWalk'|'trailEnd'|'swordIntro'|'swordReady'|'swordPickup'|'swordEquipped'|'swordAttack'|'baseFade'|'baseApproach'|'baseEnd'|'end';
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
 type GroundSoldier = {id:number;x:number;y:number;hp:number;maxHp:number;role:'bazooka'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose?:number;state:'cover'|'advance'|'fire'|'hit'};
-function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,vy:0,jumpHeld:false,catUltimateUsed:false,trailProgress:0,baseProgress:0,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],sounds:[] as string[],labDead:0};}
+function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,vy:0,jumpHeld:false,catUltimateUsed:false,trailProgress:0,baseProgress:0,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],sounds:[] as string[],labDead:0,swordAttackHeld:false};}
 export function newState() {
   return {
                 t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom" | "spaceship",
@@ -285,7 +285,7 @@ export function triggerCatUltimate(s:S):boolean{
  a.catUltimateUsed=true;a.shots=[];a.bolts=[];a.roll=0;a.vy=0;a.jumpHeld=false;a.fireCd=0;a.flash=0;a.specialAnim=0;
  s.fire=false;s.keys={};shipAdvance(s,'soldierUltimateThrow');shipSound(s,'super');return true;
 }
-export function shipIsFree(s:S){return s.phase==='spaceship'&&['labFree','crossFree','crossWalk','soldierExit','trailWalk','swordIntro','swordReady','swordEquipped'].includes(s.ship.stage);}
+export function shipIsFree(s:S){return s.phase==='spaceship'&&['labFree','crossFree','crossWalk','soldierExit','trailWalk','swordIntro','swordReady','swordEquipped','swordAttack'].includes(s.ship.stage);}
 export function crossCanStand(x:number,y:number){
   const path=y>=443&&y<=516&&x>=85&&x<=860;
   const stairs=x>=143&&x<=290&&y>=333&&y<=478;
@@ -515,7 +515,17 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     case 'trailEnd':break;
     case 'swordIntro':case 'swordReady':{const move=(s.keys.r?1:0)-(s.keys.l?1:0);a.x=Math.max(90,Math.min(590,a.x+move*175*dt));a.y=SHIP.floor;if(move){a.face=move;a.walk+=dt*9;}if(a.x>=590)shipAdvance(s,'swordReady');else if(a.stage==='swordReady')shipAdvance(s,'swordIntro');break;}
     case 'swordPickup':a.y=SHIP.floor;if(a.time>=2.5)shipAdvance(s,'swordEquipped');break;
-    case 'swordEquipped':a.y=SHIP.floor;break;
+    case 'swordEquipped':{
+       a.y=SHIP.floor;a.fireCd=Math.max(0,a.fireCd-dt);
+       if(s.fire&&!a.swordAttackHeld&&a.fireCd<=0){
+         a.swordAttackHeld=true;a.fireCd=.55;shipAdvance(s,'swordAttack');
+         for(const enemy of a.enemies){if(enemy.hp>0&&(enemy.x-a.x)*a.face>=-12&&Math.abs(enemy.x-a.x)<=112){enemy.hp=Math.max(0,enemy.hp-35);enemy.hurt=.4;if(enemy.hp===0)enemy.deadTime=.001;spawnCombatImpact(s,enemy.x,enemy.y-48,1.15);}}
+         for(const soldier of a.soldiers){if(soldier.hp>0&&(soldier.x-a.x)*a.face>=-12&&Math.abs(soldier.x-a.x)<=112){soldier.hp=Math.max(0,soldier.hp-35);soldier.hurt=.4;if(soldier.hp===0)soldier.deadTime=.001;spawnCombatImpact(s,soldier.x,soldier.y-48,1.15);}}
+       }
+       if(!s.fire)a.swordAttackHeld=false;
+       break;
+     }
+     case 'swordAttack':a.y=SHIP.floor;if(a.time>=.6)shipAdvance(s,'swordEquipped');break;
     case 'baseFade':a.walk+=dt*8;if(a.time>=1.6)shipAdvance(s,'baseApproach');break;
     case 'baseApproach':a.baseProgress=Math.min(1,a.baseProgress+dt/7.5);a.walk+=dt*9;if(a.baseProgress>=1)shipAdvance(s,'baseEnd');break;
     case 'baseEnd':break;
