@@ -513,7 +513,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     }
     case 'trailWalk':if(s.keys.j&&a.trailProgress<1){a.trailProgress=Math.min(1,a.trailProgress+dt*.12);a.walk+=dt*9;}if(a.trailProgress>=1){a.baseProgress=0;a.walk=0;a.face=1;a.x=145;a.y=SHIP.floor;shipAdvance(s,'swordIntro');}break;
     case 'trailEnd':break;
-    case 'swordIntro':case 'swordReady':{const move=(s.keys.r?1:0)-(s.keys.l?1:0);a.x=Math.max(90,Math.min(875,a.x+move*175*dt));a.y=SHIP.floor;if(move){a.face=move;a.walk+=dt*9;}if(a.x>=590)shipAdvance(s,'swordReady');else if(a.stage==='swordReady')shipAdvance(s,'swordIntro');break;}
+    case 'swordIntro':case 'swordReady':{const move=(s.keys.r?1:0)-(s.keys.l?1:0);a.x=Math.max(90,Math.min(590,a.x+move*175*dt));a.y=SHIP.floor;if(move){a.face=move;a.walk+=dt*9;}if(a.x>=590)shipAdvance(s,'swordReady');else if(a.stage==='swordReady')shipAdvance(s,'swordIntro');break;}
     case 'swordPickup':a.y=SHIP.floor;if(a.time>=2.5)shipAdvance(s,'swordEquipped');break;
     case 'swordEquipped':a.y=SHIP.floor;break;
     case 'baseFade':a.walk+=dt*8;if(a.time>=1.6)shipAdvance(s,'baseApproach');break;
