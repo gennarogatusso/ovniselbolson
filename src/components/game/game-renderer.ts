@@ -1240,12 +1240,12 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  if(swordScene){
   const swordX=650,swordY=H*.84;
   if(a.stage==='swordIntro'||a.stage==='swordReady'){
-   c.save();c.translate(swordX,swordY);c.rotate(Math.PI/2);drawTrimmed(c,art.swordGround,-12,-48,24,96);c.restore();
-   actor(a.x,a.y,142);
+   c.save();c.translate(swordX,swordY);c.rotate(Math.PI/2);drawTrimmed(c,art.swordGround,-8,-32,16,64);c.restore();
+   actor(a.x,a.y,112);
   }else{
    const frameIndex=a.stage==='swordEquipped'?4:Math.min(4,Math.floor(a.time/0.5));
    const frame=art.swordPickupFrames[frameIndex]??art.swordPickupFrames[4];
-   stillTrimmed(c,frame,a.x,a.y,184);
+   stillTrimmed(c,frame,a.x,a.y,112);
   }
  }else if(baseScene){
   const q=Math.max(0,Math.min(1,a.baseProgress)),x=18+q*W*.6,y=H*.84;

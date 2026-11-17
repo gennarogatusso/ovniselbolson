@@ -135,7 +135,9 @@ describe('OVNI difficulty and narrative', () => {
     s.keys.r=true;update(s,1);s.keys.r=false;expect(s.ship.trailProgress).toBe(0);
     s.keys.j=true;for(let i=0;i<100&&s.ship.stage==='trailWalk';i++)update(s,.1);
     expect(s.ship.trailProgress).toBe(1);expect(s.ship.stage).toBe('swordIntro');expect(update(s,.016)).toBe(null);
-    for(let i=0;i<100&&s.ship.stage==='swordIntro';i++)update(s,.05);
+    expect(s.ship.stage).toBe('swordIntro');expect(s.ship.x).toBe(145);expect(shipAction(s)).toBe(null);
+    update(s,1);expect(s.ship.x).toBe(145);
+    s.keys.r=true;for(let i=0;i<60&&s.ship.stage==='swordIntro';i++)update(s,.1);s.keys.r=false;
     expect(s.ship.stage).toBe('swordReady');expect(shipAction(s)).toBe('AGARRAR ESPADA ALIENÍGENA');
     interactShip(s);expect(s.ship.stage).toBe('swordPickup');
     update(s,2.5);expect(s.ship.stage).toBe('swordEquipped');expect(shipAction(s)).toBe(null);
@@ -144,7 +146,8 @@ describe('OVNI difficulty and narrative', () => {
   it('inserts the alien sword pickup after the forest trail and keeps the player equipped at the scene end',()=>{
     const s=newState();enterShip(s);s.ship.stage='trailWalk';s.ship.trailProgress=.99;s.keys.j=true;
     update(s,.2);expect(s.ship.stage).toBe('swordIntro');expect(s.ship.baseProgress).toBe(0);
-    s.keys.j=false;for(let i=0;i<100&&s.ship.stage==='swordIntro';i++)update(s,.05);
+    s.keys.j=false;expect(s.ship.stage).toBe('swordIntro');expect(s.ship.x).toBe(145);
+    s.keys.r=true;for(let i=0;i<60&&s.ship.stage==='swordIntro';i++)update(s,.1);s.keys.r=false;
     expect(s.ship.stage).toBe('swordReady');expect(shipAction(s)).toBe('AGARRAR ESPADA ALIENÍGENA');
     interactShip(s);expect(s.ship.stage).toBe('swordPickup');
     update(s,2.49);expect(s.ship.stage).toBe('swordPickup');

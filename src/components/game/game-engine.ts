@@ -285,7 +285,7 @@ export function triggerCatUltimate(s:S):boolean{
  a.catUltimateUsed=true;a.shots=[];a.bolts=[];a.roll=0;a.vy=0;a.jumpHeld=false;a.fireCd=0;a.flash=0;a.specialAnim=0;
  s.fire=false;s.keys={};shipAdvance(s,'soldierUltimateThrow');shipSound(s,'super');return true;
 }
-export function shipIsFree(s:S){return s.phase==='spaceship'&&['labFree','crossFree','crossWalk','soldierExit','trailWalk'].includes(s.ship.stage);}
+export function shipIsFree(s:S){return s.phase==='spaceship'&&['labFree','crossFree','crossWalk','soldierExit','trailWalk','swordIntro','swordReady','swordEquipped'].includes(s.ship.stage);}
 export function crossCanStand(x:number,y:number){
   const path=y>=443&&y<=516&&x>=85&&x<=860;
   const stairs=x>=143&&x<=290&&y>=333&&y<=478;
@@ -513,8 +513,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     }
     case 'trailWalk':if(s.keys.j&&a.trailProgress<1){a.trailProgress=Math.min(1,a.trailProgress+dt*.12);a.walk+=dt*9;}if(a.trailProgress>=1){a.baseProgress=0;a.walk=0;a.face=1;a.x=145;a.y=SHIP.floor;shipAdvance(s,'swordIntro');}break;
     case 'trailEnd':break;
-    case 'swordIntro':a.x=approach(a.x,590,170*dt);a.y=SHIP.floor;a.face=1;a.walk+=dt*9;if(a.x>=589)shipAdvance(s,'swordReady');break;
-    case 'swordReady':a.y=SHIP.floor;break;
+    case 'swordIntro':case 'swordReady':{const move=(s.keys.r?1:0)-(s.keys.l?1:0);a.x=Math.max(90,Math.min(875,a.x+move*175*dt));a.y=SHIP.floor;if(move){a.face=move;a.walk+=dt*9;}if(a.x>=590)shipAdvance(s,'swordReady');else if(a.stage==='swordReady')shipAdvance(s,'swordIntro');break;}
     case 'swordPickup':a.y=SHIP.floor;if(a.time>=2.5)shipAdvance(s,'swordEquipped');break;
     case 'swordEquipped':a.y=SHIP.floor;break;
     case 'baseFade':a.walk+=dt*8;if(a.time>=1.6)shipAdvance(s,'baseApproach');break;
