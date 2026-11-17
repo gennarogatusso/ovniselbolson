@@ -4,7 +4,7 @@ export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; 
 export type SoldierImages = { cover: HTMLImageElement; bazooka: HTMLImageElement; advancing: HTMLImageElement; underFire: HTMLImageElement; shieldFire: HTMLImageElement; proneFire: HTMLImageElement };
 export type CrossRiseFrame = { image: HTMLCanvasElement; bodyWidth: number; bodyHeight: number; padding: number };
 export type CrossRiseFrames = { player: CrossRiseFrame[]; cat: CrossRiseFrame[] };
-export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames };
+export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement] };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
 export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
@@ -494,10 +494,10 @@ function pose(c:CanvasRenderingContext2D,im:HTMLImageElement,frame:number,count:
  c.save();c.imageSmoothingEnabled=false;c.globalAlpha=alpha;
  c.drawImage(im,frame*fw,0,fw,im.naturalHeight,x-w/2,y-h,w,h);c.restore();
 }
-function drawCrossRiseFrame(c:CanvasRenderingContext2D,frame:CrossRiseFrame,x:number,baseY:number,targetHeight:number,face:number){
- const scale=targetHeight/frame.bodyHeight,pad=frame.padding*scale;
- const width=frame.image.width*scale,height=frame.image.height*scale;
- c.save();c.imageSmoothingEnabled=false;c.translate(x,baseY-targetHeight-pad);c.scale(face,1);
+function drawCrossRiseFrame(c:CanvasRenderingContext2D,frame:CrossRiseFrame,x:number,baseY:number,uniformScale:number,face:number){
+ const width=frame.image.width*uniformScale,height=frame.image.height*uniformScale;
+ const top=(frame.bodyHeight+frame.padding)*uniformScale;
+ c.save();c.imageSmoothingEnabled=false;c.translate(x,baseY-top);c.scale(face,1);
  c.drawImage(frame.image,-width/2,0,width,height);c.restore();
 }
 function alien(c:CanvasRenderingContext2D,s:S,frames:GameImages['alienFrames']) {
@@ -1242,17 +1242,20 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  }else if(trail){
   const q=Math.max(0,Math.min(1,a.trailProgress)),depth=.38+q*.62,scale=(.13+depth*1.02)*1.5,y=H*(.55+depth*.43),x=W*.5,height=112*scale;
   c.save();c.translate(x,y);pose(c,art.walkDown,Math.floor(a.walk)%4,4,0,0,height);c.restore();
-  catSprite(c,im.cat,x-height*.46,y,Math.floor(a.walk*1.15),-1,Math.max(8,42*scale));
+  const catFrame=art.trailCat[Math.floor(a.walk)%art.trailCat.length]??im.cat;
+  catSprite(c,catFrame,x-height*.46,y,Math.floor(a.walk*1.15),-1,Math.max(8,42*scale));
  }else if(cross){
   drawCrossWreckSmoke(c,s);
   if(a.stage==='contemplate'||a.stage==='crossSunset'||a.stage==='end')pose(c,art.contemplate,0,2,305,334,118);
   else if(a.stage==='crossRise'){
    const frames=art.crossRiseFrames;
-   if(frames.player.length===CROSS_RISE_FRAME_COUNT&&frames.cat.length===CROSS_RISE_FRAME_COUNT){
+   const playerReference=frames.player[CROSS_RISE_FRAME_COUNT-1],catReference=frames.cat[CROSS_RISE_FRAME_COUNT-1];
+   if(frames.player.length===CROSS_RISE_FRAME_COUNT&&frames.cat.length===CROSS_RISE_FRAME_COUNT&&playerReference&&catReference&&playerReference.bodyHeight>0&&catReference.bodyHeight>0){
     const index=Math.min(CROSS_RISE_FRAME_COUNT-1,Math.floor(a.time/(CROSS_RISE_DURATION/CROSS_RISE_FRAME_COUNT)));
     const playerFrame=frames.player[index],catFrame=frames.cat[index];
-    if(playerFrame)drawCrossRiseFrame(c,playerFrame,s.chapter.roomX,s.chapter.roomY,143,-1);
-    if(catFrame)drawCrossRiseFrame(c,catFrame,a.catX,a.catY,40,-1);
+    const playerScale=143/playerReference.bodyHeight,catScale=40/catReference.bodyHeight;
+    if(playerFrame)drawCrossRiseFrame(c,playerFrame,s.chapter.roomX,s.chapter.roomY,playerScale,-1);
+    if(catFrame)drawCrossRiseFrame(c,catFrame,a.catX,a.catY,catScale,-1);
    }else{
     pose(c,art.push,2,3,s.chapter.roomX,s.chapter.roomY,118);
     catSprite(c,im.cat,a.catX,a.catY,0,-1);
