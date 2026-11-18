@@ -347,30 +347,31 @@ describe('OVNI difficulty and narrative', () => {
   });
 
 
-  it('makes secret agents rush into separate positions around the player, including behind their back',()=>{
-    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.face=1;
-    s.ship.agents=[690,755,820,885].map((x,id)=>({id,x,y:452,hp:160,maxHp:160,kind:id%2?'regular':'shield',cd:100,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard' as const}));
-    const before=s.ship.agents.map(agent=>agent.x);
-    update(s,1.25);
-    expect(Math.min(...s.ship.agents.map(agent=>agent.x))).toBeLessThan(s.ship.x-70);
-    expect(Math.max(...s.ship.agents.map(agent=>agent.x))).toBeGreaterThan(s.ship.x+70);
-    expect(s.ship.agents.filter(agent=>agent.x<s.ship.x-50)).toHaveLength(2);
-    expect(s.ship.agents.filter(agent=>agent.x>s.ship.x+50)).toHaveLength(2);
-    const sorted=s.ship.agents.map(agent=>agent.x).sort((a,b)=>a-b);
-    expect(sorted.slice(1).every((x,i)=>x-sorted[i]!>35)).toBe(true);
-    expect(s.ship.agents.some((agent,i)=>Math.abs(agent.x-before[i]!)>80)).toBe(true);
+  it('keeps two secret agents in each side lane, spread apart from each other and the player',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='swordPickup';s.ship.x=590;
+    update(s,2.5);expect(s.ship.stage).toBe('agentFight');update(s,1.5);
+    const [leftOne,leftTwo,rightOne,rightTwo]=s.ship.agents;
+    expect(leftOne!.x).toBeLessThan(250);
+    expect(leftTwo!.x).toBeGreaterThan(350);expect(leftTwo!.x).toBeLessThan(470);
+    expect(rightOne!.x).toBeGreaterThan(700);expect(rightOne!.x).toBeLessThan(820);
+    expect(rightTwo!.x).toBeGreaterThan(850);
+    expect(Math.abs(leftTwo!.x-leftOne!.x)).toBeGreaterThan(120);
+    expect(Math.abs(rightTwo!.x-rightOne!.x)).toBeGreaterThan(120);
+    expect(s.ship.agents.every(agent=>Math.abs(agent.x-s.ship.x)>100)).toBe(true);
   });
 
-  it('makes agents change sides to get behind the player when the player turns around',()=>{
-    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.face=1;
-    s.ship.agents=[690,755,820,885].map((x,id)=>({id,x,y:452,hp:160,maxHp:160,kind:id%2?'regular':'shield',cd:100,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard' as const}));
-    update(s,1.25);
-    expect(s.ship.agents[0]!.x).toBeLessThan(s.ship.x-70);
-    s.ship.face=-1;
-    update(s,2);
-    const agentsBehindPlayer=s.ship.agents.filter(agent=>agent.x>s.ship.x+70);
-    expect(agentsBehindPlayer.length).toBeGreaterThanOrEqual(2);
-    expect(agentsBehindPlayer.every(agent=>agent.face===-1)).toBe(true);
+  it('does not follow or copy the player movement; agents keep their own patrol routes',()=>{
+    const makeState=()=>{
+      const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.face=1;
+      s.ship.agents=[185,410,760,910].map((x,id)=>({id,x,y:452,hp:160,maxHp:160,kind:id%2?'regular':'shield',cd:100,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard' as const}));
+      return s;
+    };
+    const movingRight=makeState(),movingLeft=makeState();
+    movingRight.keys.r=true;movingLeft.keys.l=true;
+    update(movingRight,1.5);update(movingLeft,1.5);
+    expect(movingRight.ship.x).not.toBe(movingLeft.ship.x);
+    expect(movingRight.ship.agents.map(agent=>agent.x)).toEqual(movingLeft.ship.agents.map(agent=>agent.x));
+    expect(movingRight.ship.agents.map(agent=>agent.x)).toEqual(expect.arrayContaining([expect.any(Number),expect.any(Number),expect.any(Number),expect.any(Number)]));
   });
 
   it('lets agents fire toward the player from either side and increases their pressure',()=>{
