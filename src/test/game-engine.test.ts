@@ -381,7 +381,10 @@ describe('OVNI difficulty and narrative', () => {
     expect(s.ship.bolts).toHaveLength(2);
     expect(s.ship.bolts[0]!.vx).toBeGreaterThan(0);
     expect(s.ship.bolts[1]!.vx).toBeLessThan(0);
+    expect(Math.abs(s.ship.bolts[0]!.vx)).toBeGreaterThan(400);
     expect(s.ship.agents.every(agent=>agent.face!==undefined)).toBe(true);
+    update(s,1.05);
+    expect(s.ship.bolts.length).toBeGreaterThan(2);
   });
 
 });
