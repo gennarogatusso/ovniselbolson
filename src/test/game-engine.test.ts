@@ -294,10 +294,10 @@ describe('OVNI difficulty and narrative', () => {
     const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.face=1;
     s.ship.agents=[{id:0,x:690,y:452,hp:150,maxHp:150,kind:'regular',cd:20,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}];
     s.fire=true;update(s,.016);
-    expect(s.ship.stage).toBe('swordAttack');expect(s.ship.agents[0]!.hp).toBe(115);
+    expect(s.ship.stage).toBe('swordAttack');expect(s.ship.agents[0]!.hp).toBe(115);expect(s.ship.sounds).toContain('swordPrimary');
     update(s,.61);expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(115);
     s.fire=false;update(s,.016);s.ship.x=630;s.secondaryFire=true;update(s,.016);
-    expect(s.ship.stage).toBe('swordSecondaryAttack');expect(s.ship.agents[0]!.hp).toBe(45);
+    expect(s.ship.stage).toBe('swordSecondaryAttack');expect(s.ship.agents[0]!.hp).toBe(45);expect(s.ship.sounds).toContain('swordSecondary');
     update(s,.57);expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(45);
   });
 
@@ -314,11 +314,24 @@ describe('OVNI difficulty and narrative', () => {
     update(s,.016);expect(s.ship.hp).toBe(hp);
   });
 
+
+  it('makes the agents fire projectiles that can damage the player and emits combat sounds',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.y=452;
+    s.ship.agents=[{id:0,x:690,y:452,hp:160,maxHp:160,kind:'shield',cd:.001,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}];
+    update(s,.016);
+    expect(s.ship.bolts).toHaveLength(1);
+    expect(s.ship.sounds).toContain('agentShot');
+    s.ship.hurt=0;s.ship.bolts=[{x:s.ship.x,y:s.ship.y-46,vx:0,vy:0,life:1,kind:'rifle'}];
+    update(s,.016);
+    expect(s.ship.hp).toBeCloseTo(89.6);
+    expect(s.ship.sounds).toContain('impact');
+  });
+
   it('blocks the secret-base entrance until every agent is defeated, then returns to sword traversal',()=>{
     const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=640;s.ship.agents=[
       {id:0,x:690,y:452,hp:1,maxHp:150,kind:'regular',cd:99,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}
     ];
-    s.keys.r=true;update(s,.2);expect(s.ship.stage).toBe('agentFight');expect(s.ship.x).toBeLessThanOrEqual(640);
+    s.keys.r=true;update(s,.2);expect(s.ship.stage).toBe('agentFight');expect(s.ship.x).toBeLessThanOrEqual(648);
     s.keys.r=false;s.ship.agents[0]!.hp=0;update(s,.016);expect(s.ship.stage).toBe('agentEnd');
     update(s,1.01);expect(s.ship.stage).toBe('swordEquipped');expect(s.ship.agentCombatActive).toBe(false);
     s.keys.r=true;for(let i=0;i<20&&s.ship.stage==='swordEquipped';i++)update(s,.1);
