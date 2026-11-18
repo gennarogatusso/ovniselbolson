@@ -16,7 +16,7 @@
 - Mantener sin cambios de comportamiento el enfrentamiento `soldierFight` y sus cuatro soldados.
 - La emboscada inicia al terminar la animación `swordPickup` (2.5 s).
 - Son cuatro agentes: dos regulares y dos con escudo.
-- El texto del aviso es exactamente: `Esta es un área restringida, un paso más y disparo`.
+- El texto del aviso es exactamente: `Esta es un área restringida, un paso más y disparo`; permanece visible durante 3.5 s al comenzar la emboscada.
 - Se reutilizan los ataques actuales: primario de 35 de daño y 112 de alcance; secundario de 70 de daño y 72 de alcance; enfriamiento secundario de 0.9 s.
 - La habilidad R conserva su enfriamiento de 5 s; la voltereta reutiliza `SHIP.rollTime` y `SHIP.rollCooldown`.
 - No se incorporan dependencias ni se reemplazan fondos, sprites o música de otras escenas.
@@ -53,7 +53,7 @@
 - Modify: `src/components/game/game-renderer.ts`
 
 **Interfaces:**
-- Consumes: `ship.agents`, `agentFight`, `agentEnd`, `AGENT_WARNING_MESSAGE`.
+- Consumes: `ship.agents`, `agentFight`, `agentEnd`, `AGENT_WARNING_MESSAGE`, `AGENT_WARNING_DURATION`.
 - Produces: dibujo de los agentes con estados visuales idle/walk/aim; barras de vida individuales; proyectiles/efectos de combate; cartel de advertencia dentro de la escena.
 
 - [ ] **Step 1: Extend `ShipImages`** con las imágenes de agente regular (quieto, caminando y apuntando) y las dos poses del agente con escudo; dibujar cuatro agentes, orientados hacia el protagonista, usando sus poses según movimiento/ataque/impacto. Mantener barras de vida individuales y el estilo actual del HUD.
