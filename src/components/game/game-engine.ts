@@ -636,7 +636,7 @@ case 'agentFight':{
     }
 case 'swordAttack':a.y=SHIP.floor;if(a.time>=.6)shipAdvance(s,a.agentCombatActive?(a.agents.every(e=>e.hp<=0)?'agentEnd':'agentFight'):'swordEquipped');break;
 case 'swordSecondaryAttack':a.y=SHIP.floor;if(a.time>=SWORD_SECONDARY_DURATION)shipAdvance(s,a.agentCombatActive?(a.agents.every(e=>e.hp<=0)?'agentEnd':'agentFight'):'swordEquipped');break;
-case 'agentEnd':a.bolts=[];a.shots=[];if(a.time>=1){a.agentCombatActive=false;a.agentWarning=0;a.x=640;a.y=SHIP.floor;a.face=1;a.walk=0;shipAdvance(s,'swordEquipped');}break;
+case 'agentEnd':a.bolts=[];a.shots=[];if(a.time>=1){a.agentCombatActive=false;a.agentWarning=0;a.y=SHIP.floor;a.face=1;a.walk=0;shipAdvance(s,'swordEquipped');}break;
     case 'baseFade':a.walk+=dt*8;if(a.time>=1.6)shipAdvance(s,'baseApproach');break;
     case 'baseApproach':a.baseProgress=Math.min(1,a.baseProgress+dt/7.5);a.walk+=dt*9;if(a.baseProgress>=1)shipAdvance(s,'baseEnd');break;
     case 'baseEnd':break;
