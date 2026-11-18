@@ -363,9 +363,9 @@ export function respawnAtSoldierCheckpoint(s:S){
 }
 function createSecretAgents():GroundAgent[]{return [
  {id:0,x:690,y:SHIP.floor,hp:160,maxHp:160,kind:'shield',cd:1.25,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
- {id:1,x:770,y:SHIP.floor,hp:145,maxHp:145,kind:'regular',cd:2.1,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
- {id:2,x:850,y:SHIP.floor,hp:180,maxHp:180,kind:'shield',cd:2.8,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
- {id:3,x:925,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:3.5,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}
+ {id:1,x:755,y:SHIP.floor,hp:145,maxHp:145,kind:'regular',cd:2.1,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
+ {id:2,x:820,y:SHIP.floor,hp:180,maxHp:180,kind:'shield',cd:2.8,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
+ {id:3,x:885,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:3.5,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}
 ];}
 function beginAgentEncounter(s:S){
  const a=s.ship;a.agentCombatActive=true;a.agentWarning=AGENT_WARNING_DURATION;a.agents=createSecretAgents();
