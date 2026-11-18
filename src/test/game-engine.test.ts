@@ -296,7 +296,7 @@ describe('OVNI difficulty and narrative', () => {
     s.fire=true;update(s,.016);
     expect(s.ship.stage).toBe('swordAttack');expect(s.ship.agents[0]!.hp).toBe(115);
     update(s,.61);expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(115);
-    s.fire=false;update(s,.016);s.secondaryFire=true;update(s,.016);
+    s.fire=false;update(s,.016);s.ship.x=630;s.secondaryFire=true;update(s,.016);
     expect(s.ship.stage).toBe('swordSecondaryAttack');expect(s.ship.agents[0]!.hp).toBe(45);
     update(s,.57);expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(45);
   });
