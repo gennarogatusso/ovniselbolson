@@ -586,12 +586,12 @@ case 'agentFight':{
       else{a.x=Math.max(90,Math.min(875,a.x+move*205*dt));if(move){a.face=move;a.walk+=dt*10;}}
       a.catX=approach(a.catX,a.x-a.face*55,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);
       const livingAgents=a.agents.filter(e=>e.hp>0).sort((left,right)=>left.x-right.x);
-      const flankOffsets=[-180,-90,90,180];
+      const flankOffsets=[-165,-90,90,165];
       const flankTargets=livingAgents.map((_,index)=>{
         const slot=livingAgents.length<=1?1.5:index*3/(livingAgents.length-1);
         const lower=Math.floor(slot),fraction=slot-lower;
         const offset=flankOffsets[lower]!*(1-fraction)+flankOffsets[Math.min(3,lower+1)]!*fraction;
-        return a.x+a.face*(offset+Math.sin(s.t*1.7+index*1.2)*18);
+        return a.x+a.face*(offset+Math.sin(s.t*1.9+index*1.2)*22);
       }).sort((left,right)=>left-right);
       const movementTargets=new Map<number,number>(livingAgents.map((agent,index)=>[agent.id,Math.max(48,Math.min(930,flankTargets[index]!))]));
       for(const e of a.agents){
