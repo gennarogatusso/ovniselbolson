@@ -442,9 +442,10 @@ export class GameAudio {
    else this.tone(90,.16,'square',25,.35);
   }
   if(this.lastStage!==a.stage){this.lastStage=a.stage;this.lastPulse=0;}
-  const interval=a.stage==='emergency'?.65:a.charge>0?.15:a.stage==='contemplate'||a.stage==='end'?1.4:3;
+  const interval=a.stage==='agentUltimate'?.18:a.stage==='emergency'?.65:a.charge>0?.15:a.stage==='contemplate'||a.stage==='end'?1.4:3;
   if(s.t-this.lastPulse>interval){this.lastPulse=s.t;
-   if(a.stage==='emergency')this.tone(Math.floor(a.time*2)%2?740:490,.55,'sine',440,.42);
+   if(a.stage==='agentUltimate'){const q=Math.min(1,a.time/2);this.tone(110+q*260,.18,'triangle',430+q*1250,.1+q*.12);this.tone(52+q*34,.16,'sine',55+q*52,.12);}
+   else if(a.stage==='emergency')this.tone(Math.floor(a.time*2)%2?740:490,.55,'sine',440,.42);
    else if(a.charge>0)this.tone(140+640*a.charge/1.8,.2,'triangle',300+750*a.charge/1.8,.12+a.charge*.1);
    else if((a.stage==='contemplate'||a.stage==='end')&&this.musicTheme!=='finale'){
     const notes=[146.83,174.61,196,220,196,174.61,164.81,146.83];

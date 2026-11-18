@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { shouldStartCrossMusic } from '../components/game/game-audio';
-import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, respawnAtAgentCheckpoint, AGENT_WARNING_MESSAGE, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, shipIsFree, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, SWORD_PRIMARY_DAMAGE, SWORD_PRIMARY_RANGE, SWORD_PRIMARY_FRAME_COUNT, SWORD_PRIMARY_FRAME_DURATION, SWORD_PRIMARY_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, respawnAtAgentCheckpoint, AGENT_WARNING_MESSAGE, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, triggerAgentUltimate, shipIsFree, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, SWORD_PRIMARY_DAMAGE, SWORD_PRIMARY_RANGE, SWORD_PRIMARY_FRAME_COUNT, SWORD_PRIMARY_FRAME_DURATION, SWORD_PRIMARY_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
@@ -293,6 +293,37 @@ describe('OVNI difficulty and narrative', () => {
     expect(s.ship.stage).toBe('swordAttack');
     update(s,1.25);expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(104.5);
     s.fire=false;update(s,.016);
+  });
+
+  it('charges 50% sword mana for each of two different enemy defeats',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.face=1;
+    s.ship.agents=[
+      {id:0,x:680,y:452,hp:40,maxHp:160,kind:'regular',cd:20,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
+      {id:1,x:720,y:452,hp:45,maxHp:145,kind:'regular',cd:20,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}
+    ];
+    s.fire=true;update(s,.016);
+    expect(s.ship.agents.every(agent=>agent.hp===0)).toBe(true);
+    expect(s.ship.agentKills).toBe(2);
+    expect(s.ship.agentMana).toBe(100);
+    expect(s.ship.stage).toBe('swordAttack');
+  });
+
+  it('plays the ten ultimate sprites for two seconds, then releases a screen-wide violet blast',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.agentMana=100;s.ship.agentKills=2;
+    s.ship.agents=[
+      {id:0,x:180,y:452,hp:160,maxHp:160,kind:'shield',cd:20,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
+      {id:1,x:400,y:452,hp:145,maxHp:145,kind:'regular',cd:20,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
+      {id:2,x:740,y:452,hp:180,maxHp:180,kind:'shield',cd:20,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
+      {id:3,x:920,y:452,hp:155,maxHp:155,kind:'regular',cd:20,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}
+    ];
+    expect(triggerAgentUltimate(s)).toBe(true);
+    expect(s.ship.stage).toBe('agentUltimate');expect(s.ship.agentMana).toBe(0);
+    update(s,1.9);expect(s.ship.stage).toBe('agentUltimate');
+    update(s,.11);expect(s.ship.stage).toBe('agentUltimateBlast');
+    expect(s.ship.agents.every(agent=>agent.hp===0)).toBe(true);
+    expect(s.ship.sounds).toContain('ultimateExplosion');
+    expect(s.ship.shake).toBeGreaterThan(0);
+    update(s,1.81);expect(s.ship.stage).toBe('agentEnd');
   });
 
   it('targets a living secret agent with R and allows the player to evade agent fire with the roll',()=>{
