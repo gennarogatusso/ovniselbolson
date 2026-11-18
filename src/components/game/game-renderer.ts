@@ -1299,7 +1299,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const battle=['militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd','soldierExit'].includes(a.stage);
  const lab=['awakening','verdict','catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage);
  c.save();box(c,p.ink,0,0,W,H);
- if(a.shake>0)c.translate(Math.sin(s.t*61)*a.shake*8,Math.cos(s.t*49)*a.shake*5);
+ if(a.shake>0){const shakeScale=a.stage==='agentUltimateBlast'?16:8;c.translate(Math.sin(s.t*61)*a.shake*shakeScale,Math.cos(s.t*49)*a.shake*shakeScale*.625);}
  const background=baseScene?art.base:swordScene?art.swordScene:trail?art.trail:road?art.road:battle?art.afterCross:cross?art.cross:lab?art.laboratory:art.main;
  const scale=Math.max(W/background.naturalWidth,H/background.naturalHeight),bw=background.naturalWidth*scale,bh=background.naturalHeight*scale;
  c.drawImage(background,(W-bw)/2,(H-bh)/2,bw,bh);
@@ -1370,8 +1370,10 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    }
    for(const shot of a.shots){if(shot.kind==='special'){if((shot.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,shot,s.t);}else line(p.ice,shot.x,shot.y,shot.x-shot.vx*.025,shot.y-shot.vy*.025,3);}
    for(const bolt of a.bolts){line('#ffb86b',bolt.x,bolt.y,bolt.x-bolt.vx*.035,bolt.y-bolt.vy*.035,4);oval(c,'#fff0c4',bolt.x,bolt.y,4,3);}
-   box(c,p.panel,14,14,218,42);c.font='13px monospace';c.fillStyle=p.light;c.fillText('SALUD',24,40);box(c,p.ink,82,30,138,10);box(c,a.hp>35?p.ice:p.red,82,30,1.38*a.hp,10);
    if(!['agentUltimate','agentUltimateBlast'].includes(a.stage)){
+    box(c,p.panel,14,14,218,42);c.font='13px monospace';c.fillStyle=p.light;c.fillText('SALUD',24,40);box(c,p.ink,82,30,138,10);box(c,a.hp>35?p.ice:p.red,82,30,1.38*a.hp,10);
+   }
+   if(a.agentCombatActive&&a.agents.some(agent=>agent.hp>0)&&!['agentUltimate','agentUltimateBlast'].includes(a.stage)){
     box(c,p.panel,706,14,240,42);c.font='13px monospace';c.fillStyle='#e8c8ff';c.fillText('MANÁ',716,40);
     c.fillStyle='rgba(13,8,28,.95)';c.fillRect(780,30,155,10);
     if(a.agentMana>=100){c.save();c.shadowColor='#c47aff';c.shadowBlur=14;}
