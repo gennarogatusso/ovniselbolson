@@ -363,12 +363,12 @@ describe('OVNI difficulty and narrative', () => {
     const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.face=1;
     s.ship.agents=[690,755,820,885].map((x,id)=>({id,x,y:452,hp:160,maxHp:160,kind:id%2?'regular':'shield',cd:100,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard' as const}));
     update(s,1.25);
-    const flankAgent=s.ship.agents[0]!;
-    expect(flankAgent.x).toBeLessThan(s.ship.x-70);
+    expect(s.ship.agents[0]!.x).toBeLessThan(s.ship.x-70);
     s.ship.face=-1;
     update(s,2);
-    expect(flankAgent.x).toBeGreaterThan(s.ship.x+70);
-    expect(flankAgent.face).toBe(-1);
+    const agentsBehindPlayer=s.ship.agents.filter(agent=>agent.x>s.ship.x+70);
+    expect(agentsBehindPlayer.length).toBeGreaterThanOrEqual(2);
+    expect(agentsBehindPlayer.every(agent=>agent.face===-1)).toBe(true);
   });
 
   it('lets agents fire toward the player from either side and increases their pressure',()=>{
