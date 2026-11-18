@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { shouldStartCrossMusic } from '../components/game/game-audio';
-import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, SWORD_PRIMARY_DAMAGE, SWORD_PRIMARY_RANGE, SWORD_SECONDARY_DAMAGE, SWORD_SECONDARY_RANGE, SWORD_SECONDARY_DURATION, SWORD_SECONDARY_COOLDOWN, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, shipIsFree, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, SWORD_PRIMARY_DAMAGE, SWORD_PRIMARY_RANGE, SWORD_SECONDARY_DAMAGE, SWORD_SECONDARY_RANGE, SWORD_SECONDARY_DURATION, SWORD_SECONDARY_COOLDOWN, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
@@ -175,7 +175,7 @@ describe('OVNI difficulty and narrative', () => {
      ];
      s.ship.soldiers=[{id:0,x:350,y:452,hp:160,maxHp:160,role:'shield',cd:99,walk:0,hurt:0,deadTime:0,state:'cover'}];
      s.secondaryFire=true;update(s,.016);
-     expect(s.ship.stage).toBe('swordSecondaryAttack');
+     expect(s.ship.stage).toBe('swordSecondaryAttack');expect(shipIsFree(s)).toBe(true);
      expect(s.ship.enemies[0]!.hp).toBe(30);
      expect(s.ship.enemies[1]!.hp).toBe(100);
      expect(s.ship.enemies[2]!.hp).toBe(100);

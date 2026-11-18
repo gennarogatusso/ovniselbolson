@@ -299,7 +299,7 @@ export function triggerCatUltimate(s:S):boolean{
  a.catUltimateUsed=true;a.shots=[];a.bolts=[];a.roll=0;a.vy=0;a.jumpHeld=false;a.fireCd=0;a.flash=0;a.specialAnim=0;
  s.fire=false;s.keys={};shipAdvance(s,'soldierUltimateThrow');shipSound(s,'super');return true;
 }
-export function shipIsFree(s:S){return s.phase==='spaceship'&&['labFree','crossFree','crossWalk','soldierExit','trailWalk','swordIntro','swordReady','swordEquipped','swordAttack'].includes(s.ship.stage);}
+export function shipIsFree(s:S){return s.phase==='spaceship'&&['labFree','crossFree','crossWalk','soldierExit','trailWalk','swordIntro','swordReady','swordEquipped','swordAttack','swordSecondaryAttack'].includes(s.ship.stage);}
 export function crossCanStand(x:number,y:number){
   const path=y>=443&&y<=516&&x>=85&&x<=860;
   const stairs=x>=143&&x<=290&&y>=333&&y<=478;
