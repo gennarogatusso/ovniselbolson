@@ -354,6 +354,8 @@ describe('OVNI difficulty and narrative', () => {
     update(s,1.25);
     expect(Math.min(...s.ship.agents.map(agent=>agent.x))).toBeLessThan(s.ship.x-70);
     expect(Math.max(...s.ship.agents.map(agent=>agent.x))).toBeGreaterThan(s.ship.x+70);
+    expect(s.ship.agents.filter(agent=>agent.x<s.ship.x-50)).toHaveLength(2);
+    expect(s.ship.agents.filter(agent=>agent.x>s.ship.x+50)).toHaveLength(2);
     const sorted=s.ship.agents.map(agent=>agent.x).sort((a,b)=>a-b);
     expect(sorted.slice(1).every((x,i)=>x-sorted[i]!>35)).toBe(true);
     expect(s.ship.agents.some((agent,i)=>Math.abs(agent.x-before[i]!)>80)).toBe(true);
