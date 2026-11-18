@@ -304,6 +304,8 @@ export function enterShip(s:S){s.phase='spaceship';s.ship=newShip();s.ship.stage
 export function respawnAtShipCheckpoint(s:S){enterShip(s);}
 export function shipIsCombat(s:S){return s.phase==='spaceship'&&(['combat','soldierFight','agentFight','agentUltimate','agentUltimateBlast','agentEnd'].includes(s.ship.stage)||(s.ship.agentCombatActive&&s.ship.stage==='swordAttack'));}
 export const SOLDIER_DAMAGE_FACTOR=0.65;
+export const AGENT_DAMAGE_FACTOR=0.8;
+export const UFO_PLAYER_DAMAGE=12*1.4;
 export const CAT_ULTIMATE_READY_DELAY=7;
 export const CAT_ULTIMATE_THROW_DURATION=1.8;
 export const CAT_ULTIMATE_BEAM_DURATION=4.5;
@@ -685,7 +687,7 @@ case 'agentUltimate':{
         }
         b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
       }
-      for(const b of a.bolts){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(b.life>0&&Math.abs(b.x-a.x)<24&&Math.abs(b.y-(a.y-46))<34){b.life=0;shipHit(s,16*SOLDIER_DAMAGE_FACTOR);}}
+      for(const b of a.bolts){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(b.life>0&&Math.abs(b.x-a.x)<24&&Math.abs(b.y-(a.y-46))<34){b.life=0;shipHit(s,16*SOLDIER_DAMAGE_FACTOR*AGENT_DAMAGE_FACTOR);}}
       a.shots=a.shots.filter(b=>b.life>0);a.bolts=a.bolts.filter(b=>b.life>0);a.flash=Math.max(0,a.flash-dt);
       if(a.hp===0)return 'lose';
       if(a.agents.every(e=>e.hp<=0)){a.bolts=[];a.shots=[];shipAdvance(s,'agentEnd');}
@@ -868,7 +870,7 @@ export function update(s: S, dt: number): "win" | "lose" | "continue" | null {
     l.x += l.vx * dt; l.y += l.vy * dt; l.life -= dt;
     const top = p.y - (p.crouch ? 36 : 62);
     if(l.life>0&&l.x>p.x-14&&l.x<p.x+14&&l.y>top&&l.y<p.y&&p.hurt<=0&&p.roll===0){
-      l.life=0;p.hp-=12;p.hurt=.6;s.fx.push({x:l.x,y:l.y,life:.35,c:'laser',shape:'ring',size:7,maxLife:.35});
+      l.life=0;p.hp=Math.max(0,p.hp-UFO_PLAYER_DAMAGE);p.hurt=.6;s.fx.push({x:l.x,y:l.y,life:.35,c:'laser',shape:'ring',size:7,maxLife:.35});
       if(p.hp<=0){p.hp=0;return "lose";}
     }
     if(l.y>=GROUND){l.life=0;s.fx.push({x:l.x,y:GROUND,life:.3,c:'laser',shape:'dust',size:5,maxLife:.3});}
