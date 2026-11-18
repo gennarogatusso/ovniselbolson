@@ -1,10 +1,10 @@
-import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, SWORD_PRIMARY_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CROSS_RISE_FRAME_COUNT, CROSS_RISE_DURATION, AGENT_WARNING_MESSAGE, AGENT_WARNING_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
+import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, SWORD_PRIMARY_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CROSS_RISE_FRAME_COUNT, CROSS_RISE_DURATION, AGENT_WARNING_MESSAGE, AGENT_WARNING_DURATION, AGENT_ULTIMATE_SEQUENCE_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement; abduction: [HTMLImageElement, HTMLImageElement, HTMLImageElement] };
 export type SoldierImages = { cover: HTMLImageElement; bazooka: HTMLImageElement; advancing: HTMLImageElement; underFire: HTMLImageElement; shieldFire: HTMLImageElement; proneFire: HTMLImageElement };
 export type CrossRiseFrame = { image: HTMLCanvasElement; bodyWidth: number; bodyHeight: number; padding: number };
 export type CrossRiseFrames = { player: CrossRiseFrame[]; cat: CrossRiseFrame[] };
-export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: SpecialFrame[]; swordWalkFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; secretAgent: HTMLImageElement; secretAgentWalk: HTMLImageElement; secretAgentAim: HTMLImageElement; secretAgentShield: HTMLImageElement; secretAgentShieldAlt: HTMLImageElement };
+export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: SpecialFrame[]; swordWalkFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; secretAgent: HTMLImageElement; secretAgentWalk: HTMLImageElement; secretAgentAim: HTMLImageElement; secretAgentShield: HTMLImageElement; secretAgentShieldAlt: HTMLImageElement; agentUltimateFrames: SpecialFrame[] };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
 export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
@@ -528,12 +528,75 @@ function stillTrimmed(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:
  c.drawImage(im,bounds[0],bounds[1],bounds[2],bounds[3],x-w/2,y-h,w,h);
  c.restore();
 }
-function drawAnchoredSprite(c:CanvasRenderingContext2D,frame:SpecialFrame,x:number,y:number,bodyHeight:number){
+function drawAnchoredSprite(c:CanvasRenderingContext2D,frame:SpecialFrame,x:number,y:number,bodyHeight:number,alpha=1){
  if(!ready(frame.image)||frame.bodyHeight<=0)return;
  const scale=bodyHeight/frame.bodyHeight;
- c.save();c.imageSmoothingEnabled=false;
+ c.save();c.imageSmoothingEnabled=false;c.globalAlpha=alpha;
  c.drawImage(frame.image,x-frame.anchorX*scale,y-frame.baseY*scale,frame.image.naturalWidth*scale,frame.image.naturalHeight*scale);
  c.restore();
+}
+function drawAgentUltimateVfx(c:CanvasRenderingContext2D,s:S){
+ const a=s.ship;if(a.stage!=='agentUltimateBlast')return;
+ const t=a.time,life=Math.max(0,1-Math.max(0,t-.72)/1.08),q=Math.max(0,Math.min(1,t/1.18));
+ const ease=1-Math.pow(1-q,3),cx=Math.max(40,Math.min(W-40,a.x+a.face*65)),cy=SHIP.floor-118;
+ c.save();
+ if(t<.16){c.globalAlpha=(1-t/.16)*.88;c.fillStyle='#fff';c.fillRect(0,0,W,H);}
+ c.globalCompositeOperation='screen';
+ const bloom=c.createRadialGradient(cx,cy,2,cx,cy,Math.max(110,Math.max(W,H)*.92));
+ bloom.addColorStop(0,`rgba(255,255,255,${.72*life})`);
+ bloom.addColorStop(.13,`rgba(226,190,255,${.48*life})`);
+ bloom.addColorStop(.38,`rgba(139,61,255,${.25*life})`);
+ bloom.addColorStop(1,'rgba(72,24,155,0)');
+ c.fillStyle=bloom;c.fillRect(0,0,W,H);
+ for(let i=0;i<4;i++){
+  const delay=i*.105,phase=Math.max(0,Math.min(1,(t-delay)/.95));
+  if(phase<=0)continue;
+  const radius=30+phase*1020,ry=20+phase*590;
+  c.globalAlpha=(1-phase*.72)*life*(.92-i*.13);
+  c.strokeStyle=i%2===0?'#e5c5ff':'#a85cff';c.lineWidth=10-i*1.7;
+  c.shadowColor='#b96aff';c.shadowBlur=32-i*4;
+  c.beginPath();c.ellipse(cx,cy,radius,ry,Math.sin(t*5+i)*.035,0,Math.PI*2);c.stroke();
+  c.shadowBlur=0;c.strokeStyle='rgba(255,255,255,.82)';c.lineWidth=2.2;
+  c.beginPath();c.ellipse(cx,cy,radius*.96,ry*.96,0,0,Math.PI*2);c.stroke();
+ }
+ c.lineCap='round';c.lineJoin='round';
+ for(let i=0;i<34;i++){
+  const angle=i*Math.PI*2/34+Math.sin(i*4.1)*.055;
+  const reach=110+ease*(590+(i%6)*82),segments=4;
+  let px=cx,py=cy;c.beginPath();c.moveTo(px,py);
+  for(let k=1;k<=segments;k++){
+   const distance=reach*k/segments,jitter=Math.sin(i*3.7+k*7.1+t*15)*(8+k*2);
+   px=cx+Math.cos(angle)*distance-Math.sin(angle)*jitter;
+   py=cy+Math.sin(angle)*distance+Math.cos(angle)*jitter;c.lineTo(px,py);
+  }
+  c.globalAlpha=life*(.42+.42*Math.sin(t*18+i));
+  c.strokeStyle=i%5===0?'#fff':'#bd82ff';c.lineWidth=i%5===0?3.5:1.8+(i%3);
+  c.shadowColor='#bd69ff';c.shadowBlur=18;c.stroke();c.shadowBlur=0;
+  if(i%3===0){
+   c.beginPath();c.moveTo(cx+Math.cos(angle)*reach*.48,cy+Math.sin(angle)*reach*.48);
+   c.lineTo(cx+Math.cos(angle+.24)*reach*.61,cy+Math.sin(angle+.24)*reach*.61);
+   c.lineTo(cx+Math.cos(angle+.18)*reach*.72,cy+Math.sin(angle+.18)*reach*.72);
+   c.strokeStyle='#e5c5ff';c.lineWidth=1.6;c.globalAlpha=life*.68;c.stroke();
+  }
+ }
+ const coreRadius=18+Math.max(0,1-t/.62)*105;
+ c.globalAlpha=life;c.shadowColor='#d59aff';c.shadowBlur=38;c.fillStyle='#fff';c.beginPath();
+ for(let i=0;i<28;i++){const angle=i*Math.PI*2/28,r=coreRadius*(i%2===0?1.22:.48),x=cx+Math.cos(angle)*r,y=cy+Math.sin(angle)*r*.82;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}
+ c.closePath();c.fill();c.shadowBlur=0;
+ const core=c.createRadialGradient(cx,cy,1,cx,cy,coreRadius*2.6);
+ core.addColorStop(0,'rgba(255,255,255,.98)');core.addColorStop(.2,'rgba(229,193,255,.84)');
+ core.addColorStop(.55,'rgba(154,83,255,.36)');core.addColorStop(1,'rgba(108,42,210,0)');
+ c.fillStyle=core;c.fillRect(cx-coreRadius*2.6,cy-coreRadius*2.6,coreRadius*5.2,coreRadius*5.2);
+ c.restore();
+ c.save();c.globalCompositeOperation='screen';c.globalAlpha=life*.55;
+ const ground=c.createRadialGradient(cx,SHIP.floor-8,3,cx,SHIP.floor-8,560);
+ ground.addColorStop(0,'rgba(223,187,255,.5)');ground.addColorStop(.34,'rgba(153,76,255,.22)');ground.addColorStop(1,'rgba(75,22,145,0)');
+ c.fillStyle=ground;c.fillRect(0,SHIP.floor-180,W,210);c.restore();
+ c.save();c.globalAlpha=life*.76;
+ const vignette=c.createRadialGradient(cx,cy,Math.min(80,90+q*40),cx,cy,Math.max(W,H)*.86);
+ vignette.addColorStop(0,'rgba(3,0,14,0)');vignette.addColorStop(.63,'rgba(3,0,14,.08)');
+ vignette.addColorStop(1,'rgba(2,0,10,.82)');
+ c.fillStyle=vignette;c.fillRect(0,0,W,H);c.restore();
 }
 function drawCombatFx(c:CanvasRenderingContext2D,s:S,p:Palette){
  for(const f of s.fx){
@@ -1229,7 +1292,7 @@ function enhanceExistingVioletMoon(c:CanvasRenderingContext2D,im:HTMLImageElemen
 function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.ship,art=im.ship;
  const trail=a.stage==='trailWalk'||a.stage==='trailEnd';
- const swordScene=['swordIntro','swordReady','swordPickup','swordEquipped','swordAttack','agentFight','agentEnd'].includes(a.stage);
+ const swordScene=['swordIntro','swordReady','swordPickup','swordEquipped','swordAttack','agentFight','agentUltimate','agentUltimateBlast','agentEnd'].includes(a.stage);
  const baseScene=['baseFade','baseApproach','baseEnd'].includes(a.stage);
  const cross=['impact','crossRise','crossFree','contemplate','crossSunset','end'].includes(a.stage);
  const road=['crossWalkIntro','crossWalk'].includes(a.stage);
@@ -1271,6 +1334,12 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    const frameIndex=Math.min(frames.length-1,Math.floor(a.time/SWORD_PRIMARY_DURATION*frames.length));
    const frame=frames[frameIndex]??frames[frames.length-1];
    if(frame){c.save();c.translate(a.x,a.y);c.scale(a.face,1);drawAnchoredSprite(c,frame,0,0,112);c.restore();}
+  }else if(a.stage==='agentUltimate'||a.stage==='agentUltimateBlast'){
+   const frames=art.agentUltimateFrames;
+   const frameIndex=a.stage==='agentUltimate'?Math.min(frames.length-1,Math.floor(a.time/AGENT_ULTIMATE_SEQUENCE_DURATION*frames.length)):frames.length-1;
+   const frame=frames[frameIndex],alpha=a.stage==='agentUltimateBlast'?Math.max(0,1-a.time/.42):1;
+   if(frame&&alpha>0){c.save();c.translate(a.x,a.y);c.scale(a.face,1);drawAnchoredSprite(c,frame,0,0,170,alpha);c.restore();}
+   else if(a.stage==='agentUltimateBlast'){const idle=art.swordWalkFrames[0];c.save();c.translate(a.x,a.y);c.scale(a.face,1);stillTrimmed(c,idle,0,0,112);c.restore();}
   }else if(a.stage==='swordPickup'){
    const frame=art.swordPickupFrames[Math.min(4,Math.floor(a.time/2.5*5))]??art.swordPickupFrames[4];
    c.save();c.translate(a.x,a.y);c.scale(a.face,1);stillTrimmed(c,frame,0,0,112);c.restore();
@@ -1285,7 +1354,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    c.save();c.translate(a.x,a.y);c.scale(a.face,1);stillTrimmed(c,frame,0,0,112);c.restore();
   }
   const catFrame=art.trailCat[Math.floor(a.walk*1.1)%art.trailCat.length]??im.cat;
-  catSprite(c,catFrame,a.x-a.face*52,a.y,Math.floor(a.walk*1.1),a.face,46);
+  if(a.stage!=='agentUltimate'&&!(a.stage==='agentUltimateBlast'&&a.time<.42))catSprite(c,catFrame,a.x-a.face*52,a.y,Math.floor(a.walk*1.1),a.face,46);
   if(a.agentCombatActive||a.stage==='agentEnd'){
    for(const agent of a.agents){
     const artAgent=agent.kind==='shield'?(agent.firePose>0?art.secretAgentShieldAlt:art.secretAgentShield):agent.state==='aim'?art.secretAgentAim:agent.state==='advance'?art.secretAgentWalk:art.secretAgent;
@@ -1297,12 +1366,19 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
     oval(c,'rgba(0,0,0,.4)',0,-2,34,7);drawTrimmed(c,artAgent,-agentW/2,-agentH,agentW,agentH);
     if(agent.hp>0&&agent.firePose>0){c.globalAlpha=1;c.fillStyle='#ffe7a0';c.shadowColor='#ffb85c';c.shadowBlur=16;c.beginPath();c.arc(-agentW*.42,-agentH*.52,5+Math.sin(s.t*65)*1.5,0,Math.PI*2);c.fill();}
     c.restore();
-    if(agent.hp>0){const barW=62,bx=agent.x-barW/2,by=agent.y-agentH-17;c.fillStyle='rgba(8,8,18,.92)';c.fillRect(bx-2,by-3,barW+4,9);c.fillStyle='#5b171f';c.fillRect(bx,by,barW,4);c.fillStyle=agent.hp/agent.maxHp>.35?'#b9f2cf':'#ff6a72';c.fillRect(bx,by,barW*agent.hp/agent.maxHp,4);}
+    if(agent.hp>0&&!['agentUltimate','agentUltimateBlast'].includes(a.stage)){const barW=62,bx=agent.x-barW/2,by=agent.y-agentH-17;c.fillStyle='rgba(8,8,18,.92)';c.fillRect(bx-2,by-3,barW+4,9);c.fillStyle='#5b171f';c.fillRect(bx,by,barW,4);c.fillStyle=agent.hp/agent.maxHp>.35?'#b9f2cf':'#ff6a72';c.fillRect(bx,by,barW*agent.hp/agent.maxHp,4);}
    }
    for(const shot of a.shots){if(shot.kind==='special'){if((shot.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,shot,s.t);}else line(p.ice,shot.x,shot.y,shot.x-shot.vx*.025,shot.y-shot.vy*.025,3);}
    for(const bolt of a.bolts){line('#ffb86b',bolt.x,bolt.y,bolt.x-bolt.vx*.035,bolt.y-bolt.vy*.035,4);oval(c,'#fff0c4',bolt.x,bolt.y,4,3);}
    box(c,p.panel,14,14,218,42);c.font='13px monospace';c.fillStyle=p.light;c.fillText('SALUD',24,40);box(c,p.ink,82,30,138,10);box(c,a.hp>35?p.ice:p.red,82,30,1.38*a.hp,10);
-   if(a.agentWarning>0){
+   if(!['agentUltimate','agentUltimateBlast'].includes(a.stage)){
+    box(c,p.panel,706,14,240,42);c.font='13px monospace';c.fillStyle='#e8c8ff';c.fillText('MANÁ',716,40);
+    c.fillStyle='rgba(13,8,28,.95)';c.fillRect(780,30,155,10);
+    if(a.agentMana>=100){c.save();c.shadowColor='#c47aff';c.shadowBlur=14;}
+    c.fillStyle=a.agentMana>=100?'#e8c4ff':'#a65de8';c.fillRect(780,30,155*a.agentMana/100,10);
+    if(a.agentMana>=100){c.restore();c.strokeStyle='#edd7ff';c.lineWidth=1.4;c.strokeRect(779,29,157,12);}
+   }
+   if(a.agentWarning>0&&!['agentUltimate','agentUltimateBlast'].includes(a.stage)){
     const q=Math.min(1,a.agentWarning/AGENT_WARNING_DURATION),panelW=590,panelH=58,panelX=(W-panelW)/2,panelY=72;
     c.save();c.globalAlpha=Math.min(1,q*2.2);c.shadowColor='#ffbd55';c.shadowBlur=18;
     c.fillStyle='rgba(20,9,11,.94)';c.beginPath();c.roundRect(panelX,panelY,panelW,panelH,8);c.fill();
@@ -1436,6 +1512,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   const fade=1-Math.min(1,a.time/1.35);
   if(fade>0){c.save();c.globalAlpha=fade;box(c,p.ink,0,0,W,H);c.restore();}
  }
+ drawAgentUltimateVfx(c,s);
  drawCombatFx(c,s,p);
  c.restore();
 }
