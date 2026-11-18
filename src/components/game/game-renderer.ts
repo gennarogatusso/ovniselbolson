@@ -1266,7 +1266,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const battle=['militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd','soldierExit'].includes(a.stage);
  const lab=['awakening','verdict','catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage);
  c.save();box(c,p.ink,0,0,W,H);
- if(a.shake>0){const shakeScale=a.stage==='agentUltimateBlast'?36:a.stage==='agentUltimate'?14:8;c.translate(Math.sin(s.t*83)*a.shake*shakeScale,Math.cos(s.t*71)*a.shake*shakeScale*.78);}
+ if(a.shake>0){const shakeScale=a.stage==='agentUltimateBlast'?36:a.stage==='agentUltimate'?20:8;c.translate(Math.sin(s.t*83)*a.shake*shakeScale,Math.cos(s.t*71)*a.shake*shakeScale*.78);}
  const background=baseScene?art.base:swordScene?art.swordScene:trail?art.trail:road?art.road:battle?art.afterCross:cross?art.cross:lab?art.laboratory:art.main;
  const scale=Math.max(W/background.naturalWidth,H/background.naturalHeight),bw=background.naturalWidth*scale,bh=background.naturalHeight*scale;
  c.drawImage(background,(W-bw)/2,(H-bh)/2,bw,bh);
@@ -1482,8 +1482,10 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   const fade=1-Math.min(1,a.time/1.35);
   if(fade>0){c.save();c.globalAlpha=fade;box(c,p.ink,0,0,W,H);c.restore();}
  }
- if(a.stage==='agentUltimate')drawAgentStorm(c,s,.72,true);
- else if(a.stage!=='agentUltimateBlast'&&a.agentBurned&&swordScene)drawAgentStorm(c,s,.25,false);
+ if(a.stage==='agentUltimate'){
+  drawAgentStorm(c,s,.72,true);
+  if(a.time<.2){c.save();c.globalCompositeOperation='screen';c.globalAlpha=(1-a.time/.2)*.82;c.fillStyle='#fff';c.fillRect(0,0,W,H);const edge=c.createRadialGradient(W/2,H/2,90,W/2,H/2,680);edge.addColorStop(0,'rgba(120,50,255,0)');edge.addColorStop(.78,'rgba(135,65,255,.18)');edge.addColorStop(1,'rgba(150,90,255,.65)');c.fillStyle=edge;c.fillRect(0,0,W,H);c.restore();}
+ }else if(a.stage!=='agentUltimateBlast'&&a.agentBurned&&swordScene)drawAgentStorm(c,s,.25,false);
  drawAgentUltimateVfx(c,s);
  drawCombatFx(c,s,p);
  c.restore();
