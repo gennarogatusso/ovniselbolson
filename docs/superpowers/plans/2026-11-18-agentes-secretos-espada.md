@@ -41,9 +41,9 @@
 - Consumes: `GroundSoldier`/lógica actual de `soldierFight`, `SHIP`, `SWORD_PRIMARY_*`, `SWORD_SECONDARY_*`, `shipHit`, `spawnCombatImpact`.
 - Produces: estados `agentFight` y `agentEnd`; colección `ship.agents`; constante exportada `AGENT_WARNING_MESSAGE`; helper público `respawnAtAgentCheckpoint(s:S): void`.
 
-- [ ] **Step 1: Write failing tests** en `src/test/game-engine.test.ts` para: inicio automático de la emboscada al acabar `swordPickup`; cuatro agentes (dos regulares y dos con escudo); texto exacto de advertencia; R apunta a agentes vivos; los dos ataques de espada dañan a agentes; voltereta evita daño; la base queda bloqueada mientras haya agentes vivos y vuelve a habilitarse al derrotarlos; respawn reinicia el encuentro.
+- [ ] **Step 1: Write failing tests** en `src/test/game-engine.test.ts` para: inicio automático de la emboscada al acabar `swordPickup`; cuatro agentes (dos regulares y dos con escudo); texto exacto/duración del aviso; `shipIsCombat` habilita el HUD durante la emboscada y los ataques de espada; R apunta a agentes vivos; los dos ataques de espada dañan a agentes y regresan al combate; voltereta evita daño; la base queda bloqueada mientras haya agentes vivos y vuelve a habilitarse al derrotarlos; respawn reinicia el encuentro.
 - [ ] **Step 2: Run the focused tests**: `npm test -- src/test/game-engine.test.ts`. Expected: FAIL porque los estados, agentes, función de respawn y comportamiento aún no existen.
-- [ ] **Step 3: Implement the engine behavior** en `game-engine.ts`: inicializar `agents` y la bandera de encuentro; al terminar `swordPickup`, preparar los cuatro agentes y entrar a `agentFight`; reutilizar las reglas de movimiento, salto, voltereta, daño, proyectiles y colisiones del combate militar sin reutilizar ni mutar `soldiers`; activar el ataque primario/secundario de espada contra agentes con los valores ya existentes; extender `triggerSpecial` para buscar y perseguir agentes vivos; al quedar todos en cero, pasar a `agentEnd` y luego a `swordEquipped`; bloquear la transición a `baseFade` mientras el encuentro siga activo; añadir `respawnAtAgentCheckpoint` que restablezca vida, agentes, cooldowns, indicadores de pulsación y proyectiles.
+- [ ] **Step 3: Implement the engine behavior** en `game-engine.ts`: inicializar `agents` y la bandera de encuentro; al terminar `swordPickup`, preparar los cuatro agentes y entrar a `agentFight`; reutilizar las reglas de movimiento, salto, voltereta, daño, proyectiles y colisiones del combate militar sin reutilizar ni mutar `soldiers`; activar el ataque primario/secundario de espada contra agentes con los valores ya existentes; hacer que las animaciones `swordAttack`/`swordSecondaryAttack` regresen a `agentFight` mientras queden agentes vivos; extender `triggerSpecial` para buscar y perseguir agentes vivos; al quedar todos en cero, pasar a `agentEnd` y luego a `swordEquipped`; bloquear la transición a `baseFade` mientras el encuentro siga activo; añadir `respawnAtAgentCheckpoint` que restablezca vida, agentes, cooldowns, indicadores de pulsación y proyectiles.
 - [ ] **Step 4: Run focused tests**: `npm test -- src/test/game-engine.test.ts`. Expected: PASS para los nuevos casos y los casos existentes de espada y soldados.
 - [ ] **Step 5: Commit**: `feat: add secret agent sword encounter`.
 
@@ -56,27 +56,23 @@
 - Consumes: `ship.agents`, `agentFight`, `agentEnd`, `AGENT_WARNING_MESSAGE`.
 - Produces: dibujo de los agentes con estados visuales idle/walk/aim; barras de vida individuales; proyectiles/efectos de combate; cartel de advertencia dentro de la escena.
 
-- [ ] **Step 1: Add a renderer-level assertion or focused test** para que el texto de advertencia provenga de la constante del motor y no tenga una segunda versión literal en el renderer. Si el entorno de pruebas no permite canvas, mantener la verificación de la constante en el test del motor y verificar la integración por inspección del diff.
-- [ ] **Step 2: Run the focused test**: `npm test -- src/test/game-engine.test.ts`. Expected: PASS antes de modificar el renderer.
-- [ ] **Step 3: Extend `ShipImages`** con las imágenes de agente regular (quieto, caminando y apuntando) y las dos poses del agente con escudo; dibujar cuatro agentes, orientados hacia el protagonista, usando sus poses según movimiento/ataque/impacto. Mantener barras de vida individuales y el estilo actual del HUD.
-- [ ] **Step 4: Incluir `agentFight`/`agentEnd` en la composición de la escena de la espada**, dibujar los proyectiles enemigos, destellos de disparo e impactos y mostrar durante la entrada la advertencia en un panel visible de estilo alerta, con buen contraste y sin ocultar permanentemente al jugador ni a los agentes.
-- [ ] **Step 5: Review the changed renderer diff** para confirmar que las ramas de escenas militares, base, bosque y La Cruz no cambian; commit `feat: render secret agents and restricted-area warning`.
+- [ ] **Step 1: Extend `ShipImages`** con las imágenes de agente regular (quieto, caminando y apuntando) y las dos poses del agente con escudo; dibujar cuatro agentes, orientados hacia el protagonista, usando sus poses según movimiento/ataque/impacto. Mantener barras de vida individuales y el estilo actual del HUD.
+- [ ] **Step 2: Incluir `agentFight`/`agentEnd` en la composición de la escena de la espada**, dibujar los proyectiles enemigos, destellos de disparo e impactos y mostrar durante `AGENT_WARNING_DURATION` la advertencia en un panel visible de estilo alerta, con buen contraste y sin ocultar permanentemente al jugador ni a los agentes. Usar `AGENT_WARNING_MESSAGE` como única fuente literal del texto.
+- [ ] **Step 3: Run `npm run build`** para comprobar los tipos de imágenes y la integración del canvas. Expected: Vite build exitoso.
+- [ ] **Step 4: Review the changed renderer diff** para confirmar que las ramas de escenas militares, base, bosque y La Cruz no cambian; commit `feat: render secret agents and restricted-area warning`.
 
 ### Task 3: Asset loader and controls — escritorio y móvil
 
 **Files:**
 - Modify: `src/components/game/UfoGame.tsx`
-- Modify: `src/components/game/game-renderer.ts` (solo tipos de imágenes si no quedó completado en Task 2)
 
 **Interfaces:**
 - Consumes: nuevos campos de imagen de `ShipImages` y helpers `shipIsCombat`/`respawnAtAgentCheckpoint`.
 - Produces: cinco sprites nuevos cargados y preparados; entrada de checkpoint; R, voltereta y ataques de espada habilitados también en móvil.
 
-- [ ] **Step 1: Add/extend engine tests** para que `shipIsCombat` sea verdadero en la emboscada y sus animaciones de espada, y para que el checkpoint de agentes pueda reiniciarse.
-- [ ] **Step 2: Run** `npm test -- src/test/game-engine.test.ts`; Expected: FAIL si las nuevas condiciones todavía no están implementadas.
-- [ ] **Step 3: Load these exact existing files** dentro del `Promise.all` y preparar sus transparencias: `agente secreto.png`, `agente secreto caminando.png`, `agente secreto apuntando.png`, `agentre secreto escudo.png`, `agentre secreto escudo 2.png` (conservar el nombre `agentre`, tal como está en el repositorio). Asociarlos a `ShipImages` sin alterar el orden/destructuring de los demás assets.
-- [ ] **Step 4: Extender la recuperación de derrota** para llamar a `respawnAtAgentCheckpoint` cuando el resultado sea `lose` durante `agentFight`; adaptar el joystick vertical, el botón de ataque primario, secundario, R y voltereta para la emboscada. Mantener X exclusivo del combate militar.
-- [ ] **Step 5: Run** `npm test -- src/test/game-engine.test.ts`; Expected: PASS. Revisar que el bloque `soldierFight` siga usando sus controles originales; commit `feat: wire secret agent assets and mobile controls`.
+- [ ] **Step 1: Load these exact existing files** dentro del `Promise.all` y preparar sus transparencias: `agente secreto.png`, `agente secreto caminando.png`, `agente secreto apuntando.png`, `agentre secreto escudo.png`, `agentre secreto escudo 2.png` (conservar el nombre `agentre`, tal como está en el repositorio). Asociarlos a `ShipImages` sin alterar el orden/destructuring de los demás assets.
+- [ ] **Step 2: Extender la recuperación de derrota** para llamar a `respawnAtAgentCheckpoint` cuando el resultado sea `lose` durante `agentFight`; adaptar el joystick vertical, el botón de ataque primario, secundario, R y voltereta para la emboscada. Mantener X exclusivo del combate militar.
+- [ ] **Step 3: Run** `npm run build` y `npm test -- src/test/game-engine.test.ts`; Expected: ambos PASS. Revisar que el bloque `soldierFight` siga usando sus controles originales; commit `feat: wire secret agent assets and mobile controls`.
 
 ### Task 4: Audio — golpes de espada y combate de agentes
 
