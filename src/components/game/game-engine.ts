@@ -362,10 +362,10 @@ export function respawnAtSoldierCheckpoint(s:S){
  shipAdvance(s,'soldierFight');
 }
 function createSecretAgents():GroundAgent[]{return [
- {id:0,x:690,y:SHIP.floor,hp:160,maxHp:160,kind:'shield',cd:1.25,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
- {id:1,x:755,y:SHIP.floor,hp:145,maxHp:145,kind:'regular',cd:2.1,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
- {id:2,x:820,y:SHIP.floor,hp:180,maxHp:180,kind:'shield',cd:2.8,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
- {id:3,x:885,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:3.5,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}
+ {id:0,x:740,y:SHIP.floor,hp:160,maxHp:160,kind:'shield',cd:1.25,walk:0,hurt:0,deadTime:0,firePose:0,state:'advance'},
+ {id:1,x:805,y:SHIP.floor,hp:145,maxHp:145,kind:'regular',cd:2.1,walk:0,hurt:0,deadTime:0,firePose:0,state:'advance'},
+ {id:2,x:870,y:SHIP.floor,hp:180,maxHp:180,kind:'shield',cd:2.8,walk:0,hurt:0,deadTime:0,firePose:0,state:'advance'},
+ {id:3,x:935,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:3.5,walk:0,hurt:0,deadTime:0,firePose:0,state:'advance'}
 ];}
 function beginAgentEncounter(s:S){
  const a=s.ship;a.agentCombatActive=true;a.agentWarning=AGENT_WARNING_DURATION;a.agents=createSecretAgents();
@@ -587,8 +587,15 @@ case 'agentFight':{
       if(a.roll>0){a.roll=Math.max(0,a.roll-dt);a.x=Math.max(90,Math.min(rightLimit,a.x+a.rollFace*420*dt));a.face=a.rollFace;}
       else{a.x=Math.max(90,Math.min(rightLimit,a.x+move*205*dt));if(move){a.face=move;a.walk+=dt*10;}}
       a.catX=approach(a.catX,a.x-a.face*55,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);
+      const agentFormation=[690,755,820,885];
       for(const e of a.agents){
         if(e.hp<=0){e.state='guard';continue;}
+        const formationX=agentFormation[e.id]??e.x;
+        if(e.state==='advance'&&e.x>formationX){
+          e.x=approach(e.x,formationX,180*dt);e.walk+=dt*9;
+          if(e.x<=formationX+1){e.x=formationX;e.state='guard';}
+          continue;
+        }
         e.cd-=dt;
         if(e.cd<=0){
           const dx=a.x-e.x,dy=(a.y-44)-(e.y-52),length=Math.hypot(dx,dy)||1,speed=e.kind==='shield'?385:330;
