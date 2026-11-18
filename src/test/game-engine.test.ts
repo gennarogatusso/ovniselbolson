@@ -346,4 +346,40 @@ describe('OVNI difficulty and narrative', () => {
     expect(s.ship.soldiers).toHaveLength(0);
   });
 
+
+  it('makes secret agents rush into separate positions around the player, including behind their back',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.face=1;
+    s.ship.agents=[690,755,820,885].map((x,id)=>({id,x,y:452,hp:160,maxHp:160,kind:id%2?'regular':'shield',cd:100,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard' as const}));
+    const before=s.ship.agents.map(agent=>agent.x);
+    update(s,1.25);
+    expect(Math.min(...s.ship.agents.map(agent=>agent.x))).toBeLessThan(s.ship.x-70);
+    expect(Math.max(...s.ship.agents.map(agent=>agent.x))).toBeGreaterThan(s.ship.x+70);
+    const sorted=s.ship.agents.map(agent=>agent.x).sort((a,b)=>a-b);
+    expect(sorted.slice(1).every((x,i)=>x-sorted[i]!>35)).toBe(true);
+    expect(s.ship.agents.some((agent,i)=>Math.abs(agent.x-before[i]!)>80)).toBe(true);
+  });
+
+  it('makes agents change sides to get behind the player when the player turns around',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.face=1;
+    s.ship.agents=[690,755,820,885].map((x,id)=>({id,x,y:452,hp:160,maxHp:160,kind:id%2?'regular':'shield',cd:100,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard' as const}));
+    update(s,1.25);
+    const flankAgent=s.ship.agents[0]!;
+    expect(flankAgent.x).toBeLessThan(s.ship.x-70);
+    s.ship.face=-1;
+    update(s,2);
+    expect(flankAgent.x).toBeGreaterThan(s.ship.x+70);
+    expect(flankAgent.face).toBe(-1);
+  });
+
+  it('lets agents fire toward the player from either side and increases their pressure',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.y=452;
+    s.ship.agents=[{id:0,x:420,y:452,hp:160,maxHp:160,kind:'regular',cd:.001,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'},
+      {id:1,x:760,y:452,hp:160,maxHp:160,kind:'regular',cd:.001,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}];
+    update(s,.016);
+    expect(s.ship.bolts).toHaveLength(2);
+    expect(s.ship.bolts[0]!.vx).toBeGreaterThan(0);
+    expect(s.ship.bolts[1]!.vx).toBeLessThan(0);
+    expect(s.ship.agents.every(agent=>agent.face!==undefined)).toBe(true);
+  });
+
 });
