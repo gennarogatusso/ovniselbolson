@@ -424,6 +424,12 @@ export class GameAudio {
   if(s.phase!=='spaceship'){a.sounds=[];return;}
   for(const event of a.sounds.splice(0)){
    if(event==='pistol')this.tone(380,.09,'square',60,.32);
+   else if(event==='swordPrimary'){this.noise(.12,.20,4600,900);this.tone(860,.12,'sawtooth',210,.32);this.tone(140,.16,'triangle',70,.18);}
+   else if(event==='swordSecondary'){this.noise(.24,.34,3200,260);this.tone(510,.22,'sawtooth',82,.40);this.tone(118,.28,'triangle',36,.32);}
+   else if(event==='agentArrival'){this.noise(.18,.16,1900,460);this.tone(260,.24,'square',150,.18);this.tone(720,.18,'triangle',340,.10);}
+   else if(event==='agentShot'){this.noise(.075,.15,2600,650);this.tone(430,.065,'square',115,.22);}
+   else if(event==='agentHit'){this.noise(.095,.20,2100,320);this.tone(220,.12,'triangle',70,.20);}
+   else if(event==='agentDefeated'){this.noise(.26,.25,1700,220);this.tone(340,.24,'sawtooth',62,.28);}
    else if(event==='laser')this.tone(1600,.24,'sawtooth',130,.25);
    else if(event==='super'){this.tone(110,.75,'sawtooth',30,.8);this.tone(1300,.5,'triangle',50,.5);}
    else if(event==='ultimateExplosion'){this.noise(1.2,1.15,3200,45);this.noise(.72,.55,8200,1100);this.tone(48,1.7,'sawtooth',18,1.1);this.tone(135,.92,'square',24,.68);this.tone(700,.38,'triangle',80,.26);}
