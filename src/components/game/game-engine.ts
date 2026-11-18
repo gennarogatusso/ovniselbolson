@@ -38,17 +38,21 @@ export const SWORD_PRIMARY_RANGE = 112 * 1.3;
 export const SWORD_PRIMARY_FRAME_COUNT = 8;
 export const SWORD_PRIMARY_FRAME_DURATION = .18;
 export const SWORD_PRIMARY_DURATION = SWORD_PRIMARY_FRAME_COUNT * SWORD_PRIMARY_FRAME_DURATION;
+export const AGENT_ULTIMATE_FRAME_COUNT = 10;
+export const AGENT_ULTIMATE_FRAME_DURATION = .2;
+export const AGENT_ULTIMATE_SEQUENCE_DURATION = AGENT_ULTIMATE_FRAME_COUNT * AGENT_ULTIMATE_FRAME_DURATION;
+export const AGENT_ULTIMATE_BLAST_DURATION = 1.8;
 export const AGENT_WARNING_MESSAGE = 'Esta es un área restringida, un paso más y disparo';
 export const AGENT_WARNING_DURATION = 3.5;
 export const FOREST = { deer: 1820, ship: 3640, abduction: 3900, top: 410, bottom: 490, speed: 260 } as const;
 export function forestIsFree(s:S){return s.phase==='bedroom'&&['forestRun','burned','ship'].includes(s.chapter.stage);}
 export function computerAvailable(s:S){return roomIsFree(s)&&!s.chapter.night&&Math.hypot(s.chapter.roomX-350,s.chapter.roomY-418)<80;}
 export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=false;}
-export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'soldierExit'|'agentFight'|'agentEnd'|'trailWalk'|'trailEnd'|'swordIntro'|'swordReady'|'swordPickup'|'swordEquipped'|'swordAttack'|'baseFade'|'baseApproach'|'baseEnd'|'end';
+export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'soldierExit'|'agentFight'|'agentUltimate'|'agentUltimateBlast'|'agentEnd'|'trailWalk'|'trailEnd'|'swordIntro'|'swordReady'|'swordPickup'|'swordEquipped'|'swordAttack'|'baseFade'|'baseApproach'|'baseEnd'|'end';
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
 type GroundSoldier = {id:number;x:number;y:number;hp:number;maxHp:number;role:'bazooka'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose?:number;state:'cover'|'advance'|'fire'|'hit'};
 export type GroundAgent = {id:number;x:number;y:number;hp:number;maxHp:number;kind:'regular'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose:number;face?:-1|1;state:'guard'|'advance'|'aim'|'hit'};
-function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,vy:0,jumpHeld:false,catUltimateUsed:false,trailProgress:0,baseProgress:0,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],agents:[] as GroundAgent[],agentCombatActive:false,agentWarning:0,sounds:[] as string[],labDead:0,swordAttackHeld:false};}
+function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,vy:0,jumpHeld:false,catUltimateUsed:false,trailProgress:0,baseProgress:0,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],agents:[] as GroundAgent[],agentCombatActive:false,agentMana:0,agentKills:0,agentWarning:0,sounds:[] as string[],labDead:0,swordAttackHeld:false};}
 export function newState() {
   return {
                 t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom" | "spaceship",
@@ -298,11 +302,18 @@ export function introAction(s: S): string | null {
 }
 export function enterShip(s:S){s.phase='spaceship';s.ship=newShip();s.ship.stage='awakening';s.keys={};s.fire=false;s.shots=[];s.lasers=[];s.cam=0;}
 export function respawnAtShipCheckpoint(s:S){enterShip(s);}
-export function shipIsCombat(s:S){return s.phase==='spaceship'&&(['combat','soldierFight','agentFight','agentEnd'].includes(s.ship.stage)||(s.ship.agentCombatActive&&s.ship.stage==='swordAttack'));}
+export function shipIsCombat(s:S){return s.phase==='spaceship'&&(['combat','soldierFight','agentFight','agentUltimate','agentUltimateBlast','agentEnd'].includes(s.ship.stage)||(s.ship.agentCombatActive&&s.ship.stage==='swordAttack'));}
 export const SOLDIER_DAMAGE_FACTOR=0.65;
 export const CAT_ULTIMATE_READY_DELAY=7;
 export const CAT_ULTIMATE_THROW_DURATION=1.8;
 export const CAT_ULTIMATE_BEAM_DURATION=4.5;
+export function triggerAgentUltimate(s:S):boolean{
+ if(s.phase!=='spaceship'||s.ship.stage!=='agentFight')return false;
+ const a=s.ship;if(a.agentMana<100||a.agents.every(e=>e.hp<=0))return false;
+ a.agentMana=0;a.agentKills=0;a.shots=[];a.bolts=[];a.roll=0;a.vy=0;
+ a.jumpHeld=false;a.fireCd=0;a.flash=0;a.specialAnim=0;a.swordAttackHeld=false;a.shake=.12;
+ s.fire=false;s.keys={};shipAdvance(s,'agentUltimate');shipSound(s,'super');return true;
+}
 export function triggerCatUltimate(s:S):boolean{
  if(s.phase!=='spaceship'||s.ship.stage!=='soldierFight')return false;
  const a=s.ship;if(a.time<CAT_ULTIMATE_READY_DELAY||a.catUltimateUsed||a.soldiers.every(e=>e.hp<=0))return false;
@@ -367,12 +378,18 @@ function createSecretAgents():GroundAgent[]{return [
  {id:3,x:920,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:1.7,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard'}
 ];}
 function beginAgentEncounter(s:S){
- const a=s.ship;a.agentCombatActive=true;a.agentWarning=AGENT_WARNING_DURATION;a.agents=createSecretAgents();
+ const a=s.ship;a.agentCombatActive=true;a.agentMana=0;a.agentKills=0;a.agentWarning=AGENT_WARNING_DURATION;a.agents=createSecretAgents();
  a.x=590;a.y=SHIP.floor;a.face=1;a.hp=100;a.hurt=0;a.vy=0;a.jumpHeld=false;a.roll=0;a.rollCd=0;a.rollHeld=false;a.specialCd=0;a.specialAnim=0;a.fireCd=0;a.flash=0;a.shake=0;a.catX=538;a.catY=SHIP.floor;a.shots=[];a.bolts=[];a.swordAttackHeld=false;
  shipAdvance(s,'agentFight');shipSound(s,'agentArrival');
 }
 export function respawnAtAgentCheckpoint(s:S){beginAgentEncounter(s);s.keys={};s.fire=false;}
 function shipSound(s:S,event:string){s.ship.sounds.push(event);}
+function damageAgent(s:S,e:GroundAgent,damage:number,hurt=.4):boolean{
+ if(e.hp<=0)return false;
+ e.hp=Math.max(0,e.hp-damage);e.hurt=hurt;e.state='hit';
+ if(e.hp===0){e.deadTime=.001;s.ship.agentKills++;s.ship.agentMana=Math.min(100,s.ship.agentKills*50);shipSound(s,'agentDefeated');return true;}
+ shipSound(s,'agentHit');return false;
+}
 function shipHit(s:S,damage:number){const a=s.ship;if(a.hurt>0||a.roll>0)return;a.hp=Math.max(0,a.hp-damage);a.hurt=.8;a.shake=.3;shipSound(s,'impact');}
 function defeat(s:S,e:ShipEnemy){e.hp=0;e.deadTime=.001;shipSound(s,'impact');}
 function spawnCombatImpact(s:S,x:number,y:number,power=1){
@@ -391,6 +408,21 @@ function spawnSwordStrikeFx(s:S,x:number,y:number){
   const angle=i*2.399+s.t*1.3,speed=28+(i%4)*17,duration=.34+(i%3)*.1;
   s.fx.push({x:x+Math.cos(angle)*5,y:groundY+Math.sin(angle)*2,life:duration,maxLife:duration,c:'energy',shape:'dust',size:2+(i%3)*.8,vx:Math.cos(angle)*speed,vy:-24-(i%4)*13});
  }
+}
+function releaseAgentUltimate(s:S){
+ const a=s.ship,cx=Math.max(65,Math.min(W-65,a.x+a.face*65)),cy=SHIP.floor-118;
+ a.bolts=[];a.shots=[];a.agentMana=0;
+ for(const e of a.agents){if(e.hp<=0)continue;e.hp=0;e.hurt=1;e.state='hit';e.deadTime=.001;
+  const hitLife=.75;s.fx.push({x:e.x,y:e.y-56,life:hitLife,maxLife:hitLife,c:'energy',shape:'ring',size:42});
+  for(let i=0;i<18;i++){const angle=i/18*Math.PI*2,speed=80+(i%5)*34,duration=.48+(i%4)*.13;
+   s.fx.push({x:e.x,y:e.y-56,life:duration,maxLife:duration,c:i%4===0?'light':'energy',shape:'spark',size:2.5+(i%3),vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});}
+ }
+ for(const [size,life] of [[48,.95],[110,1.15],[190,1.35]] as const)s.fx.push({x:cx,y:cy,life,maxLife:life,c:'energy',shape:'ring',size});
+ for(let i=0;i<78;i++){const angle=i/78*Math.PI*2+(i%3)*.035,speed=145+(i%7)*38,duration=.62+(i%5)*.16;
+  s.fx.push({x:cx,y:cy,life:duration,maxLife:duration,c:i%7===0?'light':'energy',shape:'spark',size:2+(i%4)*.75,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});}
+ for(let i=0;i<28;i++){const angle=i*2.399,speed=38+(i%6)*15,duration=.85+(i%4)*.18;
+  s.fx.push({x:cx+Math.cos(angle)*18,y:SHIP.floor-4,life:duration,maxLife:duration,c:i%4===0?'smoke':'energy',shape:'dust',size:3+(i%4),vx:Math.cos(angle)*speed,vy:-30-(i%5)*16});}
+ shipAdvance(s,'agentUltimateBlast');a.shake=1.2;shipSound(s,'ultimateExplosion');
 }
 function syncUfoPhase(s:S){
  const u=s.u,next=u.hp>66?1:u.hp>33?2:3;
@@ -580,7 +612,15 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
         if(!s.fire)a.swordAttackHeld=false;
         break;
       }
-case 'agentFight':{
+case 'agentUltimate':{
+      a.bolts=[];a.shots=[];a.roll=0;a.shake=Math.max(a.shake,.06+.12*(.5+.5*Math.sin(a.time*13)));
+      if(a.time>=AGENT_ULTIMATE_SEQUENCE_DURATION)releaseAgentUltimate(s);break;
+    }
+    case 'agentUltimateBlast':{
+      a.bolts=[];a.shots=[];a.shake=Math.max(a.shake,Math.max(0,.9-a.time));
+      if(a.time>=AGENT_ULTIMATE_BLAST_DURATION)shipAdvance(s,'agentEnd');break;
+    }
+    case 'agentFight':{
       const move=(s.keys.r?1:0)-(s.keys.l?1:0),rollKey=Boolean(s.keys['roll']),jumpKey=Boolean(s.keys.j);
       if(jumpKey&&!a.jumpHeld&&a.y>=SHIP.floor-.01){a.vy=-560;shipSound(s,'jump');}a.jumpHeld=jumpKey;
       if(a.vy!==0||a.y<SHIP.floor){a.vy+=1500*dt;a.y=Math.min(SHIP.floor,a.y+a.vy*dt);if(a.y>=SHIP.floor){a.y=SHIP.floor;a.vy=0;}}
@@ -620,7 +660,7 @@ case 'agentFight':{
       a.fireCd-=dt;
       if(s.fire&&!a.swordAttackHeld&&a.fireCd<=0&&a.roll===0){
         a.swordAttackHeld=true;a.fireCd=.55;shipAdvance(s,'swordAttack');shipSound(s,'swordPrimary');
-        for(const e of a.agents)if(e.hp>0&&(e.x-a.x)*a.face>=-12&&Math.abs(e.x-a.x)<=SWORD_PRIMARY_RANGE){e.hp=Math.max(0,e.hp-SWORD_PRIMARY_DAMAGE);e.hurt=.4;e.state='hit';spawnSwordStrikeFx(s,e.x,e.y-52);shipSound(s,e.hp===0?'agentDefeated':'agentHit');if(e.hp===0)e.deadTime=.001;}
+        for(const e of a.agents)if(e.hp>0&&(e.x-a.x)*a.face>=-12&&Math.abs(e.x-a.x)<=SWORD_PRIMARY_RANGE){damageAgent(s,e,SWORD_PRIMARY_DAMAGE,.4);spawnSwordStrikeFx(s,e.x,e.y-52);}
         break;
       }
       if(!s.fire)a.swordAttackHeld=false;
@@ -631,7 +671,7 @@ case 'agentFight':{
           if(!target||target.hp<=0){let index=-1,best=Infinity;for(let i=0;i<a.agents.length;i++){const e=a.agents[i];if(e&&e.hp>0){const distance=Math.hypot(e.x-b.x,(e.y-52)-b.y);if(distance<best){best=distance;index=i;target=e;}}}b.targetIndex=index;}
           if(!target||target.hp<=0){b.life=0;continue;}
           const dx=target.x-b.x,dy=(target.y-52)-b.y,length=Math.hypot(dx,dy)||1;b.vx=dx/length*SPECIAL_PROJECTILE_SPEED;b.vy=dy/length*SPECIAL_PROJECTILE_SPEED;
-          if(length<42+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;target.hp=Math.max(0,target.hp-42);target.hurt=.45;target.state='hit';spawnCombatImpact(s,target.x,target.y-52,1.7);shipSound(s,target.hp===0?'agentDefeated':'agentHit');if(target.hp===0)target.deadTime=.001;}
+          if(length<42+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;damageAgent(s,target,42,.45);spawnCombatImpact(s,target.x,target.y-52,1.7);}
           else{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;}
           continue;
         }
