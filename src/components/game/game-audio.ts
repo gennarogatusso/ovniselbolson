@@ -411,7 +411,8 @@ export class GameAudio {
    if(this.forestTrack){this.forestTrack.currentTime=0;void this.forestTrack.play().catch(()=>{});}
   }
   const rainInForest=!this.crossMusicStarted&&this.forestMusicStarted&&s.phase==='bedroom'&&FOREST_RAIN_STAGES.has(s.chapter.stage);
-  if(rainInForest){
+  const rainOnCrossTrail=s.phase==='spaceship'&&s.ship.stage==='trailWalk';
+  if(rainInForest||rainOnCrossTrail){
    this.rainActive=true;
    if(this.rainTrack?.paused)void this.rainTrack.play().catch(()=>{});
   }else if(this.rainActive){
