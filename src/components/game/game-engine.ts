@@ -41,7 +41,7 @@ export const SWORD_PRIMARY_DURATION = SWORD_PRIMARY_FRAME_COUNT * SWORD_PRIMARY_
 export const AGENT_ULTIMATE_FRAME_COUNT = 10;
 export const AGENT_ULTIMATE_FRAME_DURATION = .2;
 export const AGENT_ULTIMATE_SEQUENCE_DURATION = AGENT_ULTIMATE_FRAME_COUNT * AGENT_ULTIMATE_FRAME_DURATION;
-export const AGENT_ULTIMATE_BLAST_DURATION = 1.8;
+export const AGENT_ULTIMATE_BLAST_DURATION = 4.25;
 export const AGENT_WARNING_MESSAGE = 'Esta es un área restringida, un paso más y disparo';
 export const AGENT_WARNING_DURATION = 3.5;
 export const FOREST = { deer: 1820, ship: 3640, abduction: 3900, top: 410, bottom: 490, speed: 260 } as const;
@@ -52,7 +52,7 @@ export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
 type GroundSoldier = {id:number;x:number;y:number;hp:number;maxHp:number;role:'bazooka'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose?:number;state:'cover'|'advance'|'fire'|'hit'};
 export type GroundAgent = {id:number;x:number;y:number;hp:number;maxHp:number;kind:'regular'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose:number;face?:-1|1;state:'guard'|'advance'|'aim'|'hit'};
-function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,vy:0,jumpHeld:false,catUltimateUsed:false,trailProgress:0,baseProgress:0,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],agents:[] as GroundAgent[],agentCombatActive:false,agentMana:0,agentKills:0,agentWarning:0,sounds:[] as string[],labDead:0,swordAttackHeld:false};}
+function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,vy:0,jumpHeld:false,catUltimateUsed:false,trailProgress:0,baseProgress:0,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],agents:[] as GroundAgent[],agentCombatActive:false,agentMana:0,agentKills:0,agentBurned:false,agentBurnedTime:0,agentWarning:0,sounds:[] as string[],labDead:0,swordAttackHeld:false};}
 export function newState() {
   return {
                 t: 0, phase: "walk" as "awka" | "walk" | "descend" | "beam" | "rise" | "noo" | "draw" | "fight" | "boom" | "over" | "help" | "crash" | "arrive" | "reunion" | "alien" | "speech" | "attack" | "fade" | "jets" | "aftermath" | "bedroom" | "spaceship",
@@ -378,7 +378,7 @@ function createSecretAgents():GroundAgent[]{return [
  {id:3,x:920,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:1.7,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard'}
 ];}
 function beginAgentEncounter(s:S){
- const a=s.ship;a.agentCombatActive=true;a.agentMana=0;a.agentKills=0;a.agentWarning=AGENT_WARNING_DURATION;a.agents=createSecretAgents();
+ const a=s.ship;a.agentCombatActive=true;a.agentMana=0;a.agentKills=0;a.agentBurned=false;a.agentBurnedTime=0;a.agentWarning=AGENT_WARNING_DURATION;a.agents=createSecretAgents();
  a.x=590;a.y=SHIP.floor;a.face=1;a.hp=100;a.hurt=0;a.vy=0;a.jumpHeld=false;a.roll=0;a.rollCd=0;a.rollHeld=false;a.specialCd=0;a.specialAnim=0;a.fireCd=0;a.flash=0;a.shake=0;a.catX=538;a.catY=SHIP.floor;a.shots=[];a.bolts=[];a.swordAttackHeld=false;
  shipAdvance(s,'agentFight');shipSound(s,'agentArrival');
 }
@@ -410,19 +410,27 @@ function spawnSwordStrikeFx(s:S,x:number,y:number){
  }
 }
 function releaseAgentUltimate(s:S){
- const a=s.ship,cx=Math.max(65,Math.min(W-65,a.x+a.face*65)),cy=SHIP.floor-118;
- a.bolts=[];a.shots=[];a.agentMana=0;
- for(const e of a.agents){if(e.hp<=0)continue;e.hp=0;e.hurt=1;e.state='hit';e.deadTime=.001;
-  const hitLife=.75;s.fx.push({x:e.x,y:e.y-56,life:hitLife,maxLife:hitLife,c:'energy',shape:'ring',size:42});
-  for(let i=0;i<18;i++){const angle=i/18*Math.PI*2,speed=80+(i%5)*34,duration=.48+(i%4)*.13;
-   s.fx.push({x:e.x,y:e.y-56,life:duration,maxLife:duration,c:i%4===0?'light':'energy',shape:'spark',size:2.5+(i%3),vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});}
- }
- for(const [size,life] of [[48,.95],[110,1.15],[190,1.35]] as const)s.fx.push({x:cx,y:cy,life,maxLife:life,c:'energy',shape:'ring',size});
- for(let i=0;i<78;i++){const angle=i/78*Math.PI*2+(i%3)*.035,speed=145+(i%7)*38,duration=.62+(i%5)*.16;
-  s.fx.push({x:cx,y:cy,life:duration,maxLife:duration,c:i%7===0?'light':'energy',shape:'spark',size:2+(i%4)*.75,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});}
- for(let i=0;i<28;i++){const angle=i*2.399,speed=38+(i%6)*15,duration=.85+(i%4)*.18;
-  s.fx.push({x:cx+Math.cos(angle)*18,y:SHIP.floor-4,life:duration,maxLife:duration,c:i%4===0?'smoke':'energy',shape:'dust',size:3+(i%4),vx:Math.cos(angle)*speed,vy:-30-(i%5)*16});}
- shipAdvance(s,'agentUltimateBlast');a.shake=1.2;shipSound(s,'ultimateExplosion');
+  const a=s.ship,cx=Math.max(65,Math.min(W-65,a.x+a.face*65)),cy=SHIP.floor-118;
+  a.bolts=[];a.shots=[];a.agentMana=0;a.agentBurned=true;a.agentBurnedTime=0;
+  // La descarga alcanza a todos y deja cuatro cuerpos calcinados en el suelo.
+  for(const e of a.agents){
+    e.hp=0;e.hurt=1;e.state='hit';e.deadTime=0;
+    const hitLife=.95;s.fx.push({x:e.x,y:e.y-48,life:hitLife,maxLife:hitLife,c:'energy',shape:'ring',size:46});
+    for(let i=0;i<22;i++){
+      const angle=i/22*Math.PI*2,speed=72+(i%6)*36,duration=.62+(i%4)*.16;
+      s.fx.push({x:e.x,y:e.y-55,life:duration,maxLife:duration,c:i%5===0?'light':'energy',shape:'spark',size:2.5+(i%3),vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
+    }
+  }
+  for(const [size,life] of [[48,1.1],[110,1.45],[190,1.8],[300,2.1]] as const)s.fx.push({x:cx,y:cy,life,maxLife:life,c:'energy',shape:'ring',size});
+  for(let i=0;i<96;i++){
+    const angle=i/96*Math.PI*2+(i%3)*.035,speed=170+(i%7)*44,duration=.75+(i%5)*.2;
+    s.fx.push({x:cx,y:cy,life:duration,maxLife:duration,c:i%7===0?'light':'energy',shape:'spark',size:2+(i%4)*.75,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
+  }
+  for(let i=0;i<48;i++){
+    const angle=i*2.399,speed=32+(i%7)*18,duration=1.15+(i%4)*.22;
+    s.fx.push({x:cx+Math.cos(angle)*22,y:SHIP.floor-4,life:duration,maxLife:duration,c:i%4===0?'smoke':'energy',shape:'dust',size:3+(i%4),vx:Math.cos(angle)*speed,vy:-36-(i%5)*18});
+  }
+  shipAdvance(s,'agentUltimateBlast');a.shake=1.25;shipSound(s,'ultimateExplosion');
 }
 function syncUfoPhase(s:S){
  const u=s.u,next=u.hp>66?1:u.hp>33?2:3;
@@ -457,7 +465,7 @@ function superShot(s:S){
   shipSound(s,'super');
 }
 function updateShip(s:S,dt:number):'continue'|'lose'|null{
-  const a=s.ship;a.time+=dt;a.hurt=Math.max(0,a.hurt-dt);a.shake=Math.max(0,a.shake-dt);a.beam=Math.max(0,a.beam-dt);a.beamCd=Math.max(0,a.beamCd-dt);a.flash=Math.max(0,a.flash-dt);a.rollCd=Math.max(0,a.rollCd-dt);a.specialCd=Math.max(0,a.specialCd-dt);a.specialAnim=Math.max(0,a.specialAnim-dt);a.agentWarning=Math.max(0,a.agentWarning-dt);a.reactorHit=Math.max(0,a.reactorHit-dt);
+  const a=s.ship;a.time+=dt;if(a.agentBurned)a.agentBurnedTime+=dt;a.hurt=Math.max(0,a.hurt-dt);a.shake=Math.max(0,a.shake-dt);a.beam=Math.max(0,a.beam-dt);a.beamCd=Math.max(0,a.beamCd-dt);a.flash=Math.max(0,a.flash-dt);a.rollCd=Math.max(0,a.rollCd-dt);a.specialCd=Math.max(0,a.specialCd-dt);a.specialAnim=Math.max(0,a.specialAnim-dt);a.agentWarning=Math.max(0,a.agentWarning-dt);a.reactorHit=Math.max(0,a.reactorHit-dt);
   if(s.keys.e&&!a.eHeld)interactShip(s);a.eHeld=Boolean(s.keys.e);
   for(const e of a.enemies){e.hurt=Math.max(0,e.hurt-dt);if(e.hp<=0)e.deadTime+=dt;}
   for(const e of a.agents){e.hurt=Math.max(0,e.hurt-dt);e.firePose=Math.max(0,e.firePose-dt);if(e.hp<=0)e.deadTime+=dt;}
@@ -617,7 +625,7 @@ case 'agentUltimate':{
       if(a.time>=AGENT_ULTIMATE_SEQUENCE_DURATION)releaseAgentUltimate(s);break;
     }
     case 'agentUltimateBlast':{
-      a.bolts=[];a.shots=[];a.shake=Math.max(a.shake,Math.max(0,.9-a.time));
+      a.bolts=[];a.shots=[];a.shake=1.12+.34*Math.abs(Math.sin(a.time*17))+.18*Math.max(0,Math.sin(a.time*39));
       if(a.time>=AGENT_ULTIMATE_BLAST_DURATION)shipAdvance(s,'agentEnd');break;
     }
     case 'agentFight':{
