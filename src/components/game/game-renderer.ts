@@ -1,10 +1,10 @@
-import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CROSS_RISE_FRAME_COUNT, CROSS_RISE_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
+import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CROSS_RISE_FRAME_COUNT, CROSS_RISE_DURATION, AGENT_WARNING_MESSAGE, forestIsFree, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement; abduction: [HTMLImageElement, HTMLImageElement, HTMLImageElement] };
 export type SoldierImages = { cover: HTMLImageElement; bazooka: HTMLImageElement; advancing: HTMLImageElement; underFire: HTMLImageElement; shieldFire: HTMLImageElement; proneFire: HTMLImageElement };
 export type CrossRiseFrame = { image: HTMLCanvasElement; bodyWidth: number; bodyHeight: number; padding: number };
 export type CrossRiseFrames = { player: CrossRiseFrame[]; cat: CrossRiseFrame[] };
-export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordSecondaryAttackFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordWalkFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement] };
+export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordSecondaryAttackFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordWalkFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; secretAgent: HTMLImageElement; secretAgentWalk: HTMLImageElement; secretAgentAim: HTMLImageElement; secretAgentShield: HTMLImageElement; secretAgentShieldAlt: HTMLImageElement };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
 export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
@@ -1205,7 +1205,7 @@ function enhanceExistingVioletMoon(c:CanvasRenderingContext2D,im:HTMLImageElemen
 function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.ship,art=im.ship;
  const trail=a.stage==='trailWalk'||a.stage==='trailEnd';
- const swordScene=['swordIntro','swordReady','swordPickup','swordEquipped','swordAttack','swordSecondaryAttack'].includes(a.stage);
+ const swordScene=['swordIntro','swordReady','swordPickup','swordEquipped','swordAttack','swordSecondaryAttack','agentFight','agentEnd'].includes(a.stage);
  const baseScene=['baseFade','baseApproach','baseEnd'].includes(a.stage);
  const cross=['impact','crossRise','crossFree','contemplate','crossSunset','end'].includes(a.stage);
  const road=['crossWalkIntro','crossWalk'].includes(a.stage);
@@ -1261,6 +1261,32 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   }
   const catFrame=art.trailCat[Math.floor(a.walk*1.1)%art.trailCat.length]??im.cat;
   catSprite(c,catFrame,a.x-a.face*52,a.y,Math.floor(a.walk*1.1),a.face,46);
+  if(a.agentCombatActive||a.stage==='agentEnd'){
+   for(const agent of a.agents){
+    const artAgent=agent.kind==='shield'?(agent.firePose>0?art.secretAgentShieldAlt:art.secretAgentShield):agent.state==='aim'?art.secretAgentAim:agent.state==='advance'?art.secretAgentWalk:art.secretAgent;
+    if(agent.hp<=0&&agent.deadTime>1.8)continue;
+    const agentH=agent.kind==='shield'?112:108,agentW=ready(artAgent)?agentH*trimBounds(artAgent)[2]/trimBounds(artAgent)[3]:68;
+    c.save();c.translate(agent.x,agent.y);c.scale(-1,1);
+    if(agent.hp<=0){c.globalAlpha=Math.max(0,1-agent.deadTime*.45);c.rotate(-Math.min(1,agent.deadTime*3)*.38);}
+    else if(agent.hurt>0&&Math.floor(s.t*18)%2)c.globalAlpha=.42;
+    oval(c,'rgba(0,0,0,.4)',0,-2,34,7);drawTrimmed(c,artAgent,-agentW/2,-agentH,agentW,agentH);
+    if(agent.hp>0&&agent.firePose>0){c.globalAlpha=1;c.fillStyle='#ffe7a0';c.shadowColor='#ffb85c';c.shadowBlur=16;c.beginPath();c.arc(-agentW*.42,-agentH*.52,5+Math.sin(s.t*65)*1.5,0,Math.PI*2);c.fill();}
+    c.restore();
+    if(agent.hp>0){const barW=62,bx=agent.x-barW/2,by=agent.y-agentH-17;c.fillStyle='rgba(8,8,18,.92)';c.fillRect(bx-2,by-3,barW+4,9);c.fillStyle='#5b171f';c.fillRect(bx,by,barW,4);c.fillStyle=agent.hp/agent.maxHp>.35?'#b9f2cf':'#ff6a72';c.fillRect(bx,by,barW*agent.hp/agent.maxHp,4);}
+   }
+   for(const shot of a.shots){if(shot.kind==='special'){if((shot.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,shot,s.t);}else line(p.ice,shot.x,shot.y,shot.x-shot.vx*.025,shot.y-shot.vy*.025,3);}
+   for(const bolt of a.bolts){line('#ffb86b',bolt.x,bolt.y,bolt.x-bolt.vx*.035,bolt.y-bolt.vy*.035,4);oval(c,'#fff0c4',bolt.x,bolt.y,4,3);}
+   box(c,p.panel,14,14,218,42);c.font='13px monospace';c.fillStyle=p.light;c.fillText('SALUD',24,40);box(c,p.ink,82,30,138,10);box(c,a.hp>35?p.ice:p.red,82,30,1.38*a.hp,10);
+   if(a.agentWarning>0){
+    const q=Math.min(1,a.agentWarning/3.5),panelW=590,panelH=58,panelX=(W-panelW)/2,panelY=72;
+    c.save();c.globalAlpha=Math.min(1,q*2.2);c.shadowColor='#ffbd55';c.shadowBlur=18;
+    c.fillStyle='rgba(20,9,11,.94)';c.beginPath();c.roundRect(panelX,panelY,panelW,panelH,8);c.fill();
+    c.strokeStyle='#ffc56f';c.lineWidth=2;c.stroke();c.shadowBlur=0;c.textAlign='center';c.textBaseline='middle';
+    c.fillStyle='#ffc56f';c.font='bold 23px monospace';c.fillText('⚠',panelX+29,panelY+29);
+    c.fillStyle='#fff2d8';c.font='bold 15px monospace';c.fillText(AGENT_WARNING_MESSAGE,W/2+12,panelY+29);
+    c.restore();
+   }
+  }
  }else if(baseScene){
   const q=Math.max(0,Math.min(1,a.baseProgress)),x=18+q*W*.6,y=H*.84;
   const frame=art.swordWalkFrames[Math.floor(a.walk*1.1)%art.swordWalkFrames.length]??art.swordWalkFrames[0];
