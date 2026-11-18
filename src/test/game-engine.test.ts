@@ -130,13 +130,13 @@ describe('OVNI difficulty and narrative', () => {
     const firstY=s.ship.y;update(s,.1);expect(s.ship.y).toBeLessThan(firstY);
     s.keys.j=false;update(s,1);expect(s.ship.y).toBe(452);expect(s.ship.vy).toBe(0);
   });
-  it('waits seven seconds, plays the nine-frame 1.8-second throw, then kills all four soldiers',()=>{
+  it('waits ten seconds, plays the nine-frame 1.8-second throw, then kills all four soldiers',()=>{
     const s=newState();enterShip(s);s.ship.stage='soldierFight';s.ship.soldiers=[0,1,2,3].map((id)=>({id,x:700+id*35,y:452,hp:160,maxHp:160,role:id%2?'bazooka':'shield',cd:100,walk:0,hurt:0,deadTime:0,state:'cover'}));
     s.ship.bolts=[{x:s.ship.x,y:s.ship.y-46,vx:0,vy:0,life:1,kind:'rocket'}];
-    expect(CAT_ULTIMATE_READY_DELAY).toBe(7);expect(CAT_ULTIMATE_THROW_DURATION).toBe(1.8);expect(CAT_ULTIMATE_BEAM_DURATION).toBe(4.5);
+    expect(CAT_ULTIMATE_READY_DELAY).toBe(10);expect(CAT_ULTIMATE_THROW_DURATION).toBe(1.8);expect(CAT_ULTIMATE_BEAM_DURATION).toBe(4.5);
     expect(triggerCatUltimate(s)).toBe(false);
-    update(s,6.9);expect(s.ship.stage).toBe('soldierFight');expect(triggerCatUltimate(s)).toBe(false);
-    update(s,.1);expect(s.ship.time).toBeCloseTo(7);
+    update(s,9.9);expect(s.ship.stage).toBe('soldierFight');expect(triggerCatUltimate(s)).toBe(false);
+    update(s,.1);expect(s.ship.time).toBeCloseTo(10);
     expect(triggerCatUltimate(s)).toBe(true);expect(s.ship.stage).toBe('soldierUltimateThrow');
     expect(s.ship.catUltimateUsed).toBe(true);expect(s.ship.bolts).toHaveLength(0);
     expect(triggerCatUltimate(s)).toBe(false);
