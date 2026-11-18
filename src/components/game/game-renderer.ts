@@ -4,7 +4,7 @@ export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; 
 export type SoldierImages = { cover: HTMLImageElement; bazooka: HTMLImageElement; advancing: HTMLImageElement; underFire: HTMLImageElement; shieldFire: HTMLImageElement; proneFire: HTMLImageElement };
 export type CrossRiseFrame = { image: HTMLCanvasElement; bodyWidth: number; bodyHeight: number; padding: number };
 export type CrossRiseFrames = { player: CrossRiseFrame[]; cat: CrossRiseFrame[] };
-export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement] };
+export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordWalkFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement] };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
 export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
@@ -1246,13 +1246,23 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    const frameIndex=Math.min(4,Math.floor(a.time/.12));
    const frame=art.swordAttackFrames[frameIndex]??art.swordAttackFrames[4];
    c.save();c.translate(a.x,a.y);c.scale(a.face,1);stillTrimmed(c,frame,0,0,112);c.restore();
+  }else if(a.stage==='swordPickup'){
+   const frame=art.swordPickupFrames[Math.min(4,Math.floor(a.time/2.5*5))]??art.swordPickupFrames[4];
+   c.save();c.translate(a.x,a.y);c.scale(a.face,1);stillTrimmed(c,frame,0,0,112);c.restore();
   }else{
-   const frame=art.swordPickupFrames[4];
+   const moving=s.keys.l||s.keys.r;
+   const frameIndex=moving?Math.floor(a.walk*1.1)%art.swordWalkFrames.length:0;
+   const frame=art.swordWalkFrames[frameIndex]??art.swordWalkFrames[0];
    c.save();c.translate(a.x,a.y);c.scale(a.face,1);stillTrimmed(c,frame,0,0,112);c.restore();
   }
+  const catFrame=art.trailCat[Math.floor(a.walk*1.1)%art.trailCat.length]??im.cat;
+  catSprite(c,catFrame,a.x-a.face*52,a.y,Math.floor(a.walk*1.1),a.face,46);
  }else if(baseScene){
   const q=Math.max(0,Math.min(1,a.baseProgress)),x=18+q*W*.6,y=H*.84;
-  actor(x,y,168);catSprite(c,im.cat,x-86,y,Math.floor(a.walk*1.1),1,60+q*14);
+  const frame=art.swordWalkFrames[Math.floor(a.walk*1.1)%art.swordWalkFrames.length]??art.swordWalkFrames[0];
+  c.save();c.translate(x,y);stillTrimmed(c,frame,0,0,168);c.restore();
+  const catFrame=art.trailCat[Math.floor(a.walk*1.1)%art.trailCat.length]??im.cat;
+  catSprite(c,catFrame,x-86,y,Math.floor(a.walk*1.1),1,60+q*14);
  }else if(trail){
   const q=Math.max(0,Math.min(1,a.trailProgress)),depth=.38+q*.62,scale=(.13+depth*1.02)*1.5,y=H*(.55+depth*.43),x=W*.5,height=112*scale;
   c.save();c.translate(x,y);pose(c,art.walkDown,Math.floor(a.walk)%4,4,0,0,height);c.restore();

@@ -148,6 +148,15 @@ describe('OVNI difficulty and narrative', () => {
      s.fire=true;update(s,.016);expect(s.ship.stage).toBe('swordAttack');expect(s.ship.enemies[0]!.hp).toBe(35);
      update(s,.3);expect(s.ship.stage).toBe('swordAttack');s.fire=false;update(s,.31);expect(s.ship.stage).toBe('swordEquipped');
    });
+   it('walks with the equipped sword, then reaches the moonlit secret-base entrance',()=>{
+     const s=newState();s.phase='spaceship';s.ship.stage='swordEquipped';s.ship.x=590;s.ship.y=452;
+     s.keys.r=true;update(s,.5);
+     expect(s.ship.stage).toBe('swordEquipped');expect(s.ship.x).toBeGreaterThan(590);expect(s.ship.walk).toBeGreaterThan(0);
+     for(let i=0;i<30&&s.ship.stage==='swordEquipped';i++)update(s,.1);
+     expect(s.ship.stage).toBe('baseFade');expect(s.ship.x).toBe(875);expect(s.ship.baseProgress).toBe(0);
+     s.keys.r=false;update(s,1.61);expect(s.ship.stage).toBe('baseApproach');
+     update(s,7.6);expect(s.ship.stage).toBe('baseEnd');expect(s.ship.baseProgress).toBe(1);
+   });
    it('inserts the alien sword pickup after the forest trail and keeps the player equipped at the scene end',()=>{
     const s=newState();enterShip(s);s.ship.stage='trailWalk';s.ship.trailProgress=.99;s.keys.j=true;
     update(s,.2);expect(s.ship.stage).toBe('swordIntro');expect(s.ship.baseProgress).toBe(0);

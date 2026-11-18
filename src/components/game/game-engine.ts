@@ -516,16 +516,22 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     case 'swordIntro':case 'swordReady':{const move=(s.keys.r?1:0)-(s.keys.l?1:0);a.x=Math.max(90,Math.min(590,a.x+move*175*dt));a.y=SHIP.floor;if(move){a.face=move;a.walk+=dt*9;}if(a.x>=590)shipAdvance(s,'swordReady');else if(a.stage==='swordReady')shipAdvance(s,'swordIntro');break;}
     case 'swordPickup':a.y=SHIP.floor;if(a.time>=2.5)shipAdvance(s,'swordEquipped');break;
     case 'swordEquipped':{
-       a.y=SHIP.floor;a.fireCd=Math.max(0,a.fireCd-dt);
-       if(s.fire&&!a.swordAttackHeld&&a.fireCd<=0){
-         a.swordAttackHeld=true;a.fireCd=.55;shipAdvance(s,'swordAttack');
-         for(const enemy of a.enemies){if(enemy.hp>0&&(enemy.x-a.x)*a.face>=-12&&Math.abs(enemy.x-a.x)<=112){enemy.hp=Math.max(0,enemy.hp-35);enemy.hurt=.4;if(enemy.hp===0)enemy.deadTime=.001;spawnCombatImpact(s,enemy.x,enemy.y-48,1.15);}}
-         for(const soldier of a.soldiers){if(soldier.hp>0&&(soldier.x-a.x)*a.face>=-12&&Math.abs(soldier.x-a.x)<=112){soldier.hp=Math.max(0,soldier.hp-35);soldier.hurt=.4;if(soldier.hp===0)soldier.deadTime=.001;spawnCombatImpact(s,soldier.x,soldier.y-48,1.15);}}
-       }
-       if(!s.fire)a.swordAttackHeld=false;
-       break;
-     }
-     case 'swordAttack':a.y=SHIP.floor;if(a.time>=.6)shipAdvance(s,'swordEquipped');break;
+        a.y=SHIP.floor;a.fireCd=Math.max(0,a.fireCd-dt);
+        const move=(s.keys.r?1:0)-(s.keys.l?1:0);
+        if(move){a.x=Math.max(90,Math.min(875,a.x+move*175*dt));a.face=move;a.walk+=dt*9;}
+        if(move>0&&a.x>=875){
+          a.baseProgress=0;a.walk=0;a.face=1;shipAdvance(s,'baseFade');
+          break;
+        }
+        if(s.fire&&!a.swordAttackHeld&&a.fireCd<=0){
+          a.swordAttackHeld=true;a.fireCd=.55;shipAdvance(s,'swordAttack');
+          for(const enemy of a.enemies){if(enemy.hp>0&&(enemy.x-a.x)*a.face>=-12&&Math.abs(enemy.x-a.x)<=112){enemy.hp=Math.max(0,enemy.hp-35);enemy.hurt=.4;if(enemy.hp===0)enemy.deadTime=.001;spawnCombatImpact(s,enemy.x,enemy.y-48,1.15);}}
+          for(const soldier of a.soldiers){if(soldier.hp>0&&(soldier.x-a.x)*a.face>=-12&&Math.abs(soldier.x-a.x)<=112){soldier.hp=Math.max(0,soldier.hp-35);soldier.hurt=.4;if(soldier.hp===0)soldier.deadTime=.001;spawnCombatImpact(s,soldier.x,soldier.y-48,1.15);}}
+        }
+        if(!s.fire)a.swordAttackHeld=false;
+        break;
+      }
+case 'swordAttack':a.y=SHIP.floor;if(a.time>=.6)shipAdvance(s,'swordEquipped');break;
     case 'baseFade':a.walk+=dt*8;if(a.time>=1.6)shipAdvance(s,'baseApproach');break;
     case 'baseApproach':a.baseProgress=Math.min(1,a.baseProgress+dt/7.5);a.walk+=dt*9;if(a.baseProgress>=1)shipAdvance(s,'baseEnd');break;
     case 'baseEnd':break;
