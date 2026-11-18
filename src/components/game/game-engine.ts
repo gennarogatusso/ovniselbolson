@@ -579,17 +579,18 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
       }
 case 'agentFight':{
       const move=(s.keys.r?1:0)-(s.keys.l?1:0),rollKey=Boolean(s.keys['roll']),jumpKey=Boolean(s.keys.j);
+      const nearestAgent=a.agents.filter(e=>e.hp>0).sort((left,right)=>left.x-right.x)[0];
+      const rightLimit=nearestAgent?Math.min(820,nearestAgent.x-42):820;
       if(jumpKey&&!a.jumpHeld&&a.y>=SHIP.floor-.01){a.vy=-560;shipSound(s,'jump');}a.jumpHeld=jumpKey;
       if(a.vy!==0||a.y<SHIP.floor){a.vy+=1500*dt;a.y=Math.min(SHIP.floor,a.y+a.vy*dt);if(a.y>=SHIP.floor){a.y=SHIP.floor;a.vy=0;}}
       if(rollKey&&!a.rollHeld&&a.rollCd===0&&a.y===SHIP.floor){a.roll=SHIP.rollTime;a.rollCd=SHIP.rollTime+SHIP.rollCooldown;a.rollFace=move||a.face;shipSound(s,'roll');}a.rollHeld=rollKey;
-      if(a.roll>0){a.roll=Math.max(0,a.roll-dt);a.x=Math.max(90,Math.min(640,a.x+a.rollFace*420*dt));a.face=a.rollFace;}
-      else{a.x=Math.max(90,Math.min(640,a.x+move*205*dt));if(move){a.face=move;a.walk+=dt*10;}}
+      if(a.roll>0){a.roll=Math.max(0,a.roll-dt);a.x=Math.max(90,Math.min(rightLimit,a.x+a.rollFace*420*dt));a.face=a.rollFace;}
+      else{a.x=Math.max(90,Math.min(rightLimit,a.x+move*205*dt));if(move){a.face=move;a.walk+=dt*10;}}
       a.catX=approach(a.catX,a.x-a.face*55,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);
       for(const e of a.agents){
         if(e.hp<=0){e.state='guard';continue;}
         e.cd-=dt;
-        const desiredDistance=78+e.id*10,stop=a.x+desiredDistance;if(e.x>stop+2){e.x=approach(e.x,stop,82*dt);e.walk+=dt*8;e.state=e.hurt>0?'hit':'advance';}
-        else if(e.cd<=0){
+        if(e.cd<=0){
           const dx=a.x-e.x,dy=(a.y-44)-(e.y-52),length=Math.hypot(dx,dy)||1,speed=e.kind==='shield'?385:330;
           a.bolts.push({x:e.x-28,y:e.y-52,vx:dx/length*speed,vy:dy/length*speed,life:3.5,kind:'rifle'});
           e.cd=(e.kind==='shield'?1.65:2.25)+(e.id%2)*.2;e.firePose=.38;e.state='aim';shipSound(s,'agentShot');
