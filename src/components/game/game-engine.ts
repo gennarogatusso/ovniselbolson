@@ -593,7 +593,7 @@ case 'agentFight':{
         const offset=flankOffsets[lower]!*(1-fraction)+flankOffsets[Math.min(3,lower+1)]!*fraction;
         return a.x+a.face*(offset+Math.sin(s.t*1.9+index*1.2)*22);
       }).sort((left,right)=>left-right);
-      const movementTargets=new Map<number,number>(livingAgents.map((agent,index)=>[agent.id,Math.max(48,Math.min(930,flankTargets[index]!))]));
+      const movementTargets=new Map<number,number>(livingAgents.map((agent,index)=>[agent.id,Math.max(48,Math.min(930,flankTargets[index]!))] as const));
       for(const e of a.agents){
         if(e.hp<=0){e.state='guard';continue;}
         // Los agentes se reparten en cuatro posiciones alrededor del protagonista.
