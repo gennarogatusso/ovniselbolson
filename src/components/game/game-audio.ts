@@ -79,8 +79,14 @@ export class GameAudio {
  private forestTrack:HTMLAudioElement|null=null;
  private rainTrack:HTMLAudioElement|null=null;
  private crossTrack:HTMLAudioElement|null=null;
+ private trailTrack:HTMLAudioElement|null=null;
+ private swordTrack:HTMLAudioElement|null=null;
  private forestMusicStarted=false;
  private crossMusicStarted=false;
+ private trailMusicTransitionAt:number|null=null;
+ private trailMusicStarted=false;
+ private trailMusicFadeInAt:number|null=null;
+ private pausedAt:number|null=null;
  private rainActive=false;
  private gamePaused=false;
  private musicActive=false;
@@ -114,6 +120,10 @@ export class GameAudio {
   this.rainTrack.loop=true;this.rainTrack.preload='auto';
   this.crossTrack??=new Audio('/imagens/cancion%20cruz%20en%20adelante.mp3');
   this.crossTrack.loop=true;this.crossTrack.preload='auto';
+  this.trailTrack??=new Audio('/imagens/cancion%20despues%20de%20la%20pelea%20militar.mp3');
+  this.trailTrack.loop=true;this.trailTrack.preload='auto';
+  this.swordTrack??=new Audio('/imagens/sonido%20espada.mp3');
+  this.swordTrack.loop=false;this.swordTrack.preload='auto';
  }
 
  setVolume(value:number){
@@ -123,13 +133,41 @@ export class GameAudio {
   if(this.forestTrack)this.forestTrack.volume=.72*this.volume;
   if(this.rainTrack)this.rainTrack.volume=.42*this.volume;
   if(this.crossTrack)this.crossTrack.volume=.72*this.volume;
+  if(this.trailTrack)this.trailTrack.volume=.72*this.volume;
+  if(this.swordTrack)this.swordTrack.volume=.82*this.volume;
+  this.updateTrailMusicVolumes();
  }
 
  resetForestAudio(){
-  this.forestMusicStarted=false;this.crossMusicStarted=false;this.rainActive=false;this.gamePaused=false;
-  for(const track of [this.forestTrack,this.rainTrack,this.crossTrack]){
+  this.forestMusicStarted=false;this.crossMusicStarted=false;this.trailMusicTransitionAt=null;this.trailMusicStarted=false;this.trailMusicFadeInAt=null;this.pausedAt=null;this.rainActive=false;this.gamePaused=false;
+  for(const track of [this.forestTrack,this.rainTrack,this.crossTrack,this.trailTrack,this.swordTrack]){
    if(!track)continue;
    track.pause();track.currentTime=0;
+  }
+  if(this.crossTrack)this.crossTrack.volume=.72*this.volume;
+  if(this.trailTrack)this.trailTrack.volume=.72*this.volume;
+ }
+
+ private updateTrailMusicVolumes(){
+  const now=this.context?.currentTime??0;
+  if(this.trailMusicTransitionAt!==null){
+   const fade=Math.max(0,Math.min(1,(now-this.trailMusicTransitionAt)/2.8));
+   if(this.crossTrack)this.crossTrack.volume=.72*this.volume*(1-fade);
+   if(fade>=1){
+    if(this.crossTrack){this.crossTrack.pause();this.crossTrack.currentTime=0;}
+    this.trailMusicTransitionAt=null;this.trailMusicStarted=true;this.trailMusicFadeInAt=now;
+    if(this.trailTrack){this.trailTrack.currentTime=0;this.trailTrack.volume=0;void this.trailTrack.play().catch(()=>{});}
+   }
+  }
+  if(this.trailMusicStarted){
+   if(this.trailMusicFadeInAt!==null){
+    const fade=Math.max(0,Math.min(1,(now-this.trailMusicFadeInAt)/1.2));
+    if(this.trailTrack)this.trailTrack.volume=.72*this.volume*fade;
+    if(fade>=1)this.trailMusicFadeInAt=null;
+   }else if(this.trailTrack)this.trailTrack.volume=.72*this.volume;
+   if(this.crossTrack)this.crossTrack.volume=0;
+  }else if(this.trailMusicTransitionAt===null&&this.crossTrack){
+   this.crossTrack.volume=.72*this.volume;
   }
  }
 
@@ -398,7 +436,8 @@ export class GameAudio {
   const a=s.ship;
   if(!playing){
    a.sounds=[];
-   this.forestTrack?.pause();this.rainTrack?.pause();this.crossTrack?.pause();this.gamePaused=true;
+   if(!this.gamePaused)this.pausedAt=this.context?.currentTime??0;
+   this.forestTrack?.pause();this.rainTrack?.pause();this.crossTrack?.pause();this.trailTrack?.pause();this.swordTrack?.pause();this.gamePaused=true;
    this.setMusic(null);
    this.lastPhase=s.phase;this.lastIntroStage=s.intro.stage;this.lastChapterStage=s.chapter.stage;
    return;
@@ -406,15 +445,23 @@ export class GameAudio {
 
   if(!this.crossMusicStarted&&shouldStartCrossMusic(s)){
    this.crossMusicStarted=true;
-   // La canción de la cruz reemplaza la música del bosque y la lluvia desde este punto hasta el cierre.
+   // La canción de la cruz reemplaza la música del bosque y la lluvia desde este punto.
    if(this.forestTrack){this.forestTrack.pause();this.forestTrack.currentTime=0;}
    if(this.rainTrack){this.rainTrack.pause();this.rainTrack.currentTime=0;}
    this.rainActive=false;
-   if(this.crossTrack){this.crossTrack.currentTime=0;void this.crossTrack.play().catch(()=>{});}
+   if(this.crossTrack){this.crossTrack.currentTime=0;this.crossTrack.volume=.72*this.volume;void this.crossTrack.play().catch(()=>{});}
   }
+  // Al empezar a alejarse de La Cruz, la música actual se desvanece antes de entrar la nueva pista.
+  if(!this.trailMusicStarted&&this.trailMusicTransitionAt===null&&s.phase==='spaceship'&&s.ship.stage==='trailWalk'){
+   this.trailMusicTransitionAt=this.context?.currentTime??0;
+  }
+  this.updateTrailMusicVolumes();
   if(this.gamePaused){
-   this.gamePaused=false;
-   const activeTrack=this.crossMusicStarted?this.crossTrack:this.forestMusicStarted?this.forestTrack:null;
+   const now=this.context?.currentTime??0,pausedFor=Math.max(0,now-(this.pausedAt??now));
+   if(this.trailMusicTransitionAt!==null)this.trailMusicTransitionAt+=pausedFor;
+   if(this.trailMusicFadeInAt!==null)this.trailMusicFadeInAt+=pausedFor;
+   this.pausedAt=null;this.gamePaused=false;
+   const activeTrack=this.trailMusicStarted?this.trailTrack:this.crossMusicStarted?this.crossTrack:this.forestMusicStarted?this.forestTrack:null;
    if(activeTrack?.paused)void activeTrack.play().catch(()=>{});
   }
   // La música del bosque comienza al salir de la casa y suena hasta el impacto en La Cruz.
@@ -438,7 +485,9 @@ export class GameAudio {
   if(s.phase!=='spaceship'){a.sounds=[];return;}
   for(const event of a.sounds.splice(0)){
    if(event==='pistol')this.tone(380,.09,'square',60,.32);
-   else if(event==='swordPrimary'){this.noise(.12,.20,4600,900);this.tone(860,.12,'sawtooth',210,.32);this.tone(140,.16,'triangle',70,.18);}
+   else if(event==='swordPrimary'){
+    if(this.swordTrack){this.swordTrack.currentTime=0;void this.swordTrack.play().catch(()=>{});}
+   }
    else if(event==='agentArrival'){this.noise(.18,.16,1900,460);this.tone(260,.24,'square',150,.18);this.tone(720,.18,'triangle',340,.10);}
    else if(event==='agentShot'){this.noise(.075,.15,2600,650);this.tone(430,.065,'square',115,.22);}
    else if(event==='agentHit'){this.noise(.095,.20,2100,320);this.tone(220,.12,'triangle',70,.20);}
@@ -475,7 +524,9 @@ export class GameAudio {
   this.forestTrack?.pause();this.forestTrack=null;
   this.rainTrack?.pause();this.rainTrack=null;
   this.crossTrack?.pause();this.crossTrack=null;
-  this.forestMusicStarted=false;this.crossMusicStarted=false;this.rainActive=false;this.gamePaused=false;
+  this.trailTrack?.pause();this.trailTrack=null;
+  this.swordTrack?.pause();this.swordTrack=null;
+  this.forestMusicStarted=false;this.crossMusicStarted=false;this.trailMusicTransitionAt=null;this.trailMusicStarted=false;this.trailMusicFadeInAt=null;this.pausedAt=null;this.rainActive=false;this.gamePaused=false;
   this.stopMusic();
   for(const oscillator of this.musicNodes){try{oscillator.stop();}catch{/* Ya estaba detenido. */}}
   this.musicNodes.clear();
