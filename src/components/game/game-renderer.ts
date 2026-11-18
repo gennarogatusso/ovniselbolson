@@ -1,4 +1,4 @@
-import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CROSS_RISE_FRAME_COUNT, CROSS_RISE_DURATION, AGENT_WARNING_MESSAGE, forestIsFree, canAskHelp, type S } from './game-engine';
+import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CROSS_RISE_FRAME_COUNT, CROSS_RISE_DURATION, AGENT_WARNING_MESSAGE, AGENT_WARNING_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement; abduction: [HTMLImageElement, HTMLImageElement, HTMLImageElement] };
 export type SoldierImages = { cover: HTMLImageElement; bazooka: HTMLImageElement; advancing: HTMLImageElement; underFire: HTMLImageElement; shieldFire: HTMLImageElement; proneFire: HTMLImageElement };
@@ -1278,7 +1278,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    for(const bolt of a.bolts){line('#ffb86b',bolt.x,bolt.y,bolt.x-bolt.vx*.035,bolt.y-bolt.vy*.035,4);oval(c,'#fff0c4',bolt.x,bolt.y,4,3);}
    box(c,p.panel,14,14,218,42);c.font='13px monospace';c.fillStyle=p.light;c.fillText('SALUD',24,40);box(c,p.ink,82,30,138,10);box(c,a.hp>35?p.ice:p.red,82,30,1.38*a.hp,10);
    if(a.agentWarning>0){
-    const q=Math.min(1,a.agentWarning/3.5),panelW=590,panelH=58,panelX=(W-panelW)/2,panelY=72;
+    const q=Math.min(1,a.agentWarning/AGENT_WARNING_DURATION),panelW=590,panelH=58,panelX=(W-panelW)/2,panelY=72;
     c.save();c.globalAlpha=Math.min(1,q*2.2);c.shadowColor='#ffbd55';c.shadowBlur=18;
     c.fillStyle='rgba(20,9,11,.94)';c.beginPath();c.roundRect(panelX,panelY,panelW,panelH,8);c.fill();
     c.strokeStyle='#ffc56f';c.lineWidth=2;c.stroke();c.shadowBlur=0;c.textAlign='center';c.textBaseline='middle';
