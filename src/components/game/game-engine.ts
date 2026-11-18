@@ -362,10 +362,10 @@ export function respawnAtSoldierCheckpoint(s:S){
  shipAdvance(s,'soldierFight');
 }
 function createSecretAgents():GroundAgent[]{return [
- {id:0,x:740,y:SHIP.floor,hp:160,maxHp:160,kind:'shield',cd:.8,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'advance'},
- {id:1,x:805,y:SHIP.floor,hp:145,maxHp:145,kind:'regular',cd:1.1,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'advance'},
- {id:2,x:870,y:SHIP.floor,hp:180,maxHp:180,kind:'shield',cd:1.4,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'advance'},
- {id:3,x:935,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:1.7,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'advance'}
+ {id:0,x:180,y:SHIP.floor,hp:160,maxHp:160,kind:'shield',cd:.8,walk:0,hurt:0,deadTime:0,firePose:0,face:1,state:'guard'},
+ {id:1,x:400,y:SHIP.floor,hp:145,maxHp:145,kind:'regular',cd:1.1,walk:0,hurt:0,deadTime:0,firePose:0,face:1,state:'guard'},
+ {id:2,x:740,y:SHIP.floor,hp:180,maxHp:180,kind:'shield',cd:1.4,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard'},
+ {id:3,x:920,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:1.7,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard'}
 ];}
 function beginAgentEncounter(s:S){
  const a=s.ship;a.agentCombatActive=true;a.agentWarning=AGENT_WARNING_DURATION;a.agents=createSecretAgents();
@@ -585,44 +585,34 @@ case 'agentFight':{
       if(a.roll>0){a.roll=Math.max(0,a.roll-dt);a.x=Math.max(90,Math.min(875,a.x+a.rollFace*420*dt));a.face=a.rollFace;}
       else{a.x=Math.max(90,Math.min(875,a.x+move*205*dt));if(move){a.face=move;a.walk+=dt*10;}}
       a.catX=approach(a.catX,a.x-a.face*55,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);
-      const livingAgents=a.agents.filter(e=>e.hp>0).sort((left,right)=>left.x-right.x);
-      const flankOffsets=[-165,-90,90,165];
-      const flankTargets=livingAgents.map((_,index)=>{
-        const slot=livingAgents.length<=1?1.5:index*3/(livingAgents.length-1);
-        const lower=Math.floor(slot),fraction=slot-lower;
-        const offset=flankOffsets[lower]!*(1-fraction)+flankOffsets[Math.min(3,lower+1)]!*fraction;
-        return a.x+a.face*(offset+Math.sin(s.t*1.9+index*1.2)*22);
-      }).sort((left,right)=>left-right);
-      const movementTargets=new Map<number,number>(livingAgents.map((agent,index)=>[agent.id,Math.max(48,Math.min(930,flankTargets[index]!))] as const));
+      const patrols=[
+        {center:180,radius:26,rate:.78,speed:96},
+        {center:400,radius:38,rate:.66,speed:118},
+        {center:740,radius:35,rate:.82,speed:104},
+        {center:920,radius:24,rate:.72,speed:92}
+      ] as const;
       for(const e of a.agents){
         if(e.hp<=0){e.state='guard';continue;}
-        // Los agentes se reparten en cuatro posiciones alrededor del protagonista.
-        // El objetivo se actualiza continuamente para que lo rodeen al cambiar de dirección.
-        const targetX=movementTargets.get(e.id)??e.x;
-        const distanceToTarget=targetX-e.x;
-        const baseSpeed=e.kind==='regular'?255:220;
-        const speed=baseSpeed*(Math.abs(distanceToTarget)>180?1.18:1);
+        // Dos agentes patrullan el sector izquierdo y dos el derecho.
+        // Sus recorridos dependen del tiempo, no de la posición ni de las teclas del jugador.
+        const patrol=patrols[e.id]??{center:e.x,radius:0,rate:0,speed:0};
+        const targetX=patrol.center+Math.sin(s.t*patrol.rate+e.id*1.41)*patrol.radius;
         const previousX=e.x;
-        e.x=approach(e.x,targetX,speed*dt);
+        e.x=approach(e.x,targetX,patrol.speed*dt);
         const moving=Math.abs(e.x-previousX)>.5;
+        // Solo giran para apuntar; nunca persiguen ni copian el movimiento del protagonista.
         e.face=(a.x>e.x?1:-1);
-        if(moving){e.walk+=dt*(e.kind==='regular'?14:11);e.state=e.hurt>0?'hit':'advance';}
+        if(moving){e.walk+=dt*(e.kind==='regular'?10:8);e.state=e.hurt>0?'hit':'advance';}
         else e.state=e.hurt>0?'hit':e.firePose>0?'aim':'guard';
         e.cd-=dt;
         if(e.cd<=0){
-          // Cada agente apunta desde su lado actual; también puede disparar desde la espalda.
+          const isBehind=(e.x-a.x)*a.face<0;
           const muzzleX=e.x+e.face*28,dx=a.x-muzzleX,dy=(a.y-44)-(e.y-52),length=Math.hypot(dx,dy)||1;
           const projectileSpeed=e.kind==='regular'?500:455;
           a.bolts.push({x:muzzleX,y:e.y-52,vx:dx/length*projectileSpeed,vy:dy/length*projectileSpeed,life:3.5,kind:'rifle'});
-          e.cd=(e.kind==='regular'?1.0:1.25)+(e.id%2)*.16;e.firePose=.32;e.state='aim';shipSound(s,'agentShot');
+          const interval=e.kind==='regular'?1.1:1.35;
+          e.cd=(isBehind?interval*.82:interval)+(e.id%2)*.16;e.firePose=.32;e.state='aim';shipSound(s,'agentShot');
         }
-      }
-      // Mantener espacio entre cuerpos incluso cuando se cruzan para cambiar de flanco.
-      const orderedAgents=livingAgents.sort((left,right)=>left.x-right.x);
-      for(let i=1;i<orderedAgents.length;i++){
-        const previous=orderedAgents[i-1]!,current=orderedAgents[i]!;
-        if(current.x-previous.x<54)current.x=Math.min(930,previous.x+54);
-        current.face=(a.x>current.x?1:-1);
       }
       a.fireCd-=dt;
       if(s.secondaryFire&&!a.swordSecondaryAttackHeld&&a.swordSecondaryCd<=0&&a.roll===0){
