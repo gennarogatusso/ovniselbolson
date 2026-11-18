@@ -621,7 +621,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
         break;
       }
 case 'agentUltimate':{
-      a.bolts=[];a.shots=[];a.roll=0;a.shake=Math.max(a.shake,.06+.12*(.5+.5*Math.sin(a.time*13)));
+      a.bolts=[];a.shots=[];a.roll=0;a.shake=.30+.17*Math.abs(Math.sin(a.time*19));
       if(a.time>=AGENT_ULTIMATE_SEQUENCE_DURATION)releaseAgentUltimate(s);break;
     }
     case 'agentUltimateBlast':{
