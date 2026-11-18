@@ -588,7 +588,7 @@ case 'agentFight':{
       for(const e of a.agents){
         if(e.hp<=0){e.deadTime+=dt;e.state='guard';continue;}
         e.cd-=dt;
-        if(e.kind==='shield'&&e.x>a.x+185){e.x=approach(e.x,a.x+185,36*dt);e.walk+=dt*7;e.state=e.hurt>0?'hit':'advance';}
+        const desiredDistance=78+e.id*10,stop=a.x+desiredDistance;if(e.x>stop+2){e.x=approach(e.x,stop,82*dt);e.walk+=dt*8;e.state=e.hurt>0?'hit':'advance';}
         else if(e.cd<=0){
           const dx=a.x-e.x,dy=(a.y-44)-(e.y-52),length=Math.hypot(dx,dy)||1,speed=e.kind==='shield'?385:330;
           a.bolts.push({x:e.x-28,y:e.y-52,vx:dx/length*speed,vy:dy/length*speed,life:3.5,kind:'rifle'});
@@ -623,7 +623,7 @@ case 'agentFight':{
       for(const b of a.bolts){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(b.life>0&&Math.abs(b.x-a.x)<24&&Math.abs(b.y-(a.y-46))<34){b.life=0;shipHit(s,16*SOLDIER_DAMAGE_FACTOR);}}
       a.shots=a.shots.filter(b=>b.life>0);a.bolts=a.bolts.filter(b=>b.life>0);a.flash=Math.max(0,a.flash-dt);
       if(a.hp===0)return 'lose';
-      if(a.agents.every(e=>e.hp<=0)){a.bolts=[];a.shots=[];shipAdvance(s,'agentEnd');shipSound(s,'agentArrival');}
+      if(a.agents.every(e=>e.hp<=0)){a.bolts=[];a.shots=[];shipAdvance(s,'agentEnd');}
       break;
     }
 case 'swordAttack':a.y=SHIP.floor;if(a.time>=.6)shipAdvance(s,a.agentCombatActive?(a.agents.every(e=>e.hp<=0)?'agentEnd':'agentFight'):'swordEquipped');break;
