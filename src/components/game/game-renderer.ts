@@ -1,10 +1,10 @@
-import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, SWORD_PRIMARY_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CROSS_RISE_FRAME_COUNT, CROSS_RISE_DURATION, AGENT_WARNING_MESSAGE, AGENT_WARNING_DURATION, AGENT_ULTIMATE_SEQUENCE_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
+import { ALIEN_MESSAGE, GROUND, H, W, WORLD, SHIP, FOREST, SPECIAL_ATTACK_ANIM_DURATION, SWORD_PRIMARY_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CROSS_RISE_FRAME_COUNT, CROSS_RISE_DURATION, AGENT_WARNING_MESSAGE, AGENT_WARNING_DURATION, AGENT_ULTIMATE_SEQUENCE_DURATION, AGENT_ULTIMATE_BLAST_DURATION, forestIsFree, canAskHelp, type S } from './game-engine';
 export type IntroImages = { building: HTMLImageElement; mountain: HTMLImageElement; seated: HTMLImageElement; beer: HTMLImageElement; drink: HTMLImageElement; smokeIn: HTMLImageElement; smokeOut: HTMLImageElement; rise: HTMLImageElement; cat: HTMLImageElement };
 export type ChapterImages = { truck: HTMLImageElement; trump: HTMLImageElement; milei: HTMLImageElement; arg: HTMLImageElement; usa: HTMLImageElement; bedroom: HTMLImageElement; eating: HTMLImageElement; sleeping: HTMLImageElement; waking: HTMLImageElement; dark: HTMLImageElement; walk: HTMLImageElement; up: HTMLImageElement; down: HTMLImageElement; run: HTMLImageElement; restingCat: HTMLImageElement; forest: HTMLImageElement; deer: HTMLImageElement; ship: HTMLImageElement; abduction: [HTMLImageElement, HTMLImageElement, HTMLImageElement] };
 export type SoldierImages = { cover: HTMLImageElement; bazooka: HTMLImageElement; advancing: HTMLImageElement; underFire: HTMLImageElement; shieldFire: HTMLImageElement; proneFire: HTMLImageElement };
 export type CrossRiseFrame = { image: HTMLCanvasElement; bodyWidth: number; bodyHeight: number; padding: number };
 export type CrossRiseFrames = { player: CrossRiseFrame[]; cat: CrossRiseFrame[] };
-export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: SpecialFrame[]; swordWalkFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; secretAgent: HTMLImageElement; secretAgentWalk: HTMLImageElement; secretAgentAim: HTMLImageElement; secretAgentShield: HTMLImageElement; secretAgentShieldAlt: HTMLImageElement; agentUltimateFrames: SpecialFrame[] };
+export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: SpecialFrame[]; swordWalkFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; secretAgent: HTMLImageElement; secretAgentWalk: HTMLImageElement; secretAgentAim: HTMLImageElement; secretAgentShield: HTMLImageElement; secretAgentShieldAlt: HTMLImageElement; agentUltimateFrames: SpecialFrame[]; burnedSoldier: HTMLImageElement };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
 export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
@@ -535,68 +535,35 @@ function drawAnchoredSprite(c:CanvasRenderingContext2D,frame:SpecialFrame,x:numb
  c.drawImage(frame.image,x-frame.anchorX*scale,y-frame.baseY*scale,frame.image.naturalWidth*scale,frame.image.naturalHeight*scale);
  c.restore();
 }
-function drawAgentUltimateVfx(c:CanvasRenderingContext2D,s:S){
- const a=s.ship;if(a.stage!=='agentUltimateBlast')return;
- const t=a.time,life=Math.max(0,1-Math.max(0,t-.72)/1.08),q=Math.max(0,Math.min(1,t/1.18));
- const ease=1-Math.pow(1-q,3),cx=Math.max(40,Math.min(W-40,a.x+a.face*65)),cy=SHIP.floor-118;
- c.save();
- if(t<.16){c.globalAlpha=(1-t/.16)*.88;c.fillStyle='#fff';c.fillRect(0,0,W,H);}
- c.globalCompositeOperation='screen';
- const bloom=c.createRadialGradient(cx,cy,2,cx,cy,Math.max(110,Math.max(W,H)*.92));
- bloom.addColorStop(0,`rgba(255,255,255,${.72*life})`);
- bloom.addColorStop(.13,`rgba(226,190,255,${.48*life})`);
- bloom.addColorStop(.38,`rgba(139,61,255,${.25*life})`);
- bloom.addColorStop(1,'rgba(72,24,155,0)');
- c.fillStyle=bloom;c.fillRect(0,0,W,H);
- for(let i=0;i<4;i++){
-  const delay=i*.105,phase=Math.max(0,Math.min(1,(t-delay)/.95));
-  if(phase<=0)continue;
-  const radius=30+phase*1020,ry=20+phase*590;
-  c.globalAlpha=(1-phase*.72)*life*(.92-i*.13);
-  c.strokeStyle=i%2===0?'#e5c5ff':'#a85cff';c.lineWidth=10-i*1.7;
-  c.shadowColor='#b96aff';c.shadowBlur=32-i*4;
-  c.beginPath();c.ellipse(cx,cy,radius,ry,Math.sin(t*5+i)*.035,0,Math.PI*2);c.stroke();
-  c.shadowBlur=0;c.strokeStyle='rgba(255,255,255,.82)';c.lineWidth=2.2;
-  c.beginPath();c.ellipse(cx,cy,radius*.96,ry*.96,0,0,Math.PI*2);c.stroke();
- }
- c.lineCap='round';c.lineJoin='round';
- for(let i=0;i<34;i++){
-  const angle=i*Math.PI*2/34+Math.sin(i*4.1)*.055;
-  const reach=110+ease*(590+(i%6)*82),segments=4;
-  let px=cx,py=cy;c.beginPath();c.moveTo(px,py);
-  for(let k=1;k<=segments;k++){
-   const distance=reach*k/segments,jitter=Math.sin(i*3.7+k*7.1+t*15)*(8+k*2);
-   px=cx+Math.cos(angle)*distance-Math.sin(angle)*jitter;
-   py=cy+Math.sin(angle)*distance+Math.cos(angle)*jitter;c.lineTo(px,py);
-  }
-  c.globalAlpha=life*(.42+.42*Math.sin(t*18+i));
-  c.strokeStyle=i%5===0?'#fff':'#bd82ff';c.lineWidth=i%5===0?3.5:1.8+(i%3);
-  c.shadowColor='#bd69ff';c.shadowBlur=18;c.stroke();c.shadowBlur=0;
-  if(i%3===0){
-   c.beginPath();c.moveTo(cx+Math.cos(angle)*reach*.48,cy+Math.sin(angle)*reach*.48);
-   c.lineTo(cx+Math.cos(angle+.24)*reach*.61,cy+Math.sin(angle+.24)*reach*.61);
-   c.lineTo(cx+Math.cos(angle+.18)*reach*.72,cy+Math.sin(angle+.18)*reach*.72);
-   c.strokeStyle='#e5c5ff';c.lineWidth=1.6;c.globalAlpha=life*.68;c.stroke();
-  }
- }
- const coreRadius=18+Math.max(0,1-t/.62)*105;
- c.globalAlpha=life;c.shadowColor='#d59aff';c.shadowBlur=38;c.fillStyle='#fff';c.beginPath();
- for(let i=0;i<28;i++){const angle=i*Math.PI*2/28,r=coreRadius*(i%2===0?1.22:.48),x=cx+Math.cos(angle)*r,y=cy+Math.sin(angle)*r*.82;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}
- c.closePath();c.fill();c.shadowBlur=0;
- const core=c.createRadialGradient(cx,cy,1,cx,cy,coreRadius*2.6);
- core.addColorStop(0,'rgba(255,255,255,.98)');core.addColorStop(.2,'rgba(229,193,255,.84)');
- core.addColorStop(.55,'rgba(154,83,255,.36)');core.addColorStop(1,'rgba(108,42,210,0)');
- c.fillStyle=core;c.fillRect(cx-coreRadius*2.6,cy-coreRadius*2.6,coreRadius*5.2,coreRadius*5.2);
+function drawAgentStorm(c:CanvasRenderingContext2D,s:S,strength:number,active:boolean){
+ if(strength<=0)return;const t=s.t;c.save();c.globalCompositeOperation='screen';
+ // Auroras boreales violetas, en capas que ondulan.
+ for(let layer=0;layer<4;layer++){c.beginPath();for(let x=-30;x<=W+30;x+=26){const y=45+layer*34+Math.sin(x*.008+t*.8+layer)*26+Math.sin(x*.02-t)*10;if(x===-30)c.moveTo(x,y);else c.lineTo(x,y);}c.strokeStyle=layer%2?'rgba(152,83,255,.22)':'rgba(112,50,226,.28)';c.lineWidth=active?30:16;c.shadowColor='#843cff';c.shadowBlur=active?32:16;c.stroke();}
+ // Viento rápido y ráfagas curvas por toda la pantalla.
+ for(let i=0;i<26;i++){const y=55+(i*31)%430+Math.sin(t*3+i)*20,x=((i*171-t*(active?380:110))%(W+260)+W+260)%(W+260)-130;c.beginPath();c.moveTo(x,y);c.bezierCurveTo(x+50,y-25,x+120,y+28,x+205,y-10);c.strokeStyle='rgba(174,119,255,'+(.24*strength)+')';c.lineWidth=i%5===0?3:1.5;c.stroke();}
+ // Lluvia diagonal violeta.
+ const rain=active?120:46;for(let i=0;i<rain;i++){const v=active?700:240,x=((i*149-t*v)%(W+100)+W+100)%(W+100)-50,y=((i*83+t*v*1.15)%(H+100)+H+100)%(H+100)-50;c.beginPath();c.moveTo(x,y);c.lineTo(x-10,y+(active?20:10));c.strokeStyle=i%6===0?'rgba(237,220,255,'+(.54*strength)+')':'rgba(153,95,255,'+(.4*strength)+')';c.lineWidth=i%5===0?2:1.2;c.stroke();}
+ // Rayos eléctricos de fondo, con ramificaciones.
+ for(let i=0;i<4;i++){const pulse=Math.max(0,Math.sin(t*(active?5.4:2)+i*2.7))**12*strength;if(pulse<.04)continue;let x=115+i*245,y=-5;c.globalAlpha=pulse;c.beginPath();c.moveTo(x,y);for(let k=0;k<8;k++){x+=Math.sin(t*2+i*5+k*4)*24+(i%2?10:-10);y+=48;c.lineTo(x,y);}c.strokeStyle='#8540ff';c.lineWidth=9;c.shadowColor='#9d5aff';c.shadowBlur=30;c.stroke();c.strokeStyle='#e5d5ff';c.lineWidth=2;c.stroke();c.shadowBlur=0;}
  c.restore();
- c.save();c.globalCompositeOperation='screen';c.globalAlpha=life*.55;
- const ground=c.createRadialGradient(cx,SHIP.floor-8,3,cx,SHIP.floor-8,560);
- ground.addColorStop(0,'rgba(223,187,255,.5)');ground.addColorStop(.34,'rgba(153,76,255,.22)');ground.addColorStop(1,'rgba(75,22,145,0)');
- c.fillStyle=ground;c.fillRect(0,SHIP.floor-180,W,210);c.restore();
- c.save();c.globalAlpha=life*.76;
- const vignette=c.createRadialGradient(cx,cy,Math.min(80,90+q*40),cx,cy,Math.max(W,H)*.86);
- vignette.addColorStop(0,'rgba(3,0,14,0)');vignette.addColorStop(.63,'rgba(3,0,14,.08)');
- vignette.addColorStop(1,'rgba(2,0,10,.82)');
- c.fillStyle=vignette;c.fillRect(0,0,W,H);c.restore();
+ // Cenizas que siguen cayendo aun cuando termina la explosión.
+ c.save();c.globalCompositeOperation='screen';for(let i=0;i<(active?64:34);i++){const v=active?92:32,x=((i*97-t*v)%(W+30)+W+30)%(W+30)-15,y=((i*61+t*v*.85)%(H+30)+H+30)%(H+30)-15;c.globalAlpha=(.17+(i%4)*.07)*strength;c.fillStyle=i%3?'#a78abf':'#e0d3f7';c.fillRect(x,y,1.5+(i%3),1.5+(i%2));}c.restore();
+}
+function drawAgentBurnedGround(c:CanvasRenderingContext2D,s:S){
+ const y=SHIP.floor;c.save();c.globalCompositeOperation='multiply';const burn=c.createLinearGradient(0,y-64,0,y+30);burn.addColorStop(0,'rgba(25,12,39,0)');burn.addColorStop(.35,'rgba(17,9,27,.7)');burn.addColorStop(.8,'rgba(7,6,13,.95)');burn.addColorStop(1,'rgba(20,10,30,.8)');c.fillStyle=burn;c.fillRect(0,y-68,W,80);c.restore();
+ c.save();c.globalCompositeOperation='screen';for(let i=0;i<14;i++){const x=(i*83+24)%W;c.beginPath();c.moveTo(x,y-3);c.lineTo(x+15,y-12-(i%4)*4);c.lineTo(x+31,y-4);c.strokeStyle='rgba(157,94,226,'+(i%3===0?.55:.3)+')';c.lineWidth=i%4===0?2:1;c.stroke();}const glow=c.createRadialGradient(W/2,y,5,W/2,y,440);glow.addColorStop(0,'rgba(124,62,190,.25)');glow.addColorStop(1,'rgba(40,15,75,0)');c.fillStyle=glow;c.fillRect(0,y-100,W,100);c.restore();
+}
+function drawAgentUltimateVfx(c:CanvasRenderingContext2D,s:S){
+ const a=s.ship;if(a.stage!=='agentUltimateBlast')return;const t=a.time,duration=AGENT_ULTIMATE_BLAST_DURATION,life=Math.min(1,Math.max(0,(duration-t)/.85)),q=Math.max(0,Math.min(1,t/duration)),cx=Math.max(40,Math.min(W-40,a.x+a.face*65)),cy=SHIP.floor-118;c.save();
+ // Flash blanco en toda la pantalla con un borde violeta intenso.
+ const flash=t<.26?(1-t/.26)*.98:Math.max(0,Math.sin(t*8))**18*.3;if(flash>0){c.globalCompositeOperation='screen';c.globalAlpha=flash;c.fillStyle='#fff';c.fillRect(0,0,W,H);const edge=c.createRadialGradient(W/2,H/2,100,W/2,H/2,690);edge.addColorStop(0,'rgba(120,50,255,0)');edge.addColorStop(.75,'rgba(137,60,255,.22)');edge.addColorStop(1,'rgba(145,80,255,.7)');c.fillStyle=edge;c.fillRect(0,0,W,H);}
+ c.globalCompositeOperation='screen';const bloom=c.createRadialGradient(cx,cy,2,cx,cy,780);bloom.addColorStop(0,'rgba(255,255,255,'+(.88*life)+')');bloom.addColorStop(.2,'rgba(220,190,255,'+(.58*life)+')');bloom.addColorStop(.55,'rgba(132,56,255,'+(.28*life)+')');bloom.addColorStop(1,'rgba(70,24,155,0)');c.fillStyle=bloom;c.fillRect(0,0,W,H);
+ // Ondas expansivas y relámpagos radiales por más de cuatro segundos.
+ for(let i=0;i<6;i++){const phase=Math.max(0,Math.min(1,(t-i*.13)/(duration-.1)));if(!phase)continue;const radius=24+phase*1180,ry=16+phase*680;c.globalAlpha=(1-phase*.55)*life*(.98-i*.1);c.strokeStyle=i%2?'#a85cff':'#ead8ff';c.lineWidth=12-i*1.2;c.shadowColor='#b96aff';c.shadowBlur=35;c.beginPath();c.ellipse(cx,cy,radius,ry,Math.sin(t*4+i)*.04,0,Math.PI*2);c.stroke();c.shadowBlur=0;}
+ c.lineCap='round';for(let i=0;i<38;i++){const angle=i*Math.PI*2/38,reach=100+q*690;let px=cx,py=cy;c.beginPath();c.moveTo(px,py);for(let k=1;k<=5;k++){const d=reach*k/5,j=Math.sin(i*3+k*8+t*14)*16;px=cx+Math.cos(angle)*d-Math.sin(angle)*j;py=cy+Math.sin(angle)*d+Math.cos(angle)*j;c.lineTo(px,py);}c.globalAlpha=life*(.4+.4*Math.sin(t*17+i)**2);c.strokeStyle=i%5?'#bd82ff':'#fff';c.lineWidth=i%5?2.1:4;c.shadowColor='#bd69ff';c.shadowBlur=22;c.stroke();c.shadowBlur=0;}
+ const core=c.createRadialGradient(cx,cy,1,cx,cy,125);core.addColorStop(0,'rgba(255,255,255,.98)');core.addColorStop(.22,'rgba(229,193,255,.85)');core.addColorStop(.58,'rgba(154,83,255,.42)');core.addColorStop(1,'rgba(108,42,210,0)');c.fillStyle=core;c.fillRect(cx-130,cy-130,260,260);c.restore();
+ c.save();c.globalCompositeOperation='screen';c.globalAlpha=life*.7;const ground=c.createRadialGradient(cx,SHIP.floor-8,3,cx,SHIP.floor-8,620);ground.addColorStop(0,'rgba(223,187,255,.6)');ground.addColorStop(.4,'rgba(153,76,255,.25)');ground.addColorStop(1,'rgba(75,22,145,0)');c.fillStyle=ground;c.fillRect(0,SHIP.floor-190,W,220);c.restore();drawAgentStorm(c,s,Math.max(.22,life),true);
+ c.save();c.globalAlpha=life*.75;const vignette=c.createRadialGradient(cx,cy,90,cx,cy,700);vignette.addColorStop(0,'rgba(3,0,14,0)');vignette.addColorStop(1,'rgba(2,0,10,.82)');c.fillStyle=vignette;c.fillRect(0,0,W,H);c.restore();
 }
 function drawCombatFx(c:CanvasRenderingContext2D,s:S,p:Palette){
  for(const f of s.fx){
@@ -1299,10 +1266,11 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const battle=['militaryIntro','soldierFight','soldierUltimateThrow','soldierUltimateAscend','soldierUltimateBeam','soldierEnd','soldierExit'].includes(a.stage);
  const lab=['awakening','verdict','catEntry','eyeCharge','rescue','rise','labFree','door'].includes(a.stage);
  c.save();box(c,p.ink,0,0,W,H);
- if(a.shake>0){const shakeScale=a.stage==='agentUltimateBlast'?16:8;c.translate(Math.sin(s.t*61)*a.shake*shakeScale,Math.cos(s.t*49)*a.shake*shakeScale*.625);}
+ if(a.shake>0){const shakeScale=a.stage==='agentUltimateBlast'?36:a.stage==='agentUltimate'?14:8;c.translate(Math.sin(s.t*83)*a.shake*shakeScale,Math.cos(s.t*71)*a.shake*shakeScale*.78);}
  const background=baseScene?art.base:swordScene?art.swordScene:trail?art.trail:road?art.road:battle?art.afterCross:cross?art.cross:lab?art.laboratory:art.main;
  const scale=Math.max(W/background.naturalWidth,H/background.naturalHeight),bw=background.naturalWidth*scale,bh=background.naturalHeight*scale;
  c.drawImage(background,(W-bw)/2,(H-bh)/2,bw,bh);
+  if(swordScene&&a.agentBurned)drawAgentBurnedGround(c,s);
  if(baseScene)enhanceExistingVioletMoon(c,art.base,{x:(W-bw)/2,y:(H-bh)/2,w:bw,h:bh},s.t);
  if(road||battle){c.save();c.globalAlpha=road ? 0.17 : 0.23;box(c,'#392754',0,0,W,H);c.restore();}
  const actor=(x:number,y:number,h=112)=>{
@@ -1355,9 +1323,9 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   }
   const catFrame=art.trailCat[Math.floor(a.walk*1.1)%art.trailCat.length]??im.cat;
   if(a.stage!=='agentUltimate'&&!(a.stage==='agentUltimateBlast'&&a.time<.42))catSprite(c,catFrame,a.x-a.face*52,a.y,Math.floor(a.walk*1.1),a.face,46);
-  if(a.agentCombatActive||a.stage==='agentEnd'){
+  if(a.agentCombatActive||a.stage==='agentEnd'||(a.agentBurned&&swordScene)){
    for(const agent of a.agents){
-    const artAgent=agent.kind==='shield'?(agent.firePose>0?art.secretAgentShieldAlt:art.secretAgentShield):agent.state==='aim'?art.secretAgentAim:agent.state==='advance'?art.secretAgentWalk:art.secretAgent;
+    if(a.agentBurned){const corpseX=([135,365,595,825] as const)[agent.id]??agent.x,corpseH=40+(agent.id%2)*3,angles=[-.035,.025,-.018,.04] as const;c.save();c.translate(corpseX,SHIP.floor-1);c.rotate(angles[agent.id]??0);const g=c.createRadialGradient(0,-12,2,0,-12,76);g.addColorStop(0,'rgba(155,91,226,.28)');g.addColorStop(1,'rgba(66,22,115,0)');c.fillStyle=g;c.fillRect(-90,-62,180,62);oval(c,'rgba(0,0,0,.72)',0,-1,72,7);stillTrimmed(c,art.burnedSoldier,0,0,corpseH,.98);c.restore();continue;}const artAgent=agent.kind==='shield'?(agent.firePose>0?art.secretAgentShieldAlt:art.secretAgentShield):agent.state==='aim'?art.secretAgentAim:agent.state==='advance'?art.secretAgentWalk:art.secretAgent;
     if(agent.hp<=0&&agent.deadTime>1.8)continue;
     const agentH=agent.kind==='shield'?112:108,agentW=ready(artAgent)?agentH*trimBounds(artAgent)[2]/trimBounds(artAgent)[3]:68;
     c.save();c.translate(agent.x,agent.y);c.scale(agent.face??-1,1);
@@ -1514,6 +1482,8 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   const fade=1-Math.min(1,a.time/1.35);
   if(fade>0){c.save();c.globalAlpha=fade;box(c,p.ink,0,0,W,H);c.restore();}
  }
+ if(a.stage==='agentUltimate')drawAgentStorm(c,s,.72,true);
+ else if(a.agentBurned&&swordScene)drawAgentStorm(c,s,.25,false);
  drawAgentUltimateVfx(c,s);
  drawCombatFx(c,s,p);
  c.restore();
