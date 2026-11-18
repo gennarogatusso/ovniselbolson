@@ -48,7 +48,7 @@ export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=fal
 export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'soldierExit'|'agentFight'|'agentEnd'|'trailWalk'|'trailEnd'|'swordIntro'|'swordReady'|'swordPickup'|'swordEquipped'|'swordAttack'|'swordSecondaryAttack'|'baseFade'|'baseApproach'|'baseEnd'|'end';
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
 type GroundSoldier = {id:number;x:number;y:number;hp:number;maxHp:number;role:'bazooka'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose?:number;state:'cover'|'advance'|'fire'|'hit'};
-export type GroundAgent = {id:number;x:number;y:number;hp:number;maxHp:number;kind:'regular'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose:number;state:'guard'|'advance'|'aim'|'hit'};
+export type GroundAgent = {id:number;x:number;y:number;hp:number;maxHp:number;kind:'regular'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose:number;face?:-1|1;state:'guard'|'advance'|'aim'|'hit'};
 function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,vy:0,jumpHeld:false,catUltimateUsed:false,trailProgress:0,baseProgress:0,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],agents:[] as GroundAgent[],agentCombatActive:false,agentWarning:0,sounds:[] as string[],labDead:0,swordAttackHeld:false,swordSecondaryAttackHeld:false,swordSecondaryCd:0};}
 export function newState() {
   return {
@@ -362,10 +362,10 @@ export function respawnAtSoldierCheckpoint(s:S){
  shipAdvance(s,'soldierFight');
 }
 function createSecretAgents():GroundAgent[]{return [
- {id:0,x:740,y:SHIP.floor,hp:160,maxHp:160,kind:'shield',cd:1.25,walk:0,hurt:0,deadTime:0,firePose:0,state:'advance'},
- {id:1,x:805,y:SHIP.floor,hp:145,maxHp:145,kind:'regular',cd:2.1,walk:0,hurt:0,deadTime:0,firePose:0,state:'advance'},
- {id:2,x:870,y:SHIP.floor,hp:180,maxHp:180,kind:'shield',cd:2.8,walk:0,hurt:0,deadTime:0,firePose:0,state:'advance'},
- {id:3,x:935,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:3.5,walk:0,hurt:0,deadTime:0,firePose:0,state:'advance'}
+ {id:0,x:740,y:SHIP.floor,hp:160,maxHp:160,kind:'shield',cd:.8,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'advance'},
+ {id:1,x:805,y:SHIP.floor,hp:145,maxHp:145,kind:'regular',cd:1.1,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'advance'},
+ {id:2,x:870,y:SHIP.floor,hp:180,maxHp:180,kind:'shield',cd:1.4,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'advance'},
+ {id:3,x:935,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:1.7,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'advance'}
 ];}
 function beginAgentEncounter(s:S){
  const a=s.ship;a.agentCombatActive=true;a.agentWarning=AGENT_WARNING_DURATION;a.agents=createSecretAgents();
@@ -579,29 +579,46 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
       }
 case 'agentFight':{
       const move=(s.keys.r?1:0)-(s.keys.l?1:0),rollKey=Boolean(s.keys['roll']),jumpKey=Boolean(s.keys.j);
-      const nearestAgent=a.agents.filter(e=>e.hp>0).sort((left,right)=>left.x-right.x)[0];
-      const rightLimit=nearestAgent?Math.min(843,nearestAgent.x-42):875;
       if(jumpKey&&!a.jumpHeld&&a.y>=SHIP.floor-.01){a.vy=-560;shipSound(s,'jump');}a.jumpHeld=jumpKey;
       if(a.vy!==0||a.y<SHIP.floor){a.vy+=1500*dt;a.y=Math.min(SHIP.floor,a.y+a.vy*dt);if(a.y>=SHIP.floor){a.y=SHIP.floor;a.vy=0;}}
       if(rollKey&&!a.rollHeld&&a.rollCd===0&&a.y===SHIP.floor){a.roll=SHIP.rollTime;a.rollCd=SHIP.rollTime+SHIP.rollCooldown;a.rollFace=move||a.face;shipSound(s,'roll');}a.rollHeld=rollKey;
-      if(a.roll>0){a.roll=Math.max(0,a.roll-dt);a.x=Math.max(90,Math.min(rightLimit,a.x+a.rollFace*420*dt));a.face=a.rollFace;}
-      else{a.x=Math.max(90,Math.min(rightLimit,a.x+move*205*dt));if(move){a.face=move;a.walk+=dt*10;}}
+      if(a.roll>0){a.roll=Math.max(0,a.roll-dt);a.x=Math.max(90,Math.min(875,a.x+a.rollFace*420*dt));a.face=a.rollFace;}
+      else{a.x=Math.max(90,Math.min(875,a.x+move*205*dt));if(move){a.face=move;a.walk+=dt*10;}}
       a.catX=approach(a.catX,a.x-a.face*55,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);
-      const agentFormation=[690,755,820,885];
+      const flankOffsets=[-160,-80,80,160];
+      const livingAgents=a.agents.filter(e=>e.hp>0);
       for(const e of a.agents){
         if(e.hp<=0){e.state='guard';continue;}
-        const formationX=agentFormation[e.id]??e.x;
-        if(e.state==='advance'&&e.x>formationX){
-          e.x=approach(e.x,formationX,180*dt);e.walk+=dt*9;
-          if(e.x<=formationX+1){e.x=formationX;e.state='guard';}
-          continue;
+        // Cada agente ocupa un ángulo distinto: dos buscan la espalda y dos presionan de frente.
+        // El pequeño vaivén evita que se queden clavados cuando el jugador no se mueve.
+        const orbit=Math.sin(s.t*1.7+e.id*1.35)*24;
+        const baseOffset=flankOffsets[e.id]??(e.id*76-120);
+        const desiredX=Math.max(48,Math.min(930,a.x+a.face*(baseOffset+orbit)));
+        let separation=0;
+        for(const other of livingAgents){
+          if(other===e)continue;
+          const distance=e.x-other.x,absolute=Math.abs(distance);
+          if(absolute<64){
+            const direction=absolute<.01?(e.id%2===0?-1:1):Math.sign(distance);
+            separation+=direction*(64-absolute)*.9;
+          }
         }
+        const targetX=Math.max(48,Math.min(930,desiredX+separation));
+        const speed=e.kind==='regular'?250:215;
+        const previousX=e.x;
+        e.x=approach(e.x,targetX,speed*dt);
+        const moving=Math.abs(e.x-previousX)>.5;
+        e.face=(a.x>e.x?1:-1);
+        if(moving){e.walk+=dt*(e.kind==='regular'?13:10);e.state=e.hurt>0?'hit':'advance';}
+        else e.state=e.hurt>0?'hit':e.firePose>0?'aim':'guard';
         e.cd-=dt;
         if(e.cd<=0){
-          const dx=a.x-e.x,dy=(a.y-44)-(e.y-52),length=Math.hypot(dx,dy)||1,speed=e.kind==='shield'?385:330;
-          a.bolts.push({x:e.x-28,y:e.y-52,vx:dx/length*speed,vy:dy/length*speed,life:3.5,kind:'rifle'});
-          e.cd=(e.kind==='shield'?1.65:2.25)+(e.id%2)*.2;e.firePose=.38;e.state='aim';shipSound(s,'agentShot');
-        }else e.state=e.hurt>0?'hit':e.firePose>0?'aim':'guard';
+          // El agente dispara hacia el jugador incluso cuando ya logró rodearlo.
+          const muzzleX=e.x+e.face*28,dx=a.x-muzzleX,dy=(a.y-44)-(e.y-52),length=Math.hypot(dx,dy)||1;
+          const projectileSpeed=e.kind==='regular'?475:440;
+          a.bolts.push({x:muzzleX,y:e.y-52,vx:dx/length*projectileSpeed,vy:dy/length*projectileSpeed,life:3.5,kind:'rifle'});
+          e.cd=(e.kind==='regular'?1.05:1.35)+(e.id%2)*.18;e.firePose=.32;e.state='aim';shipSound(s,'agentShot');
+        }
       }
       a.fireCd-=dt;
       if(s.secondaryFire&&!a.swordSecondaryAttackHeld&&a.swordSecondaryCd<=0&&a.roll===0){
