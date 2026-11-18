@@ -1421,7 +1421,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const background=baseScene?art.base:swordScene?art.swordScene:trail?art.trail:road?art.road:battle?art.afterCross:cross?art.cross:lab?art.laboratory:art.main;
  const scale=Math.max(W/background.naturalWidth,H/background.naturalHeight),bw=background.naturalWidth*scale,bh=background.naturalHeight*scale;
  c.drawImage(background,(W-bw)/2,(H-bh)/2,bw,bh);
-  if(swordScene&&a.agentBurned)drawAgentBurnedGround(c,s);drawAgentAftermathFire(c,s);
+  if(swordScene&&a.agentBurned){drawAgentBurnedGround(c,s);drawAgentAftermathFire(c,s);}
  if(baseScene)enhanceExistingVioletMoon(c,art.base,{x:(W-bw)/2,y:(H-bh)/2,w:bw,h:bh},s.t);
   if(trail)enhanceExistingVioletMoon(c,art.trail,{x:(W-bw)/2,y:(H-bh)/2,w:bw,h:bh},s.t,1.65);
  if(road||battle){c.save();c.globalAlpha=road ? 0.17 : 0.23;box(c,'#392754',0,0,W,H);c.restore();}
