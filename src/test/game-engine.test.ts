@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { shouldStartCrossMusic } from '../components/game/game-audio';
-import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, respawnAtAgentCheckpoint, AGENT_WARNING_MESSAGE, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, shipIsFree, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, SWORD_PRIMARY_DAMAGE, SWORD_PRIMARY_RANGE, SWORD_SECONDARY_DAMAGE, SWORD_SECONDARY_RANGE, SWORD_SECONDARY_DURATION, SWORD_SECONDARY_COOLDOWN, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, respawnAtAgentCheckpoint, AGENT_WARNING_MESSAGE, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, shipIsFree, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, SWORD_PRIMARY_DAMAGE, SWORD_PRIMARY_RANGE, SWORD_PRIMARY_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
@@ -158,36 +158,23 @@ describe('OVNI difficulty and narrative', () => {
     update(s,2.5);expect(s.ship.stage).toBe('swordEquipped');expect(shipAction(s)).toBe(null);
     update(s,12);expect(s.ship.stage).toBe('swordEquipped');expect(s.ship.baseProgress).toBe(0);
   });
-  it('plays the five-frame primary sword attack on click, damages enemies in front, and returns to the equipped ending',()=>{
-     const s=newState();s.phase='spaceship';s.ship.stage='swordEquipped';s.ship.x=300;s.ship.y=452;s.ship.face=1;s.ship.enemies=[{x:380,y:452,hp:70,kind:'direct',cd:99,windup:0,hurt:0,deadTime:0,face:-1}];
-     s.fire=true;update(s,.016);expect(s.ship.stage).toBe('swordAttack');expect(s.ship.enemies[0]!.hp).toBe(35);
-     update(s,.3);expect(s.ship.stage).toBe('swordAttack');s.fire=false;update(s,.31);expect(s.ship.stage).toBe('swordEquipped');
-   });
-   it('uses a high-damage short-range secondary sword attack without changing the primary attack',()=>{
-     expect(SWORD_PRIMARY_DAMAGE).toBe(35);expect(SWORD_PRIMARY_RANGE).toBe(112);
-     expect(SWORD_SECONDARY_DAMAGE).toBe(70);expect(SWORD_SECONDARY_RANGE).toBe(72);
-     expect(SWORD_SECONDARY_DURATION).toBe(.56);expect(SWORD_SECONDARY_COOLDOWN).toBe(.9);
+  it('plays the eight-frame primary sword attack with stable sprite scale and a 30% damage and range increase',()=>{
+     expect(SWORD_PRIMARY_DAMAGE).toBe(45.5);
+     expect(SWORD_PRIMARY_RANGE).toBe(145.6);
+     expect(SWORD_PRIMARY_DURATION).toBe(.8);
      const s=newState();s.phase='spaceship';s.ship.stage='swordEquipped';s.ship.x=300;s.ship.y=452;s.ship.face=1;
      s.ship.enemies=[
-       {x:360,y:452,hp:100,kind:'direct',cd:99,windup:0,hurt:0,deadTime:0,face:-1},
-       {x:380,y:452,hp:100,kind:'direct',cd:99,windup:0,hurt:0,deadTime:0,face:-1},
-       {x:250,y:452,hp:100,kind:'direct',cd:99,windup:0,hurt:0,deadTime:0,face:1}
+       {x:440,y:452,hp:100,kind:'direct',cd:99,windup:0,hurt:0,deadTime:0,face:-1},
+       {x:450,y:452,hp:100,kind:'direct',cd:99,windup:0,hurt:0,deadTime:0,face:-1}
      ];
-     s.ship.soldiers=[{id:0,x:350,y:452,hp:160,maxHp:160,role:'shield',cd:99,walk:0,hurt:0,deadTime:0,state:'cover'}];
-     s.secondaryFire=true;update(s,.016);
-     expect(s.ship.stage).toBe('swordSecondaryAttack');expect(shipIsFree(s)).toBe(true);
-     expect(s.ship.enemies[0]!.hp).toBe(30);
+     s.fire=true;update(s,.016);
+     expect(s.ship.stage).toBe('swordAttack');
+     expect(s.ship.enemies[0]!.hp).toBe(54.5);
      expect(s.ship.enemies[1]!.hp).toBe(100);
-     expect(s.ship.enemies[2]!.hp).toBe(100);
-     expect(s.ship.soldiers[0]!.hp).toBe(90);
-     expect(s.ship.swordSecondaryAttackHeld).toBe(true);
-     update(s,.3);expect(s.ship.stage).toBe('swordSecondaryAttack');
-     update(s,.27);expect(s.ship.stage).toBe('swordEquipped');
-     expect(s.ship.enemies[0]!.hp).toBe(30);
-     update(s,.1);expect(s.ship.stage).toBe('swordEquipped');
-     s.secondaryFire=false;update(s,.016);
-     expect(s.ship.swordSecondaryAttackHeld).toBe(false);
-     expect(s.ship.swordSecondaryCd).toBeGreaterThan(0);
+     expect(shipIsFree(s)).toBe(true);
+     update(s,.38);expect(s.ship.stage).toBe('swordAttack');
+     s.fire=false;update(s,.39);expect(s.ship.stage).toBe('swordAttack');
+     update(s,.03);expect(s.ship.stage).toBe('swordEquipped');
    });
    it('walks with the equipped sword, then reaches the moonlit secret-base entrance',()=>{
      const s=newState();s.phase='spaceship';s.ship.stage='swordEquipped';s.ship.x=590;s.ship.y=452;
@@ -290,15 +277,14 @@ describe('OVNI difficulty and narrative', () => {
     expect(shipIsCombat(s)).toBe(true);
   });
 
-  it('lets the sword primary and secondary attacks damage agents without repeating a held attack',()=>{
+  it('lets the strengthened primary sword attack damage secret agents without repeating a held attack',()=>{
     const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.face=1;
     s.ship.agents=[{id:0,x:690,y:452,hp:150,maxHp:150,kind:'regular',cd:20,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}];
     s.fire=true;update(s,.016);
-    expect(s.ship.stage).toBe('swordAttack');expect(s.ship.agents[0]!.hp).toBe(115);expect(s.ship.sounds).toContain('swordPrimary');
-    update(s,.61);expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(115);
-    s.fire=false;update(s,.016);s.ship.x=630;s.secondaryFire=true;update(s,.016);
-    expect(s.ship.stage).toBe('swordSecondaryAttack');expect(s.ship.agents[0]!.hp).toBe(45);expect(s.ship.sounds).toContain('swordSecondary');
-    update(s,.57);expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(45);
+    expect(s.ship.stage).toBe('swordAttack');expect(s.ship.agents[0]!.hp).toBe(104.5);expect(s.ship.sounds).toContain('swordPrimary');
+    update(s,.81);expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(104.5);
+    update(s,.2);expect(s.ship.agents[0]!.hp).toBe(104.5);
+    s.fire=false;update(s,.016);
   });
 
   it('targets a living secret agent with R and allows the player to evade agent fire with the roll',()=>{
