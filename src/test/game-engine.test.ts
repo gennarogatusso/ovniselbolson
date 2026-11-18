@@ -370,8 +370,9 @@ describe('OVNI difficulty and narrative', () => {
     movingRight.keys.r=true;movingLeft.keys.l=true;
     update(movingRight,1.5);update(movingLeft,1.5);
     expect(movingRight.ship.x).not.toBe(movingLeft.ship.x);
-    expect(movingRight.ship.agents.map(agent=>agent.x)).toEqual(movingLeft.ship.agents.map(agent=>agent.x));
-    expect(movingRight.ship.agents.map(agent=>agent.x)).toEqual(expect.arrayContaining([expect.any(Number),expect.any(Number),expect.any(Number),expect.any(Number)]));
+    const rightPatrolPositions=movingRight.ship.agents.map(agent=>agent.x);
+    expect(rightPatrolPositions).toEqual(movingLeft.ship.agents.map(agent=>agent.x));
+    expect(rightPatrolPositions.some((x,index)=>Math.abs(x-[185,410,760,910][index]!)>1)).toBe(true);
   });
 
   it('lets agents fire toward the player from either side and increases their pressure',()=>{
