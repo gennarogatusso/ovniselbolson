@@ -549,14 +549,14 @@ function drawAgentStorm(c:CanvasRenderingContext2D,s:S,strength:number,active:bo
  // Cenizas que siguen cayendo aun cuando termina la explosión.
  c.save();c.globalCompositeOperation='screen';for(let i=0;i<(active?64:34);i++){const v=active?92:32,x=((i*97-t*v)%(W+30)+W+30)%(W+30)-15,y=((i*61+t*v*.85)%(H+30)+H+30)%(H+30)-15;c.globalAlpha=(.17+(i%4)*.07)*strength;c.fillStyle=i%3?'#a78abf':'#e0d3f7';c.fillRect(x,y,1.5+(i%3),1.5+(i%2));}c.restore();
 }
-function drawAgentBurnedGround(c:CanvasRenderingContext2D,s:S){
+function drawAgentBurnedGround(c:CanvasRenderingContext2D,_s:S){
  const y=SHIP.floor;c.save();c.globalCompositeOperation='multiply';const burn=c.createLinearGradient(0,y-64,0,y+30);burn.addColorStop(0,'rgba(25,12,39,0)');burn.addColorStop(.35,'rgba(17,9,27,.7)');burn.addColorStop(.8,'rgba(7,6,13,.95)');burn.addColorStop(1,'rgba(20,10,30,.8)');c.fillStyle=burn;c.fillRect(0,y-68,W,80);c.restore();
  c.save();c.globalCompositeOperation='screen';for(let i=0;i<14;i++){const x=(i*83+24)%W;c.beginPath();c.moveTo(x,y-3);c.lineTo(x+15,y-12-(i%4)*4);c.lineTo(x+31,y-4);c.strokeStyle='rgba(157,94,226,'+(i%3===0?.55:.3)+')';c.lineWidth=i%4===0?2:1;c.stroke();}const glow=c.createRadialGradient(W/2,y,5,W/2,y,440);glow.addColorStop(0,'rgba(124,62,190,.25)');glow.addColorStop(1,'rgba(40,15,75,0)');c.fillStyle=glow;c.fillRect(0,y-100,W,100);c.restore();
 }
 function drawAgentUltimateVfx(c:CanvasRenderingContext2D,s:S){
  const a=s.ship;if(a.stage!=='agentUltimateBlast')return;const t=a.time,duration=AGENT_ULTIMATE_BLAST_DURATION,life=Math.min(1,Math.max(0,(duration-t)/.85)),q=Math.max(0,Math.min(1,t/duration)),cx=Math.max(40,Math.min(W-40,a.x+a.face*65)),cy=SHIP.floor-118;c.save();
  // Flash blanco en toda la pantalla con un borde violeta intenso.
- const flash=t<.26?(1-t/.26)*.98:Math.max(0,Math.sin(t*8))**18*.3;if(flash>0){c.globalCompositeOperation='screen';c.globalAlpha=flash;c.fillStyle='#fff';c.fillRect(0,0,W,H);const edge=c.createRadialGradient(W/2,H/2,100,W/2,H/2,690);edge.addColorStop(0,'rgba(120,50,255,0)');edge.addColorStop(.75,'rgba(137,60,255,.22)');edge.addColorStop(1,'rgba(145,80,255,.7)');c.fillStyle=edge;c.fillRect(0,0,W,H);}
+ const flash=t<.26?(1-t/.26)*.98:Math.max(0,Math.sin(t*8))**18*.3;if(flash>0){c.globalCompositeOperation='screen';c.globalAlpha=flash;c.fillStyle='#fff';c.fillRect(0,0,W,H);const edge=c.createRadialGradient(W/2,H/2,100,W/2,H/2,690);edge.addColorStop(0,'rgba(120,50,255,0)');edge.addColorStop(.75,'rgba(137,60,255,.22)');edge.addColorStop(1,'rgba(145,80,255,.7)');c.fillStyle=edge;c.fillRect(0,0,W,H);c.globalAlpha=1;}
  c.globalCompositeOperation='screen';const bloom=c.createRadialGradient(cx,cy,2,cx,cy,780);bloom.addColorStop(0,'rgba(255,255,255,'+(.88*life)+')');bloom.addColorStop(.2,'rgba(220,190,255,'+(.58*life)+')');bloom.addColorStop(.55,'rgba(132,56,255,'+(.28*life)+')');bloom.addColorStop(1,'rgba(70,24,155,0)');c.fillStyle=bloom;c.fillRect(0,0,W,H);
  // Ondas expansivas y relámpagos radiales por más de cuatro segundos.
  for(let i=0;i<6;i++){const phase=Math.max(0,Math.min(1,(t-i*.13)/(duration-.1)));if(!phase)continue;const radius=24+phase*1180,ry=16+phase*680;c.globalAlpha=(1-phase*.55)*life*(.98-i*.1);c.strokeStyle=i%2?'#a85cff':'#ead8ff';c.lineWidth=12-i*1.2;c.shadowColor='#b96aff';c.shadowBlur=35;c.beginPath();c.ellipse(cx,cy,radius,ry,Math.sin(t*4+i)*.04,0,Math.PI*2);c.stroke();c.shadowBlur=0;}
@@ -1483,7 +1483,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(fade>0){c.save();c.globalAlpha=fade;box(c,p.ink,0,0,W,H);c.restore();}
  }
  if(a.stage==='agentUltimate')drawAgentStorm(c,s,.72,true);
- else if(a.agentBurned&&swordScene)drawAgentStorm(c,s,.25,false);
+ else if(a.stage!=='agentUltimateBlast'&&a.agentBurned&&swordScene)drawAgentStorm(c,s,.25,false);
  drawAgentUltimateVfx(c,s);
  drawCombatFx(c,s,p);
  c.restore();
