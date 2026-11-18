@@ -35,7 +35,9 @@ type CombatFx = {x:number;y:number;life:number;c:string;vx?:number;vy?:number;si
 export const SHIP = { floor: 452, left: 48, right: 910, boxX: 480, boxY: 185, boxHits: 4, reactorX: 847, reactorY: 282, chargeTime: 1.8, rollTime: .52, rollCooldown: 1.1 } as const;
 export const SWORD_PRIMARY_DAMAGE = 35 * 1.3;
 export const SWORD_PRIMARY_RANGE = 112 * 1.3;
-export const SWORD_PRIMARY_DURATION = .8;
+export const SWORD_PRIMARY_FRAME_COUNT = 8;
+export const SWORD_PRIMARY_FRAME_DURATION = .18;
+export const SWORD_PRIMARY_DURATION = SWORD_PRIMARY_FRAME_COUNT * SWORD_PRIMARY_FRAME_DURATION;
 export const AGENT_WARNING_MESSAGE = 'Esta es un área restringida, un paso más y disparo';
 export const AGENT_WARNING_DURATION = 3.5;
 export const FOREST = { deer: 1820, ship: 3640, abduction: 3900, top: 410, bottom: 490, speed: 260 } as const;
@@ -378,6 +380,18 @@ function spawnCombatImpact(s:S,x:number,y:number,power=1){
  for(let i=0,n=Math.round(8+power*5);i<n;i++){const angle=i/n*Math.PI*2+s.t*1.7,speed=(62+(i%4)*24)*power,duration=.22+(i%4)*.055;s.fx.push({x,y,life:duration,maxLife:duration,c:i%4===0?'light':'energy',shape:'spark',size:1.4+(i%3)*.7,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});}
  for(let i=0;i<Math.round(power*4);i++){const angle=i*2.399+s.t*2,r=8+(i%3)*8,duration=.36+(i%3)*.08;s.fx.push({x:x+Math.cos(angle)*r,y:y+Math.sin(angle)*r,life:duration,maxLife:duration,c:'gold',shape:'dust',size:2+i%3});}
 }
+function spawnSwordStrikeFx(s:S,x:number,y:number){
+ const ringLife=.42;s.fx.push({x,y,life:ringLife,maxLife:ringLife,c:'energy',shape:'ring',size:12});
+ const count=22,groundY=SHIP.floor-5;
+ for(let i=0;i<count;i++){
+  const angle=Math.PI+(i/(count-1))*Math.PI,speed=86+(i%5)*25,duration=.42+(i%4)*.09;
+  s.fx.push({x:x+(Math.random()-.5)*14,y:groundY-Math.random()*7,life:duration,maxLife:duration,c:'energy',shape:'spark',size:2+(i%3)*.65,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed*.72-18});
+ }
+ for(let i=0;i<9;i++){
+  const angle=i*2.399+s.t*1.3,speed=28+(i%4)*17,duration=.34+(i%3)*.1;
+  s.fx.push({x:x+Math.cos(angle)*5,y:groundY+Math.sin(angle)*2,life:duration,maxLife:duration,c:'energy',shape:'dust',size:2+(i%3)*.8,vx:Math.cos(angle)*speed,vy:-24-(i%4)*13});
+ }
+}
 function syncUfoPhase(s:S){
  const u=s.u,next=u.hp>66?1:u.hp>33?2:3;
  if(next!==u.phase){u.phase=next;u.patternIndex=0;}
@@ -560,8 +574,8 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
         }
         if(s.fire&&!a.swordAttackHeld&&a.fireCd<=0){
           a.swordAttackHeld=true;a.fireCd=.55;shipAdvance(s,'swordAttack');shipSound(s,'swordPrimary');
-          for(const enemy of a.enemies){if(enemy.hp>0&&(enemy.x-a.x)*a.face>=-12&&Math.abs(enemy.x-a.x)<=SWORD_PRIMARY_RANGE){enemy.hp=Math.max(0,enemy.hp-SWORD_PRIMARY_DAMAGE);enemy.hurt=.4;if(enemy.hp===0)enemy.deadTime=.001;spawnCombatImpact(s,enemy.x,enemy.y-48,1.15);}}
-          for(const soldier of a.soldiers){if(soldier.hp>0&&(soldier.x-a.x)*a.face>=-12&&Math.abs(soldier.x-a.x)<=SWORD_PRIMARY_RANGE){soldier.hp=Math.max(0,soldier.hp-SWORD_PRIMARY_DAMAGE);soldier.hurt=.4;if(soldier.hp===0)soldier.deadTime=.001;spawnCombatImpact(s,soldier.x,soldier.y-48,1.15);}}
+          for(const enemy of a.enemies){if(enemy.hp>0&&(enemy.x-a.x)*a.face>=-12&&Math.abs(enemy.x-a.x)<=SWORD_PRIMARY_RANGE){enemy.hp=Math.max(0,enemy.hp-SWORD_PRIMARY_DAMAGE);enemy.hurt=.4;if(enemy.hp===0)enemy.deadTime=.001;spawnSwordStrikeFx(s,enemy.x,enemy.y-48);}}
+          for(const soldier of a.soldiers){if(soldier.hp>0&&(soldier.x-a.x)*a.face>=-12&&Math.abs(soldier.x-a.x)<=SWORD_PRIMARY_RANGE){soldier.hp=Math.max(0,soldier.hp-SWORD_PRIMARY_DAMAGE);soldier.hurt=.4;if(soldier.hp===0)soldier.deadTime=.001;spawnSwordStrikeFx(s,soldier.x,soldier.y-48);}}
         }
         if(!s.fire)a.swordAttackHeld=false;
         break;
@@ -606,7 +620,7 @@ case 'agentFight':{
       a.fireCd-=dt;
       if(s.fire&&!a.swordAttackHeld&&a.fireCd<=0&&a.roll===0){
         a.swordAttackHeld=true;a.fireCd=.55;shipAdvance(s,'swordAttack');shipSound(s,'swordPrimary');
-        for(const e of a.agents)if(e.hp>0&&(e.x-a.x)*a.face>=-12&&Math.abs(e.x-a.x)<=SWORD_PRIMARY_RANGE){e.hp=Math.max(0,e.hp-SWORD_PRIMARY_DAMAGE);e.hurt=.4;e.state='hit';spawnCombatImpact(s,e.x,e.y-52,1.15);shipSound(s,e.hp===0?'agentDefeated':'agentHit');if(e.hp===0)e.deadTime=.001;}
+        for(const e of a.agents)if(e.hp>0&&(e.x-a.x)*a.face>=-12&&Math.abs(e.x-a.x)<=SWORD_PRIMARY_RANGE){e.hp=Math.max(0,e.hp-SWORD_PRIMARY_DAMAGE);e.hurt=.4;e.state='hit';spawnSwordStrikeFx(s,e.x,e.y-52);shipSound(s,e.hp===0?'agentDefeated':'agentHit');if(e.hp===0)e.deadTime=.001;}
         break;
       }
       if(!s.fire)a.swordAttackHeld=false;
@@ -635,6 +649,15 @@ case 'agentEnd':a.bolts=[];a.shots=[];if(a.time>=1){a.agentCombatActive=false;a.
     case 'baseApproach':a.baseProgress=Math.min(1,a.baseProgress+dt/7.5);a.walk+=dt*9;if(a.baseProgress>=1)shipAdvance(s,'baseEnd');break;
     case 'baseEnd':break;
   }
+  // Actualizar y retirar las partículas también durante las escenas de la nave.
+  for(const f of s.fx){
+    if(f.vx!==undefined||f.vy!==undefined){
+      f.x+=(f.vx??0)*dt;f.y+=(f.vy??0)*dt;
+      f.vx=(f.vx??0)*Math.max(0,1-dt*2.4);
+      f.vy=(f.vy??0)+190*dt;
+    }
+  }
+  s.fx=s.fx.filter(f=>(f.life-=dt)>0);
   return null;
 }
 export function interactIntro(s: S) {

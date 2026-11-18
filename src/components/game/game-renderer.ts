@@ -535,6 +535,23 @@ function drawAnchoredSprite(c:CanvasRenderingContext2D,frame:SpecialFrame,x:numb
  c.drawImage(frame.image,x-frame.anchorX*scale,y-frame.baseY*scale,frame.image.naturalWidth*scale,frame.image.naturalHeight*scale);
  c.restore();
 }
+function drawCombatFx(c:CanvasRenderingContext2D,s:S,p:Palette){
+ for(const f of s.fx){
+  const maxLife=f.maxLife??.4,progress=Math.max(0,Math.min(1,1-f.life/maxLife)),color=p[f.c as keyof Palette]??p.gold;
+  c.save();c.globalAlpha=Math.min(1,f.life/maxLife);
+  if(f.shape==='ring'){
+   const radius=(f.size??7)+progress*(f.size??7)*1.8;c.strokeStyle=color;c.lineWidth=1.2+f.life*3;
+   c.beginPath();c.ellipse(f.x,f.y,radius,radius*.68,0,0,Math.PI*2);c.stroke();
+  }else if(f.shape==='spark'){
+   c.strokeStyle=color;c.lineWidth=f.size??2;c.beginPath();c.moveTo(f.x,f.y);
+   c.lineTo(f.x-(f.vx??0)*.035,f.y-(f.vy??0)*.035);c.stroke();oval(c,color,f.x,f.y,1.2,1.2);
+  }else{
+   const radius=f.size??(4+progress*8);oval(c,color,f.x,f.y,radius,radius*.72);
+  }
+  c.restore();
+ }
+ c.globalAlpha=1;
+}
 
 function awkaNightAtmosphere(c:CanvasRenderingContext2D,s:S){
  const departure=s.intro.stage==='depart'?Math.max(0,1-s.intro.time/1.5):1;
@@ -1419,6 +1436,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   const fade=1-Math.min(1,a.time/1.35);
   if(fade>0){c.save();c.globalAlpha=fade;box(c,p.ink,0,0,W,H);c.restore();}
  }
+ drawCombatFx(c,s,p);
  c.restore();
 }
 function drawAwkaOpeningTitle(c:CanvasRenderingContext2D,s:S) {
@@ -1579,7 +1597,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  }
  for(const b of s.shots) {if(b.kind==='special'){if(im&&(b.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,b,s.t);}else if(b.kind==='stone'){oval(c,p.stone,b.x,b.y,5,4);box(c,p.light,b.x-2,b.y-2,2,1);}else {c.strokeStyle=p.ice;c.lineWidth=3;c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.012,b.y-b.vy*.012);c.stroke();}}
  for(const b of s.lasers){c.save();const orbital=b.kind==='ufoOrbital',burst=b.kind==='ufoBurst';c.strokeStyle=orbital?'#ff9bb7':burst?'#c9a0ff':p.laser;c.lineWidth=orbital?5:burst?4.5:4;if(orbital){c.globalCompositeOperation='screen';c.shadowColor='#ff709c';c.shadowBlur=14;oval(c,'#ffe0e8',b.x,b.y,5,7);}c.beginPath();c.moveTo(b.x,b.y);c.lineTo(b.x-b.vx*.045,b.y-b.vy*.045);c.stroke();c.restore();}
- for(const f of s.fx){const maxLife=f.maxLife??.4,progress=Math.max(0,Math.min(1,1-f.life/maxLife)),color=p[f.c as keyof Palette]??p.gold;c.save();c.globalAlpha=Math.min(1,f.life/maxLife);if(f.shape==='ring'){const radius=(f.size??7)+progress*(f.size??7)*1.8;c.strokeStyle=color;c.lineWidth=1.2+f.life*3;c.beginPath();c.ellipse(f.x,f.y,radius,radius*.68,0,0,Math.PI*2);c.stroke();}else if(f.shape==='spark'){c.strokeStyle=color;c.lineWidth=f.size??2;c.beginPath();c.moveTo(f.x,f.y);c.lineTo(f.x-(f.vx??0)*.035,f.y-(f.vy??0)*.035);c.stroke();oval(c,color,f.x,f.y,1.2,1.2);}else{const radius=f.size??(4+progress*8);oval(c,color,f.x,f.y,radius,radius*.72);}c.restore();}c.globalAlpha=1;c.restore();
+ drawCombatFx(c,s,p);c.restore();
  c.font='13px "IBM Plex Mono", monospace';c.textBaseline='top';c.fillStyle=p.light;
  if(!['crash','arrive','reunion','alien','speech','attack','fade','aftermath'].includes(s.phase)){
  box(c,p.panel,14,14,240,55);c.fillStyle=p.light;c.fillText('SALUD',24,24);box(c,p.ink,85,26,155,10);box(c,player.hp>30?p.ice:p.red,85,26,1.55*player.hp,10);
