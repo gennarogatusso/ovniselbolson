@@ -586,7 +586,7 @@ case 'agentFight':{
       else{a.x=Math.max(90,Math.min(640,a.x+move*205*dt));if(move){a.face=move;a.walk+=dt*10;}}
       a.catX=approach(a.catX,a.x-a.face*55,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);
       for(const e of a.agents){
-        if(e.hp<=0){e.deadTime+=dt;e.state='guard';continue;}
+        if(e.hp<=0){e.state='guard';continue;}
         e.cd-=dt;
         const desiredDistance=78+e.id*10,stop=a.x+desiredDistance;if(e.x>stop+2){e.x=approach(e.x,stop,82*dt);e.walk+=dt*8;e.state=e.hurt>0?'hit':'advance';}
         else if(e.cd<=0){
@@ -628,7 +628,7 @@ case 'agentFight':{
     }
 case 'swordAttack':a.y=SHIP.floor;if(a.time>=.6)shipAdvance(s,a.agentCombatActive?(a.agents.every(e=>e.hp<=0)?'agentEnd':'agentFight'):'swordEquipped');break;
 case 'swordSecondaryAttack':a.y=SHIP.floor;if(a.time>=SWORD_SECONDARY_DURATION)shipAdvance(s,a.agentCombatActive?(a.agents.every(e=>e.hp<=0)?'agentEnd':'agentFight'):'swordEquipped');break;
-case 'agentEnd':a.bolts=[];a.shots=[];for(const e of a.agents)e.deadTime+=dt;if(a.time>=1){a.agentCombatActive=false;a.agentWarning=0;a.x=640;a.y=SHIP.floor;a.face=1;a.walk=0;shipAdvance(s,'swordEquipped');}break;
+case 'agentEnd':a.bolts=[];a.shots=[];if(a.time>=1){a.agentCombatActive=false;a.agentWarning=0;a.x=640;a.y=SHIP.floor;a.face=1;a.walk=0;shipAdvance(s,'swordEquipped');}break;
     case 'baseFade':a.walk+=dt*8;if(a.time>=1.6)shipAdvance(s,'baseApproach');break;
     case 'baseApproach':a.baseProgress=Math.min(1,a.baseProgress+dt/7.5);a.walk+=dt*9;if(a.baseProgress>=1)shipAdvance(s,'baseEnd');break;
     case 'baseEnd':break;
