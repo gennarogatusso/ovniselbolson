@@ -1253,6 +1253,10 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   }else if(a.stage==='swordPickup'){
    const frame=art.swordPickupFrames[Math.min(4,Math.floor(a.time/2.5*5))]??art.swordPickupFrames[4];
    c.save();c.translate(a.x,a.y);c.scale(a.face,1);stillTrimmed(c,frame,0,0,112);c.restore();
+  }else if(a.roll>0){
+   c.save();c.translate(a.x,a.y);c.scale(a.face,1);pose(c,art.roll,Math.min(5,Math.floor((1-a.roll/SHIP.rollTime)*6)),6,0,0,112);c.restore();
+  }else if(a.specialAnim>0&&a.agentCombatActive){
+   c.save();c.translate(a.x,a.y);c.scale(a.face,1);specialPose(c,im.specialFrames,SPECIAL_ATTACK_ANIM_DURATION-a.specialAnim,0,0,112);c.restore();
   }else{
    const moving=s.keys.l||s.keys.r;
    const frameIndex=moving?Math.floor(a.walk*1.1)%art.swordWalkFrames.length:0;
