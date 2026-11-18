@@ -412,7 +412,8 @@ export class GameAudio {
   }
   const rainInForest=!this.crossMusicStarted&&this.forestMusicStarted&&s.phase==='bedroom'&&FOREST_RAIN_STAGES.has(s.chapter.stage);
   const rainOnCrossTrail=s.phase==='spaceship'&&s.ship.stage==='trailWalk';
-  if(rainInForest||rainOnCrossTrail){
+  const rainAfterSwordUltimate=s.phase==='spaceship'&&s.ship.stage==='agentEnd'&&s.ship.agentBurned;
+  if(rainInForest||rainOnCrossTrail||rainAfterSwordUltimate){
    this.rainActive=true;
    if(this.rainTrack?.paused)void this.rainTrack.play().catch(()=>{});
   }else if(this.rainActive){

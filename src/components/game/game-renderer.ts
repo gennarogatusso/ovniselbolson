@@ -1641,6 +1641,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   drawAgentStorm(c,s,.72,true);
   if(a.time<.2){c.save();c.globalCompositeOperation='screen';c.globalAlpha=(1-a.time/.2)*.82;c.fillStyle='#fff';c.fillRect(0,0,W,H);const edge=c.createRadialGradient(W/2,H/2,90,W/2,H/2,680);edge.addColorStop(0,'rgba(120,50,255,0)');edge.addColorStop(.78,'rgba(135,65,255,.18)');edge.addColorStop(1,'rgba(150,90,255,.65)');c.fillStyle=edge;c.fillRect(0,0,W,H);c.restore();}
  }else if(a.stage!=='agentUltimateBlast'&&a.agentBurned&&swordScene)drawAgentStorm(c,s,.25,false);
+ if(a.stage==='agentEnd'&&a.agentBurned){drawTrailVioletPuddles(c,s);drawTrailVioletRain(c,s);}
  drawAgentUltimateVfx(c,s);
  drawCombatFx(c,s,p);
  c.restore();
