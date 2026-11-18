@@ -1270,7 +1270,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
     const artAgent=agent.kind==='shield'?(agent.firePose>0?art.secretAgentShieldAlt:art.secretAgentShield):agent.state==='aim'?art.secretAgentAim:agent.state==='advance'?art.secretAgentWalk:art.secretAgent;
     if(agent.hp<=0&&agent.deadTime>1.8)continue;
     const agentH=agent.kind==='shield'?112:108,agentW=ready(artAgent)?agentH*trimBounds(artAgent)[2]/trimBounds(artAgent)[3]:68;
-    c.save();c.translate(agent.x,agent.y);c.scale(-1,1);
+    c.save();c.translate(agent.x,agent.y);c.scale(agent.face??-1,1);
     if(agent.hp<=0){c.globalAlpha=Math.max(0,1-agent.deadTime*.45);c.rotate(-Math.min(1,agent.deadTime*3)*.38);}
     else if(agent.hurt>0&&Math.floor(s.t*18)%2)c.globalAlpha=.42;
     oval(c,'rgba(0,0,0,.4)',0,-2,34,7);drawTrimmed(c,artAgent,-agentW/2,-agentH,agentW,agentH);
