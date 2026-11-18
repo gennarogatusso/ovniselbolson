@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { shouldStartCrossMusic } from '../components/game/game-audio';
-import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, shipIsFree, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, SWORD_PRIMARY_DAMAGE, SWORD_PRIMARY_RANGE, SWORD_SECONDARY_DAMAGE, SWORD_SECONDARY_RANGE, SWORD_SECONDARY_DURATION, SWORD_SECONDARY_COOLDOWN, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, respawnAtAgentCheckpoint, AGENT_WARNING_MESSAGE, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, shipIsFree, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, SWORD_PRIMARY_DAMAGE, SWORD_PRIMARY_RANGE, SWORD_SECONDARY_DAMAGE, SWORD_SECONDARY_RANGE, SWORD_SECONDARY_DURATION, SWORD_SECONDARY_COOLDOWN, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
@@ -275,6 +275,62 @@ describe('OVNI difficulty and narrative', () => {
   it('restores the original cinematic camera focus on the UFO during its crash',()=>{
     const s=newState();s.phase='crash';s.u.x=1800;s.p.x=300;update(s,.1);
     expect(s.cam).toBeGreaterThan(300);
+  });
+
+
+  it('starts the mandatory secret-agent ambush after the sword pickup and displays the restricted-area warning',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='swordPickup';s.ship.x=590;
+    update(s,2.5);
+    expect(s.ship.stage).toBe('agentFight');
+    expect(s.ship.agents).toHaveLength(4);
+    expect(s.ship.agents.filter(agent=>agent.kind==='shield')).toHaveLength(2);
+    expect(s.ship.agents.filter(agent=>agent.kind==='regular')).toHaveLength(2);
+    expect(AGENT_WARNING_MESSAGE).toBe('Esta es un área restringida, un paso más y disparo');
+    expect(s.ship.agentWarning).toBeGreaterThan(0);
+    expect(shipIsCombat(s)).toBe(true);
+  });
+
+  it('lets the sword primary and secondary attacks damage agents without repeating a held attack',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=590;s.ship.face=1;
+    s.ship.agents=[{id:0,x:690,y:452,hp:150,maxHp:150,kind:'regular',cd:20,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}];
+    s.fire=true;update(s,.016);
+    expect(s.ship.stage).toBe('swordAttack');expect(s.ship.agents[0]!.hp).toBe(115);
+    update(s,.61);expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(115);
+    s.fire=false;update(s,.016);s.secondaryFire=true;update(s,.016);
+    expect(s.ship.stage).toBe('swordSecondaryAttack');expect(s.ship.agents[0]!.hp).toBe(45);
+    update(s,.57);expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(45);
+  });
+
+  it('targets a living secret agent with R and allows the player to evade agent fire with the roll',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;
+    s.ship.agents=[{id:0,x:690,y:452,hp:150,maxHp:150,kind:'regular',cd:20,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}];
+    expect(triggerSpecial(s)).toBe(true);
+    expect(s.ship.shots[0]?.specialTarget).toBe('agent');
+    expect(s.ship.specialCd).toBe(5);
+    const hp=s.ship.hp;s.ship.specialCd=0;s.ship.shots=[];
+    s.keys.roll=true;update(s,.016);
+    expect(s.ship.roll).toBeGreaterThan(0);
+    s.ship.bolts=[{x:s.ship.x+4,y:s.ship.y-46,vx:0,vy:0,life:1,kind:'rifle'}];
+    update(s,.016);expect(s.ship.hp).toBe(hp);
+  });
+
+  it('blocks the secret-base entrance until every agent is defeated, then returns to sword traversal',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.x=640;s.ship.agents=[
+      {id:0,x:690,y:452,hp:1,maxHp:150,kind:'regular',cd:99,walk:0,hurt:0,deadTime:0,firePose:0,state:'guard'}
+    ];
+    s.keys.r=true;update(s,.2);expect(s.ship.stage).toBe('agentFight');expect(s.ship.x).toBeLessThanOrEqual(640);
+    s.keys.r=false;s.ship.agents[0]!.hp=0;update(s,.016);expect(s.ship.stage).toBe('agentEnd');
+    update(s,1.01);expect(s.ship.stage).toBe('swordEquipped');expect(s.ship.agentCombatActive).toBe(false);
+    s.keys.r=true;for(let i=0;i<20&&s.ship.stage==='swordEquipped';i++)update(s,.1);
+    expect(s.ship.stage).toBe('baseFade');
+  });
+
+  it('restarts only the secret-agent encounter at full health after defeat',()=>{
+    const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.hp=0;
+    respawnAtAgentCheckpoint(s);
+    expect(s.ship.stage).toBe('agentFight');expect(s.ship.hp).toBe(100);expect(s.ship.agents).toHaveLength(4);
+    expect(s.ship.agentCombatActive).toBe(true);
+    expect(s.ship.soldiers).toHaveLength(0);
   });
 
 });
