@@ -370,7 +370,19 @@ export class GameAudio {
   const active=awkaMusicActive(s,playing);
   if(active!==this.musicActive){
    this.musicActive=active;
-   if(active){if(this.music)void this.music.play().catch(()=>{this.musicActive=false;});}
+   if(active){
+    if(this.music){
+     const track=this.music;
+     const begin=()=>{
+      if(!this.musicActive)return;
+      // Saltea el pequeño pitido al inicio de la pista ambiente de AWKA.
+      if(track.currentTime<.5)track.currentTime=.5;
+      void track.play().catch(()=>{this.musicActive=false;});
+     };
+     if(track.readyState>=1)begin();
+     else track.addEventListener('loadedmetadata',begin,{once:true});
+    }
+   }
    else if(this.music){this.music.pause();this.music.currentTime=0;}
   }
   if(this.music)this.music.volume=AWKA_VOLUME*this.volume*awkaMusicVolume(s);

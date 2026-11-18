@@ -1407,6 +1407,37 @@ function enhanceExistingVioletMoon(c:CanvasRenderingContext2D,im:HTMLImageElemen
 }
 
 
+function drawAgentCombatHud(c:CanvasRenderingContext2D,hp:number,mana:number|null){
+ const x=14,y=14,w=238,h=mana===null?48:84;
+ c.save();
+ const panel=c.createLinearGradient(x,y,x,y+h);
+ panel.addColorStop(0,'rgba(27,23,48,.94)');panel.addColorStop(1,'rgba(9,9,23,.91)');
+ c.shadowColor='rgba(0,0,0,.42)';c.shadowBlur=15;c.fillStyle=panel;
+ c.beginPath();c.roundRect(x,y,w,h,9);c.fill();c.shadowBlur=0;
+ c.strokeStyle='rgba(202,177,255,.42)';c.lineWidth=1;
+ c.beginPath();c.roundRect(x+.5,y+.5,w-1,h-1,9);c.stroke();
+ c.strokeStyle='rgba(255,255,255,.10)';c.beginPath();c.moveTo(x+10,y+1);c.lineTo(x+w-10,y+1);c.stroke();
+ const row=(label:string,value:number,top:number,start:string,end:string,glow:string,ready=false)=>{
+  const ratio=Math.max(0,Math.min(1,value/100)),trackX=x+13,trackY=top+18,trackW=w-26,trackH=8;
+  c.fillStyle=label==='SALUD'?'#ff9aa8':'#e2c5ff';
+  c.beginPath();c.arc(x+17,top+7,3.2,0,Math.PI*2);c.fill();
+  c.font='bold 10px "IBM Plex Mono", monospace';c.textAlign='left';c.textBaseline='middle';
+  c.fillStyle='#f2efff';c.fillText(label,x+27,top+7);
+  c.textAlign='right';c.fillStyle='rgba(235,229,255,.78)';c.fillText(Math.round(value)+'%',x+w-13,top+7);
+  c.fillStyle='rgba(2,3,13,.78)';c.beginPath();c.roundRect(trackX,trackY,trackW,trackH,4);c.fill();
+  if(ratio>0){
+   const fillW=Math.max(4,trackW*ratio),gradient=c.createLinearGradient(trackX,trackY,trackX+fillW,trackY+trackH);
+   gradient.addColorStop(0,start);gradient.addColorStop(1,end);
+   c.save();c.shadowColor=glow;c.shadowBlur=ready?15:7;c.fillStyle=gradient;
+   c.beginPath();c.roundRect(trackX,trackY,fillW,trackH,4);c.fill();c.restore();
+   c.fillStyle='rgba(255,255,255,.28)';c.beginPath();c.roundRect(trackX+2,trackY+1,Math.max(0,fillW-4),1.4,1);c.fill();
+  }
+ };
+ row('SALUD',hp,y+3,'#ff9aa8','#df3d62','#ff5579');
+ if(mana!==null)row('MANÁ',mana,y+39,'#e4c3ff','#8d45dc','#bd73ff',mana>=100);
+ c.restore();
+}
+
 function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.ship,art=im.ship;
  const trail=a.stage==='trailWalk'||a.stage==='trailEnd';
@@ -1491,17 +1522,11 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
    for(const shot of a.shots){if(shot.kind==='special'){if((shot.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,shot,s.t);}else line(p.ice,shot.x,shot.y,shot.x-shot.vx*.025,shot.y-shot.vy*.025,3);}
    for(const bolt of a.bolts){line('#ffb86b',bolt.x,bolt.y,bolt.x-bolt.vx*.035,bolt.y-bolt.vy*.035,4);oval(c,'#fff0c4',bolt.x,bolt.y,4,3);}
    if(!['agentUltimate','agentUltimateBlast'].includes(a.stage)){
-    box(c,p.panel,14,14,218,42);c.font='13px monospace';c.fillStyle=p.light;c.fillText('SALUD',24,40);box(c,p.ink,82,30,138,10);box(c,a.hp>35?p.ice:p.red,82,30,1.38*a.hp,10);
-   }
-   if(a.agentCombatActive&&a.agents.some(agent=>agent.hp>0)&&!['agentUltimate','agentUltimateBlast'].includes(a.stage)){
-    box(c,p.panel,706,14,240,42);c.font='13px monospace';c.fillStyle='#e8c8ff';c.fillText('MANÁ',716,40);
-    c.fillStyle='rgba(13,8,28,.95)';c.fillRect(780,30,155,10);
-    if(a.agentMana>=100){c.save();c.shadowColor='#c47aff';c.shadowBlur=14;}
-    c.fillStyle=a.agentMana>=100?'#e8c4ff':'#a65de8';c.fillRect(780,30,155*a.agentMana/100,10);
-    if(a.agentMana>=100){c.restore();c.strokeStyle='#edd7ff';c.lineWidth=1.4;c.strokeRect(779,29,157,12);}
+    const manaVisible=a.agentCombatActive&&a.agents.some(agent=>agent.hp>0);
+    drawAgentCombatHud(c,a.hp,manaVisible?a.agentMana:null);
    }
    if(a.agentWarning>0&&!['agentUltimate','agentUltimateBlast'].includes(a.stage)){
-    const q=Math.min(1,a.agentWarning/AGENT_WARNING_DURATION),panelW=590,panelH=58,panelX=(W-panelW)/2,panelY=72;
+    const q=Math.min(1,a.agentWarning/AGENT_WARNING_DURATION),panelW=590,panelH=58,panelX=(W-panelW)/2,panelY=112;
     c.save();c.globalAlpha=Math.min(1,q*2.2);c.shadowColor='#ffbd55';c.shadowBlur=18;
     c.fillStyle='rgba(20,9,11,.94)';c.beginPath();c.roundRect(panelX,panelY,panelW,panelH,8);c.fill();
     c.strokeStyle='#ffc56f';c.lineWidth=2;c.stroke();c.shadowBlur=0;c.textAlign='center';c.textBaseline='middle';
