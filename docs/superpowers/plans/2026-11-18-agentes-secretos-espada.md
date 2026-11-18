@@ -38,8 +38,8 @@
 - Test: `src/test/game-engine.test.ts`
 
 **Interfaces:**
-- Consumes: `GroundSoldier`/lógica actual de `soldierFight`, `SHIP`, `SWORD_PRIMARY_*`, `SWORD_SECONDARY_*`, `shipHit`, `spawnCombatImpact`.
-- Produces: estados `agentFight` y `agentEnd`; colección `ship.agents`; constante exportada `AGENT_WARNING_MESSAGE`; helper público `respawnAtAgentCheckpoint(s:S): void`.
+- Consumes: la lógica actual de `soldierFight`, `SHIP`, `SWORD_PRIMARY_*`, `SWORD_SECONDARY_*`, `shipHit`, `spawnCombatImpact`.
+- Produces: estados `agentFight` y `agentEnd`; tipo `GroundAgent` y colección propia `ship.agents`; constantes exportadas `AGENT_WARNING_MESSAGE` y `AGENT_WARNING_DURATION` (3.5 s); helper público `respawnAtAgentCheckpoint(s:S): void`.
 
 - [ ] **Step 1: Write failing tests** en `src/test/game-engine.test.ts` para: inicio automático de la emboscada al acabar `swordPickup`; cuatro agentes (dos regulares y dos con escudo); texto exacto/duración del aviso; `shipIsCombat` habilita el HUD durante la emboscada y los ataques de espada; R apunta a agentes vivos; los dos ataques de espada dañan a agentes y regresan al combate; voltereta evita daño; la base queda bloqueada mientras haya agentes vivos y vuelve a habilitarse al derrotarlos; respawn reinicia el encuentro.
 - [ ] **Step 2: Run the focused tests**: `npm test -- src/test/game-engine.test.ts`. Expected: FAIL porque los estados, agentes, función de respawn y comportamiento aún no existen.
