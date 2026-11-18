@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { shouldStartCrossMusic } from '../components/game/game-audio';
-import { DIFFICULTY, GROUND, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
@@ -45,6 +45,21 @@ describe('OVNI difficulty and narrative', () => {
     const phases:string[]=[];let result:string|null=null;
     for(let i=0;i<2000&&!result;i++){if(phases.at(-1)!==s.phase)phases.push(s.phase);result=update(s,.05);if(String(s.phase)==='reunion'){expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);}if(String(s.phase)==='fade'){expect(s.jets.every(jet=>jet.x>3200)).toBe(true);expect(s.ufoHits).toBeGreaterThan(0);expect(s.alienHit).toBe(true);expect(s.alien.reveal).toBe(0);expect(s.jetShots).toHaveLength(0);}expect(s.shots).toHaveLength(0);expect(s.lasers).toHaveLength(0);}
         expect(phases).toEqual(['crash','arrive','reunion','alien','speech','attack','jets','fade']);expect(result).toBe('continue');expect(s.allies.every(a=>a.dead&&a.hp===0)).toBe(true);expect(s.cat.gone).toBe(false);
+  });
+  it('shortens the alien message to five seconds and the two-person attack to 2.5 seconds',()=>{
+    const speech=newState();speech.phase='speech';speech.pt=4.8;
+    expect(ALIEN_SPEECH_DURATION).toBe(5);update(speech,.1);expect(speech.phase).toBe('speech');
+    update(speech,.11);expect(speech.phase).toBe('attack');
+    expect(ALIEN_ATTACK_DURATION).toBe(2.5);
+    const s=newState();s.phase='attack';s.p.crouch=true;s.alien.x=s.crashX-75;
+    s.allies[0]!.x=s.crashX-250;s.allies[1]!.x=s.crashX-315;
+    for(let i=0;i<18;i++)update(s,.05);
+    expect(s.allies[0]!.dead).toBe(true);expect(s.allies[1]!.dead).toBe(false);expect(s.phase).toBe('attack');
+    for(let i=0;i<12;i++)update(s,.05);
+    expect(s.allies[1]!.dead).toBe(true);expect(s.phase).toBe('attack');
+    for(let i=0;i<20;i++)update(s,.05);
+    expect(s.phase).toBe('jets');expect(s.p.crouch).toBe(false);expect(s.p.y).toBe(GROUND);
+    expect(s.p.vy).toBe(0);expect(s.p.face).toBe(1);expect(s.p.x).toBe(s.crashX-175);
   });
   it('respawns at the laboratory bed checkpoint after ship combat defeat',()=>{const s=newState();s.phase='spaceship';s.ship.stage='combat';s.ship.hp=0;s.ship.reactorHp=25;s.ship.boxBroken=true;expect(update(s,.016)).toBe('lose');respawnAtShipCheckpoint(s);expect(s.phase).toBe('spaceship');expect(s.ship.stage).toBe('awakening');expect(s.ship.hp).toBe(100);expect(s.ship.reactorHp).toBe(100);expect(s.ship.boxBroken).toBe(false);});
 
@@ -199,18 +214,21 @@ describe('OVNI difficulty and narrative', () => {
     s.phase='fight';expect(canSkipOpeningScene(s)).toBe(false);
     s.phase='crash';expect(canSkipOpeningScene(s)).toBe(false);
   });
-  it('skips only the Trump and Milei aftermath sequence into the next bedroom chapter',()=>{
-    const s=newState();s.phase='aftermath';s.chapter.stage='trump';s.chapter.time=4;s.keys.r=true;s.fire=true;
+  it('skips the crashed-UFO cinematic or the military aftermath into the next bedroom chapter',()=>{
+    const s=newIntroState();s.phase='crash';s.chapter.stage='truck';s.chapter.time=4;s.keys.r=true;s.fire=true;
     expect(canSkipAftermathScene(s)).toBe(true);expect(skipAftermathScene(s)).toBe(true);
     expect(s.phase).toBe('bedroom');expect(s.chapter.stage).toBe('roomFade');expect(s.chapter.time).toBe(0);
     expect(s.keys).toEqual({});expect(s.fire).toBe(false);expect(s.chapter.computer).toBe(false);
+    expect(s.jetShots).toHaveLength(0);expect(s.u.vis).toBe(false);
     expect(canSkipAftermathScene(s)).toBe(false);expect(skipAftermathScene(s)).toBe(false);
   });
-  it('does not show the aftermath skip during the earlier UFO crash cinematics or later gameplay',()=>{
-    const s=newState();s.phase='jets';expect(canSkipAftermathScene(s)).toBe(false);
+  it('offers the scene skip from the crash through the jets and during the existing military sequence only',()=>{
+    const s=newIntroState();
+    for(const phase of ['crash','arrive','reunion','alien','speech','attack','jets'] as const){s.phase=phase;expect(canSkipAftermathScene(s)).toBe(true);}
     s.phase='aftermath';
     for(const stage of ['truck','unload','trump','approach','milei','leave'] as const){s.chapter.stage=stage;expect(canSkipAftermathScene(s)).toBe(true);}
     s.phase='bedroom';expect(canSkipAftermathScene(s)).toBe(false);
+    s.chapter.enabled=false;s.phase='jets';expect(canSkipAftermathScene(s)).toBe(false);
   });
   it('restart resets allies, cat, cinematic and recruitment',()=>{const s=newState();expect(s.phase).toBe('walk');expect(s.recruited).toBe(false);expect(s.cat.gone).toBe(false);expect(s.alien.reveal).toBe(0);expect(s.allies.every(a=>a.hp===100&&!a.dead)).toBe(true);});
 

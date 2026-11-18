@@ -13,6 +13,8 @@ export const COMBAT_TIP_SEQUENCE_DURATION = COMBAT_TIP_CARD_DURATION * 2;
 export const CROSS_RISE_FRAME_COUNT = 6;
 export const CROSS_RISE_DURATION = 2.4;
 export const ALIEN_MESSAGE = "#%3# indescifrable.... GATO....#%3 ME PERTENECE ... #%indescifrable";
+export const ALIEN_SPEECH_DURATION = 5;
+export const ALIEN_ATTACK_DURATION = 2.5;
 export const ENDINGS = {
   revenge: { title: "¡FELICIDADES! MATASTE AL OVNI PERO NO RECUPERASTE TU GATO", sub: "FINAL N.º 1 — BAD ENDING" },
   continuation: { title: "CONTINUARÁ", sub: "FINAL N.º 2 — ALGO SALIÓ DE LA NAVE" },
@@ -111,15 +113,18 @@ function updateCinematic(s: S, dt: number): "continue" | null {
       if (s.pt>=2.2) { p.x=s.crashX-175; s.allies.forEach((a,i)=>{a.x=s.crashX-250-i*65;}); p.walk=0; cat.gone=false; cat.x=u.x-25; cat.y=GROUND; next(s,"reunion"); }
       break;
     }
-    case "reunion": cat.x=approach(cat.x,p.x+22,65*dt); cat.walk+=dt*10; p.crouch=Math.abs(cat.x-p.x)<45; if(s.pt>=6) next(s,"alien"); break;
+    case "reunion": cat.x=approach(cat.x,p.x+22,65*dt); cat.walk+=dt*10; p.crouch=Math.abs(cat.x-p.x)<45; if(s.pt>=6){p.crouch=false;p.y=GROUND;p.vy=0;next(s,"alien");} break;
     case "alien": s.alien.reveal=Math.min(1,s.pt/3); s.alien.x=approach(s.alien.x,s.crashX-75,14*dt); s.alien.stand=Math.max(0,Math.min(1,(s.pt-3)/2)); s.alien.riseFrame=Math.min(3,Math.floor(Math.max(0,s.pt-1.5)/1.1)); if(s.pt>=4.8){s.alien.riseFrame=3;next(s,"speech");} break;
-    case "speech": if(s.pt>=10) next(s,"attack"); break;
+    case "speech": if(s.pt>=ALIEN_SPEECH_DURATION) next(s,"attack"); break;
     case "attack": {
-      if(s.pt>1 && s.pt<1.6) s.alien.x=approach(s.alien.x,s.allies[0].x,1200*dt);
-      if(s.pt>=1.6) { const a=s.allies[0]; a.dead=true; a.hp=0; }
-      if(s.pt>2 && s.pt<2.6) s.alien.x=approach(s.alien.x,s.allies[1].x,1200*dt);
-      if(s.pt>=2.6) { const a=s.allies[1]; a.dead=true; a.hp=0; }
-      if(s.pt>=5){s.jets.forEach((j,i)=>{j.x=s.cam-150-i*170;j.fired=[false,false];});s.jetShots=[];s.ufoHits=0;s.alienHit=false;s.alien.y=GROUND;s.alien.reveal=1;next(s,"jets");} break;
+      if(s.pt>.45 && s.pt<.9) s.alien.x=approach(s.alien.x,s.allies[0].x,1200*dt);
+      if(s.pt>=.9) { const a=s.allies[0]; a.dead=true; a.hp=0; }
+      if(s.pt>1.05 && s.pt<1.5) s.alien.x=approach(s.alien.x,s.allies[1].x,1200*dt);
+      if(s.pt>=1.5) { const a=s.allies[1]; a.dead=true; a.hp=0; }
+      if(s.pt>=ALIEN_ATTACK_DURATION){
+        p.x=s.crashX-175;p.y=GROUND;p.vy=0;p.crouch=false;p.walk=0;p.face=1;
+        s.jets.forEach((j,i)=>{j.x=s.cam-150-i*170;j.fired=[false,false];});s.jetShots=[];s.ufoHits=0;s.alienHit=false;s.alien.y=GROUND;s.alien.reveal=1;next(s,"jets");
+      } break;
     }
             
         case "jets": {
@@ -171,14 +176,17 @@ export function skipOpeningScene(s:S):boolean{
  return true;
 }
 export function canSkipAftermathScene(s:S){
- return s.phase==='aftermath'&&['truck','unload','trump','approach','milei','leave'].includes(s.chapter.stage);
+ return s.chapter.enabled&&(
+  ['crash','arrive','reunion','alien','speech','attack','jets'].includes(s.phase)||
+  (s.phase==='aftermath'&&['truck','unload','trump','approach','milei','leave'].includes(s.chapter.stage))
+ );
 }
 export function skipAftermathScene(s:S):boolean{
  if(!canSkipAftermathScene(s))return false;
  const a=s.chapter;
  s.phase='bedroom';s.pt=0;a.stage='roomFade';a.time=0;
  a.roomX=115;a.roomY=435;a.roomWalk=0;a.roomDirection='right';a.moving=false;a.computer=false;
- s.keys={};s.fire=false;s.shots=[];s.lasers=[];s.msg='';s.msgT=0;
+ s.keys={};s.fire=false;s.shots=[];s.lasers=[];s.jetShots=[];s.msg='';s.msgT=0;s.u.vis=false;s.alien.reveal=0;
  return true;
 }
 
