@@ -580,7 +580,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
 case 'agentFight':{
       const move=(s.keys.r?1:0)-(s.keys.l?1:0),rollKey=Boolean(s.keys['roll']),jumpKey=Boolean(s.keys.j);
       const nearestAgent=a.agents.filter(e=>e.hp>0).sort((left,right)=>left.x-right.x)[0];
-      const rightLimit=nearestAgent?Math.min(820,nearestAgent.x-42):820;
+      const rightLimit=nearestAgent?Math.min(843,nearestAgent.x-42):875;
       if(jumpKey&&!a.jumpHeld&&a.y>=SHIP.floor-.01){a.vy=-560;shipSound(s,'jump');}a.jumpHeld=jumpKey;
       if(a.vy!==0||a.y<SHIP.floor){a.vy+=1500*dt;a.y=Math.min(SHIP.floor,a.y+a.vy*dt);if(a.y>=SHIP.floor){a.y=SHIP.floor;a.vy=0;}}
       if(rollKey&&!a.rollHeld&&a.rollCd===0&&a.y===SHIP.floor){a.roll=SHIP.rollTime;a.rollCd=SHIP.rollTime+SHIP.rollCooldown;a.rollFace=move||a.face;shipSound(s,'roll');}a.rollHeld=rollKey;
