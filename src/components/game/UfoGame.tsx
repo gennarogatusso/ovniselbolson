@@ -169,14 +169,10 @@ function prepareCrossRiseFrames(source:HTMLImageElement):CrossRiseFrames {
 }
 
 const LOADING_PHRASES = [
-  'Cargando Cerro Piltriquitrón',
+  'Cargando Cerro Piltriquitron',
   'Cargando OVNIS de El Bolsón',
-  'Cargando AWKA',
-  'Cargando extraterrestres',
-  'Sintonizando señales del Piltri',
-  'Buscando a Meowmie',
-  'Abriendo el cielo patagónico',
-  'Cargando la Comarca Andina',
+  'Cargando Awka',
+  'Cargando Extraterrestres',
 ];
 
 export function UfoGame() {
@@ -350,32 +346,35 @@ export function UfoGame() {
         <span className="game-loading-stars"/>
         <span className="game-loading-ridge"/>
         <span className="game-loading-track-glow"/>
-        <span className="game-loading-ufo">
-         <svg viewBox="0 0 88 54" className="game-loading-ufo-art">
-          <ellipse cx="44" cy="39" rx="34" ry="8" fill="#1a2940" opacity=".5"/>
-          <path d="M17 31 C22 20 66 20 71 31 C68 40 20 40 17 31Z" fill="#91c4d2" stroke="#e6f8ff" strokeWidth="2"/>
-          <path d="M29 29 C30 10 58 10 59 29Z" fill="url(#game-loading-dome)" stroke="#d9f8ff" strokeWidth="1.5"/>
-          <path d="M22 32 Q44 40 66 32" fill="none" stroke="#263c56" strokeWidth="2"/>
-          <g fill="#ffe8a8">
-           <circle cx="27" cy="33" r="2.1"/><circle cx="37" cy="35" r="2.1"/><circle cx="49" cy="35" r="2.1"/><circle cx="60" cy="33" r="2.1"/>
+        <span className="game-loading-yarn">
+         <svg viewBox="0 0 150 48" className="game-loading-yarn-art">
+          <path d="M3 39 C24 19 42 43 62 25 S91 13 116 25" fill="none" stroke="#f0c5ad" strokeWidth="2.1" strokeLinecap="round"/>
+          <path d="M7 39 C27 24 43 45 65 28" fill="none" stroke="#fff0dc" strokeWidth="1" strokeLinecap="round" opacity=".72"/>
+          <g className="game-loading-yarn-ball">
+           <circle cx="124" cy="25" r="16" fill="#c96d62" stroke="#f4c9a9" strokeWidth="1.8"/>
+           <path d="M111 15 C122 23 130 31 137 38 M110 25 C119 17 129 12 139 15 M111 34 C120 27 128 22 139 20 M116 11 C114 22 117 33 125 40 M130 10 C124 20 123 30 130 40" fill="none" stroke="#f6d8bd" strokeWidth="2.2" strokeLinecap="round"/>
+           <path d="M109 20 C116 25 122 29 128 37 M121 10 C127 18 132 26 137 32" fill="none" stroke="#8f424b" strokeWidth="1.5" strokeLinecap="round" opacity=".82"/>
+           <circle cx="119" cy="18" r="2.2" fill="#ffe8d3" opacity=".86"/>
           </g>
-          <defs><linearGradient id="game-loading-dome" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#f5ffff"/><stop offset="1" stopColor="#5c91ac"/></linearGradient></defs>
          </svg>
         </span>
         <span className="game-loading-cat">
-         <svg viewBox="0 0 92 62" className="game-loading-cat-art">
-          <path className="game-loading-cat-tail" d="M22 42 C6 47 7 27 16 25" fill="none" stroke="#171b29" strokeWidth="8" strokeLinecap="round"/>
-          <path d="M22 35 C21 27 31 23 44 25 C54 25 59 32 59 42 L54 48 L24 48Z" fill="#202638"/>
-          <path d="M41 26 L43 12 L54 21 L60 15 L69 28Z" fill="#202638" stroke="#0e1422" strokeWidth="2"/>
-          <path d="M43 17 L46 24 L52 22Z M61 20 L65 25 L67 19Z" fill="#c88778"/>
-          <path d="M47 31 C52 25 69 25 76 33 C80 41 74 49 64 49 L52 47 C46 43 44 37 47 31Z" fill="#222a3b"/>
-          <path d="M55 42 Q62 35 70 42 Q67 49 61 48Z" fill="#f3eee0"/>
-          <circle cx="58" cy="35" r="2.2" fill="#ffd96f"/><circle cx="71" cy="35" r="2.2" fill="#ffd96f"/>
-          <path d="M62 41 L67 41 L65 44Z" fill="#e88d94"/>
-          <g className="game-loading-cat-legs" fill="none" stroke="#202638" strokeWidth="6" strokeLinecap="round">
-           <path d="M29 45 L25 56"/><path d="M42 45 L44 56"/><path d="M61 46 L59 57"/><path d="M73 46 L78 56"/>
+         <svg viewBox="0 0 100 72" className="game-loading-cat-art">
+          <path className="game-loading-cat-tail" d="M25 49 C9 55 5 37 14 27 C20 20 28 25 24 33" fill="none" stroke="#171d2c" strokeWidth="8" strokeLinecap="round"/>
+          <ellipse cx="45" cy="47" rx="27" ry="16" fill="#202737"/>
+          <path d="M25 47 C23 55 26 63 30 66 M42 52 C40 59 40 64 44 67 M62 51 C62 58 65 64 69 66" fill="none" stroke="#202737" strokeWidth="7" strokeLinecap="round"/>
+          <path d="M25 64 Q31 68 36 64 M40 66 Q46 70 51 66 M64 65 Q71 69 75 65" fill="none" stroke="#f0eee5" strokeWidth="3" strokeLinecap="round"/>
+          <path d="M53 38 C53 25 63 16 76 18 C88 20 94 31 89 42 C85 51 72 54 61 48Z" fill="#202737"/>
+          <path d="M62 24 L63 8 L76 20 M79 19 L91 10 L91 29" fill="#202737" stroke="#111827" strokeWidth="2" strokeLinejoin="round"/>
+          <path d="M65 17 L66 23 L72 21Z M82 20 L89 15 L88 24Z" fill="#c98783"/>
+          <path d="M61 38 C68 32 82 34 88 42 C83 51 70 53 63 46Z" fill="#f1ede4"/>
+          <ellipse cx="73" cy="36" rx="2.3" ry="3" fill="#f6d36b"/><ellipse cx="85" cy="36" rx="2.3" ry="3" fill="#f6d36b"/>
+          <path d="M75 43 L81 43 L78 47Z" fill="#d97983"/>
+          <path d="M64 45 Q55 43 51 39" fill="none" stroke="#f1ede4" strokeWidth="3" strokeLinecap="round"/>
+          <g className="game-loading-cat-legs">
+           <path d="M30 51 L25 64 M48 53 L48 66 M67 49 L70 65 M83 48 L89 62" fill="none" stroke="#202737" strokeWidth="6" strokeLinecap="round"/>
           </g>
-          <path d="M61 44 Q67 47 71 44" stroke="#f5f1e9" strokeWidth="2" fill="none"/>
+          <path d="M92 44 L98 42 M92 48 L99 49" stroke="#f4e9dd" strokeWidth="1.2" strokeLinecap="round"/>
          </svg>
         </span>
        </div>

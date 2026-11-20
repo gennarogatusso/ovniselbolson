@@ -250,23 +250,23 @@
 .game-loading-ridge { position: absolute; left: -2%; right: -2%; bottom: 5px; height: 54px; background: linear-gradient(180deg,#4b4959,#252d3a); clip-path: polygon(0 75%,10% 44%,19% 62%,30% 15%,42% 65%,53% 28%,64% 68%,77% 8%,88% 55%,100% 34%,100% 100%,0 100%); opacity: .9; }
 .game-loading-ridge::after { content: ""; position: absolute; inset: 20px 0 0; background: linear-gradient(180deg,#4b413f,#252832); clip-path: polygon(0 42%,13% 12%,25% 60%,38% 29%,53% 68%,70% 21%,84% 57%,100% 7%,100% 100%,0 100%); }
 .game-loading-track-glow { position: absolute; left: 2%; bottom: 8px; width: 44%; height: 5px; border-radius: 8px; background: linear-gradient(90deg,transparent,#e89a64,#ffe0a6,transparent); filter: blur(2px); animation: game-loading-glow 1.45s ease-in-out infinite; z-index: 5; }
-.game-loading-ufo { position: absolute; left: 3%; top: 6px; z-index: 2; width: 66px; height: 45px; animation: game-loading-ufo-chase 3.3s ease-in-out infinite; }
-.game-loading-ufo::after { content: ""; position: absolute; z-index: -1; left: 36%; top: 29px; width: 112px; height: 72px; background: linear-gradient(180deg,rgb(184 242 255 / 38%),rgb(255 204 134 / 8%) 75%,transparent); clip-path: polygon(37% 0,63% 0,100% 100%,0 100%); transform-origin: 50% 0; animation: game-loading-beam .8s ease-in-out infinite alternate; }
-.game-loading-ufo-art { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 7px rgb(145 226 255 / 75%)); }
-.game-loading-cat { position: absolute; left: 18%; bottom: 5px; z-index: 4; width: 70px; height: 52px; animation: game-loading-cat-run 3.3s cubic-bezier(.42,0,.58,1) infinite; filter: drop-shadow(0 3px 3px rgb(0 0 0 / 40%)); }
+.game-loading-cat { position: absolute; left: 18%; bottom: 5px; z-index: 4; width: 78px; height: 62px; animation: game-loading-cat-run 3.1s cubic-bezier(.42,0,.58,1) infinite; filter: drop-shadow(0 3px 3px rgb(0 0 0 / 42%)); }
 .game-loading-cat-art { display: block; width: 100%; height: 100%; overflow: visible; }
-.game-loading-cat-legs { transform-box: fill-box; transform-origin: 50% 0; animation: game-loading-legs .18s steps(2,end) infinite alternate; }
-.game-loading-cat-tail { transform-box: fill-box; transform-origin: 80% 50%; animation: game-loading-tail .55s ease-in-out infinite alternate; }
+.game-loading-cat-legs { transform-box: fill-box; transform-origin: 50% 50%; animation: game-loading-legs .16s steps(2,end) infinite alternate; }
+.game-loading-cat-tail { transform-box: fill-box; transform-origin: 80% 50%; animation: game-loading-tail .48s ease-in-out infinite alternate; }
+.game-loading-yarn { position: absolute; left: 40%; bottom: 8px; z-index: 3; width: 138px; height: 44px; animation: game-loading-yarn-roll 3.1s cubic-bezier(.35,.05,.6,1) infinite; }
+.game-loading-yarn-art { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 2px 2px rgb(0 0 0 / 36%)); }
+.game-loading-yarn-ball { transform-box: fill-box; transform-origin: center; animation: game-loading-yarn-spin .52s linear infinite; }
 .game-loading-label { min-height: 17px; margin: 4px 0 0; color: #f7e7d5; font: 700 clamp(10px, 1.25vw, 13px) var(--font-mono); letter-spacing: .06em; text-shadow: 0 0 12px rgb(255 186 130 / 46%); animation: game-loading-copy .45s ease-out; }
-@keyframes game-loading-cat-run { 0% { left: 18%; transform: translateY(0) rotate(-2deg); } 45% { transform: translateY(-4px) rotate(1deg); } 100% { left: calc(96% - 70px); transform: translateY(0) rotate(-2deg); } }
-@keyframes game-loading-ufo-chase { 0% { left: 3%; transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-5px) rotate(2deg); } 100% { left: calc(82% - 66px); transform: translateY(0) rotate(-3deg); } }
-@keyframes game-loading-beam { from { opacity: .3; transform: scaleX(.86); } to { opacity: .8; transform: scaleX(1.1); } }
-@keyframes game-loading-legs { from { transform: skewX(-17deg) translateY(-1px); } to { transform: skewX(17deg) translateY(1px); } }
-@keyframes game-loading-tail { from { transform: rotate(-12deg); } to { transform: rotate(18deg); } }
+@keyframes game-loading-cat-run { 0% { left: 18%; transform: translateY(0) rotate(-2deg); } 45% { transform: translateY(-5px) rotate(1deg); } 100% { left: 55%; transform: translateY(0) rotate(-2deg); } }
+@keyframes game-loading-yarn-roll { 0% { left: 40%; transform: translateY(0); } 48% { transform: translateY(-2px); } 100% { left: 66%; transform: translateY(0); } }
+@keyframes game-loading-yarn-spin { to { transform: rotate(360deg); } }
+@keyframes game-loading-legs { from { transform: skewX(-20deg) translateY(-1px); } to { transform: skewX(20deg) translateY(1px); } }
+@keyframes game-loading-tail { from { transform: rotate(-14deg); } to { transform: rotate(20deg); } }
 @keyframes game-loading-glow { 0% { transform: translateX(-20%); opacity: .45; } 50% { opacity: 1; } 100% { transform: translateX(180%); opacity: .45; } }
 @keyframes game-loading-copy { from { opacity: .25; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 600px) { .game-loading-card { width: min(340px, 90%); padding-inline: 12px; } .game-loading-cat { width: 62px; height: 46px; } .game-loading-ufo { width: 58px; height: 40px; } }
-@media (prefers-reduced-motion: reduce) { .game-loading-ufo, .game-loading-ufo::after, .game-loading-cat, .game-loading-track-glow, .game-loading-cat-legs, .game-loading-cat-tail { animation-duration: 1.5s; } }
+@media (max-width: 600px) { .game-loading-card { width: min(340px, 90%); padding-inline: 12px; } .game-loading-cat { width: 66px; height: 53px; } .game-loading-yarn { width: 118px; height: 38px; } }
+@media (prefers-reduced-motion: reduce) { .game-loading-cat, .game-loading-cat-legs, .game-loading-cat-tail, .game-loading-yarn, .game-loading-yarn-ball, .game-loading-track-glow { animation-duration: 1.5s; } }
 .game-credits-backdrop { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; padding: 18px; background: rgb(3 7 18 / 76%); backdrop-filter: blur(6px); }
 .game-credits-card { width: min(560px, 88%); padding: clamp(22px, 4vw, 42px); border: 1px solid rgb(191 220 255 / 45%); border-radius: 14px; background: linear-gradient(145deg, rgb(12 22 43 / 97%), rgb(20 27 50 / 96%)); color: #f7f5f0; text-align: center; box-shadow: 0 18px 55px rgb(0 0 0 / 55%); }
 .game-credits-card h2 { margin: 0 0 18px; font: 700 clamp(20px, 3vw, 30px) var(--font-mono); letter-spacing: .16em; }
