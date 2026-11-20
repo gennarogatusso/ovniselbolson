@@ -535,8 +535,7 @@ function drawAnchoredSprite(c:CanvasRenderingContext2D,frame:SpecialFrame,x:numb
  c.drawImage(frame.image,x-frame.anchorX*scale,y-frame.baseY*scale,frame.image.naturalWidth*scale,frame.image.naturalHeight*scale);
  c.restore();
 }
-function drawArmedPlayer(c:CanvasRenderingContext2D,frames:GameImages['armedPlayer'],x:number,y:number,height:number,face:number,walkProgress:number,firing:boolean,flash:number,time:number){
- const moving=walkProgress>0;
+function drawArmedPlayer(c:CanvasRenderingContext2D,frames:GameImages['armedPlayer'],x:number,y:number,height:number,face:number,walkProgress:number,moving:boolean,firing:boolean,flash:number,time:number){
  let frame=frames.idle;
  if(flash>0){
   const elapsed=Math.max(0,.08-flash);
@@ -1513,7 +1512,13 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  if(road||battle){c.save();c.globalAlpha=road ? 0.17 : 0.23;box(c,'#392754',0,0,W,H);c.restore();}
  const actor=(x:number,y:number,h=112)=>{
   if(a.stage==='soldierFight'){
-   drawArmedPlayer(c,im.armedPlayer,x,y,h,a.face,a.walk,s.fire,a.flash,s.t);
+   if(a.specialAnim>0){
+    c.save();c.translate(x,y);c.scale(a.face,1);specialPose(c,im.specialFrames,SPECIAL_ATTACK_ANIM_DURATION-a.specialAnim,0,0,h);c.restore();
+   }else if(a.roll>0){
+    c.save();c.translate(x,y);c.scale(a.face,1);pose(c,art.roll,Math.min(5,Math.floor((1-a.roll/SHIP.rollTime)*6)),6,0,0,h);c.restore();
+   }else{
+    drawArmedPlayer(c,im.armedPlayer,x,y,h,a.face,a.walk,Boolean(s.keys.l||s.keys.r),s.fire,a.flash,s.t);
+   }
    return;
   }
   c.save();c.translate(x,y);c.scale(a.face,1);
@@ -1863,14 +1868,14 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  for(const [i,a] of s.allies.entries()) { if(a.hurt>0 && Math.floor(a.hurt*15)%2)continue;if(im?.allies[i])person(c,im.allies[i]??im.allies[0],a.x,a.y,s.recruited?a.walk:s.t,i,a.dead||a.hp<=0);if(s.recruited && s.phase==='fight'){box(c,p.panel,a.x-18,a.y-83,36,4);box(c,p.ice,a.x-18,a.y-83,36*a.hp/100,4);}}
   const hugging=!s.cat.gone && ((s.phase==='reunion'&&Math.abs(s.cat.x-s.p.x)<45)||['alien','speech','attack','fade','aftermath'].includes(s.phase));
   if(im && !s.cat.gone && !hugging)catSprite(c,im.cat,s.cat.x,s.cat.y,s.cat.walk,s.cat.x>s.p.x?-1:1);
-  const player=s.p,useArmedPlayer=Boolean(im&&player.armed>0&&s.phase==='fight');
+  const player=s.p,useArmedPlayer=Boolean(im&&player.armed>0&&s.phase==='fight'&&!player.crouch);
   if(im && hugging){
    const stand=s.phase==='reunion'?Math.max(0,Math.min(1,(s.pt-4.6)/.8)):1;
    pose(c,im.reunion,0,2,player.x,player.y,96,1-stand);
    pose(c,im.reunion,1,2,player.x,player.y,96,stand);
   }else if(im && s.specialAnim>0){c.save();c.translate(player.x,player.y);c.scale(player.face,1);specialPose(c,im.specialFrames,SPECIAL_ATTACK_ANIM_DURATION-s.specialAnim,0,0,86);c.restore();}
   else if(im && player.roll>0){c.save();c.translate(player.x,player.y);c.scale(player.rollFace,1);pose(c,im.ship.roll,Math.min(5,Math.floor((1-player.roll/SHIP.rollTime)*6)),6,0,0,86);c.restore();}
-  else if(im && useArmedPlayer)drawArmedPlayer(c,im.armedPlayer,player.x,player.y,86,player.face,player.walk,s.fire,player.flash,s.t);
+  else if(im && useArmedPlayer){if(!(player.hurt>0&&Math.floor(player.hurt*20)%2))drawArmedPlayer(c,im.armedPlayer,player.x,player.y,86,player.face,player.walk,player.walk>0,s.fire,player.flash,s.t);}
   else if(im && !(player.hurt>0&&Math.floor(player.hurt*20)%2))sprite(c,im.player,player.x,player.y,86,player.face,player.walk,player.crouch);
   if(im && player.roll===0 && player.armed>0 && !useArmedPlayer && !['reunion','alien','speech','attack','fade','jets','aftermath'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im.gun,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
   if(s.phase==='crash'&&s.u.vis)drawUfoCrashTrail(c,s,p);
