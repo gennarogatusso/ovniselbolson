@@ -48,7 +48,7 @@ export const FOREST = { deer: 1820, ship: 3640, abduction: 3900, top: 410, botto
 export function forestIsFree(s:S){return s.phase==='bedroom'&&['forestRun','burned','ship'].includes(s.chapter.stage);}
 export function computerAvailable(s:S){return roomIsFree(s)&&!s.chapter.night&&Math.hypot(s.chapter.roomX-350,s.chapter.roomY-418)<80;}
 export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=false;}
-export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'soldierExit'|'agentFight'|'agentUltimate'|'agentUltimateBlast'|'agentEnd'|'trailWalk'|'trailEnd'|'swordIntro'|'swordReady'|'swordPickup'|'swordEquipped'|'swordAttack'|'baseFade'|'baseApproach'|'baseEnd'|'end';
+export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'soldierExit'|'agentEntrance'|'agentFight'|'agentUltimate'|'agentUltimateBlast'|'agentEnd'|'trailWalk'|'trailEnd'|'swordIntro'|'swordReady'|'swordPickup'|'swordEquipped'|'swordAttack'|'baseFade'|'baseApproach'|'baseEnd'|'end';
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
 type GroundSoldier = {id:number;x:number;y:number;hp:number;maxHp:number;role:'bazooka'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose?:number;state:'cover'|'advance'|'fire'|'hit'};
 export type GroundAgent = {id:number;x:number;y:number;hp:number;maxHp:number;kind:'regular'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose:number;face?:-1|1;state:'guard'|'advance'|'aim'|'hit'};
@@ -382,7 +382,7 @@ function createSecretAgents():GroundAgent[]{return [
 function beginAgentEncounter(s:S){
  const a=s.ship;a.agentCombatActive=true;a.agentMana=0;a.agentKills=0;a.agentBurned=false;a.agentBurnedTime=0;a.agentWarning=AGENT_WARNING_DURATION;a.agents=createSecretAgents();
  a.x=590;a.y=SHIP.floor;a.face=1;a.hp=100;a.hurt=0;a.vy=0;a.jumpHeld=false;a.roll=0;a.rollCd=0;a.rollHeld=false;a.specialCd=0;a.specialAnim=0;a.fireCd=0;a.flash=0;a.shake=0;a.catX=538;a.catY=SHIP.floor;a.shots=[];a.bolts=[];a.swordAttackHeld=false;
- shipAdvance(s,'agentFight');shipSound(s,'agentArrival');
+ shipAdvance(s,'agentEntrance');shipSound(s,'agentArrival');
 }
 export function respawnAtAgentCheckpoint(s:S){beginAgentEncounter(s);s.keys={};s.fire=false;}
 function shipSound(s:S,event:string){s.ship.sounds.push(event);}
@@ -530,7 +530,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
     case 'crossRise':timed(CROSS_RISE_DURATION,'crossFree');break;
     case 'crossFree':s.chapter.moving=false;moveRoom(s,dt,crossCanStand);a.catX=approach(a.catX,s.chapter.roomX+52,170*dt);a.catY=approach(a.catY,s.chapter.roomY+5,170*dt);break;
     case 'contemplate':a.catX=approach(a.catX,359,95*dt);a.catY=approach(a.catY,338,95*dt);if(a.time>=6)shipAdvance(s,'crossSunset');break;
-    case 'crossSunset':if(a.time>=7){a.x=112;a.y=SHIP.floor;a.face=1;a.catX=60;a.catY=SHIP.floor;shipAdvance(s,'crossWalkIntro');}break;
+    case 'crossSunset':if(a.time>=7){a.x=112;a.y=SHIP.floor;a.face=1;a.catX=60;a.catY=SHIP.floor;shipAdvance(s,'crossWalk');}break;
     case 'crossWalkIntro':a.x=approach(a.x,665,158*dt);a.face=1;a.walk+=dt*9;a.catX=approach(a.catX,a.x-58,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);if(a.x>=664)shipAdvance(s,'crossWalk');break;
     case 'crossWalk':{const move=(s.keys.r?1:0)-(s.keys.l?1:0);a.x=Math.max(65,Math.min(875,a.x+move*175*dt));if(move){a.face=move;a.walk+=dt*9;}a.catX=approach(a.catX,a.x-a.face*58,190*dt);a.catY=approach(a.catY,SHIP.floor,190*dt);break;}
     case 'militaryIntro':if(a.time>=2.2)shipAdvance(s,'soldierFight');break;
@@ -630,6 +630,7 @@ case 'agentUltimate':{
       a.bolts=[];a.shots=[];a.shake=1.12+.34*Math.abs(Math.sin(a.time*17))+.18*Math.max(0,Math.sin(a.time*39));
       if(a.time>=AGENT_ULTIMATE_BLAST_DURATION)shipAdvance(s,'agentEnd');break;
     }
+    case 'agentEntrance':if(a.time>=AGENT_WARNING_DURATION)shipAdvance(s,'agentFight');break;
     case 'agentFight':{
       const move=(s.keys.r?1:0)-(s.keys.l?1:0),rollKey=Boolean(s.keys['roll']),jumpKey=Boolean(s.keys.j);
       if(jumpKey&&!a.jumpHeld&&a.y>=SHIP.floor-.01){a.vy=-560;shipSound(s,'jump');}a.jumpHeld=jumpKey;

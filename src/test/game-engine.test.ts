@@ -272,12 +272,16 @@ describe('OVNI difficulty and narrative', () => {
   it('starts the mandatory secret-agent ambush after the sword pickup and displays the restricted-area warning',()=>{
     const s=newState();s.phase='spaceship';s.ship.stage='swordPickup';s.ship.x=590;
     update(s,2.5);
-    expect(s.ship.stage).toBe('agentFight');
+    expect(s.ship.stage).toBe('agentEntrance');
     expect(s.ship.agents).toHaveLength(4);
     expect(s.ship.agents.filter(agent=>agent.kind==='shield')).toHaveLength(2);
     expect(s.ship.agents.filter(agent=>agent.kind==='regular')).toHaveLength(2);
     expect(AGENT_WARNING_MESSAGE).toBe('Esta es un área restringida, un paso más y disparo');
     expect(s.ship.agentWarning).toBeGreaterThan(0);
+    expect(shipIsCombat(s)).toBe(false);
+    update(s,3.5);
+    expect(s.ship.stage).toBe('agentFight');
+    expect(s.ship.agentWarning).toBe(0);
     expect(shipIsCombat(s)).toBe(true);
   });
 
@@ -370,15 +374,16 @@ describe('OVNI difficulty and narrative', () => {
   it('restarts only the secret-agent encounter at full health after defeat',()=>{
     const s=newState();s.phase='spaceship';s.ship.stage='agentFight';s.ship.hp=0;
     respawnAtAgentCheckpoint(s);
-    expect(s.ship.stage).toBe('agentFight');expect(s.ship.hp).toBe(100);expect(s.ship.agents).toHaveLength(4);
+    expect(s.ship.stage).toBe('agentEntrance');expect(s.ship.hp).toBe(100);expect(s.ship.agents).toHaveLength(4);
     expect(s.ship.agentCombatActive).toBe(true);
+    update(s,3.5);expect(s.ship.stage).toBe('agentFight');
     expect(s.ship.soldiers).toHaveLength(0);
   });
 
 
   it('keeps two secret agents in each side lane, spread apart from each other and the player',()=>{
     const s=newState();s.phase='spaceship';s.ship.stage='swordPickup';s.ship.x=590;
-    update(s,2.5);expect(s.ship.stage).toBe('agentFight');update(s,1.5);
+    update(s,2.5);expect(s.ship.stage).toBe('agentEntrance');update(s,3.5);expect(s.ship.stage).toBe('agentFight');update(s,1.5);
     const [leftOne,leftTwo,rightOne,rightTwo]=s.ship.agents;
     expect(leftOne!.x).toBeLessThan(250);
     expect(leftTwo!.x).toBeGreaterThan(350);expect(leftTwo!.x).toBeLessThan(470);
