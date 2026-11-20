@@ -24,7 +24,15 @@ describe('OVNI difficulty and narrative', () => {
   it('increases real firing frequency by 20 percent',()=>{expect(shotInterval(100)).toBeCloseTo(1.4/1.20);expect(shotInterval(30)).toBeCloseTo(.9/1.20);});
   it('increases aggression by exactly 20 percent',()=>expect(DIFFICULTY.aggression).toBe(1.20));
   it('preserves health and weapon damage',()=>{const s=newState();expect(s.p.hp).toBe(100);expect(s.u.hp).toBe(100);expect(projectileDamage({})).toBe(4);});
-  it('moves the UFO and telegraphs its first aimed attack before firing',()=>{const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=1000;s.u.cd=0;update(s,.1);expect(s.u.x).toBeCloseTo(516.8);expect(s.u.attack).toBe('aimed');expect(s.u.windup).toBeGreaterThan(0);expect(s.lasers).toHaveLength(0);update(s,.72);expect(s.u.attack).toBe('idle');expect(s.lasers).toHaveLength(1);});
+  it('moves the UFO and telegraphs its first aimed attack before firing',()=>{const s=newState();s.phase='fight';s.u.vis=true;s.u.x=500;s.u.tx=1000;s.u.cd=0;update(s,.1);expect(s.u.x).toBeCloseTo(524.6);expect(s.u.attack).toBe('aimed');expect(s.u.windup).toBeGreaterThan(0);expect(s.lasers).toHaveLength(0);update(s,.72);expect(s.u.attack).toBe('idle');expect(s.lasers).toHaveLength(1);});
+  it('uses sudden UFO acceleration and adds a telegraphed heavy strike in phase two',()=>{
+    const movement=newState();movement.phase='fight';movement.u.x=500;movement.u.tx=1000;movement.u.moveCd=1;update(movement,.1);
+    expect(movement.u.x).toBeGreaterThan(520);
+    const heavy=newState();heavy.phase='fight';heavy.u.hp=55;heavy.u.x=500;heavy.u.tx=900;heavy.u.moveCd=1;heavy.u.cd=0;
+    update(heavy,.016);expect(heavy.u.phase).toBe(2);expect(heavy.u.attack).toBe('heavy');expect(heavy.u.windup).toBeGreaterThan(.7);
+    update(heavy,.7);expect(heavy.u.attack).toBe('heavy');expect(heavy.lasers).toHaveLength(0);
+    update(heavy,.12);expect(heavy.lasers.some(shot=>shot.kind==='ufoHeavy')).toBe(true);
+  });
   it('recruits nearby helpers once',()=>{const s=newState();s.phase='fight';s.p.x=460;s.keys.e=true;expect(canAskHelp(s)).toBe(true);update(s,.016);expect(s.recruited).toBe(true);expect(s.phase).toBe('help');expect(canAskHelp(s)).toBe(false);});
   it('keeps the forest entry in walking mode until the player starts moving',()=>{
     const s=newState();s.phase='bedroom';s.chapter.stage='forestRun';

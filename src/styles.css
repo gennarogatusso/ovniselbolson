@@ -243,6 +243,24 @@
 .game-menu-exit { left: 5.8%; top: 67.7%; width: 9%; height: 6%; }
 .game-menu-status, .game-menu-error { position: absolute; left: 5.8%; top: 76%; max-width: 35%; margin: 0; color: #fff; font: 600 clamp(9px, 1vw, 13px) var(--font-mono); text-shadow: 0 2px 8px #000; }
 .game-menu-error { top: auto; bottom: 3%; color: #ffd7d7; }
+.game-loading-overlay { position: absolute; inset: 0; z-index: 36; display: grid; place-items: center; padding: 16px; background: rgb(5 10 20 / 32%); backdrop-filter: blur(2px); }
+.game-loading-card { width: min(340px, 78%); padding: 12px 24px 16px; border: 1px solid rgb(226 194 153 / 48%); border-radius: 13px; background: linear-gradient(145deg, rgb(17 24 38 / 94%), rgb(32 28 39 / 92%)); box-shadow: 0 14px 42px rgb(0 0 0 / 48%), inset 0 0 24px rgb(255 190 127 / 7%); text-align: center; }
+.game-loading-track { position: relative; height: 88px; overflow: hidden; margin: 0 auto 2px; }
+.game-loading-track::before { content: ""; position: absolute; left: 3%; right: 3%; bottom: 11px; height: 2px; border-radius: 2px; background: rgb(224 195 159 / 23%); box-shadow: 0 0 9px rgb(255 183 123 / 20%); }
+.game-loading-track-glow { position: absolute; left: 3%; bottom: 9px; width: 38%; height: 6px; border-radius: 8px; background: linear-gradient(90deg, transparent, #e89a64, #ffe0a6, transparent); filter: blur(2px); animation: game-loading-glow 1.45s ease-in-out infinite; }
+.game-loading-cat { position: absolute; left: 3%; bottom: 10px; width: 54px; height: 72px; image-rendering: pixelated; animation: game-loading-walk 2.4s cubic-bezier(.42,0,.58,1) infinite alternate; }
+.game-loading-cat-frame { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; mix-blend-mode: multiply; }
+.game-loading-cat-frame-1 { animation: game-loading-frame-1 .48s steps(1,end) infinite; }
+.game-loading-cat-frame-2 { animation: game-loading-frame-2 .48s steps(1,end) infinite; }
+.game-loading-cat-frame-3 { animation: game-loading-frame-3 .48s steps(1,end) infinite; }
+.game-loading-label { margin: 2px 0 0; color: #f7e7d5; font: 700 clamp(10px, 1.2vw, 13px) var(--font-mono); letter-spacing: .2em; text-shadow: 0 0 12px rgb(255 186 130 / 46%); }
+@keyframes game-loading-walk { from { left: 3%; transform: translateY(0); } 50% { transform: translateY(-3px); } to { left: calc(97% - 54px); transform: translateY(0); } }
+@keyframes game-loading-glow { 0% { transform: translateX(-20%); opacity: .45; } 50% { opacity: 1; } 100% { transform: translateX(180%); opacity: .45; } }
+@keyframes game-loading-frame-1 { 0%, 32% { opacity: 1; } 33%, 100% { opacity: 0; } }
+@keyframes game-loading-frame-2 { 0%, 32% { opacity: 0; } 33%, 65% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes game-loading-frame-3 { 0%, 65% { opacity: 0; } 66%, 100% { opacity: 1; } }
+@media (max-width: 600px) { .game-loading-card { width: min(300px, 84%); padding-inline: 16px; } .game-loading-cat { width: 48px; height: 66px; } }
+@media (prefers-reduced-motion: reduce) { .game-loading-cat, .game-loading-track-glow, .game-loading-cat-frame { animation-duration: 1.5s; } }
 .game-credits-backdrop { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; padding: 18px; background: rgb(3 7 18 / 76%); backdrop-filter: blur(6px); }
 .game-credits-card { width: min(560px, 88%); padding: clamp(22px, 4vw, 42px); border: 1px solid rgb(191 220 255 / 45%); border-radius: 14px; background: linear-gradient(145deg, rgb(12 22 43 / 97%), rgb(20 27 50 / 96%)); color: #f7f5f0; text-align: center; box-shadow: 0 18px 55px rgb(0 0 0 / 55%); }
 .game-credits-card h2 { margin: 0 0 18px; font: 700 clamp(20px, 3vw, 30px) var(--font-mono); letter-spacing: .16em; }

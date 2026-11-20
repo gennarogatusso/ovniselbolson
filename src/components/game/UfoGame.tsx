@@ -323,7 +323,19 @@ export function UfoGame() {
        <button type="button" className="game-credits-close" onClick={()=>setCreditsOpen(false)}>VOLVER</button>
       </section>
      </div>}
-     {loading&&<p className="game-menu-status">CARGANDO…</p>}
+     {loading&&<div className="game-loading-overlay" role="status" aria-live="polite" aria-label="Cargando el juego">
+      <div className="game-loading-card">
+       <div className="game-loading-track" aria-hidden="true">
+        <span className="game-loading-track-glow"/>
+        <span className="game-loading-cat">
+         <img className="game-loading-cat-frame game-loading-cat-frame-1" src="/imagens/gato%20caminando%20bosque%201.png" alt=""/>
+         <img className="game-loading-cat-frame game-loading-cat-frame-2" src="/imagens/gato%20caminando%20bosque%202.png" alt=""/>
+         <img className="game-loading-cat-frame game-loading-cat-frame-3" src="/imagens/gato%20caminando%20bosque%203.png" alt=""/>
+        </span>
+       </div>
+       <p className="game-loading-label">CARGANDO…</p>
+      </div>
+     </div>}
      {assetError&&<p className="game-menu-error" role="alert">No se pudieron cargar las imágenes. Recargá la página para reintentar.</p>}
     </nav>}
     {screen!=='play'&&screen!=='title'&&<div className="game-overlay absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/65 px-5 text-center">
