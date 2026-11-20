@@ -211,9 +211,9 @@ function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
   c.shadowColor=abduction?'#8ff8ff':color;c.shadowBlur=abduction?10:5;
   oval(c,color,x,y,2.8,2.1);
  }
- c.shadowBlur=abduction?17:7;c.shadowColor=abduction?'#b4ffff':p.ice;
+ c.shadowBlur=abduction?17:crash?18:7;c.shadowColor=abduction?'#b4ffff':crash?'#ffc077':p.ice;
  const emitter=c.createRadialGradient(0,12,1,0,12,18);
- emitter.addColorStop(0,'rgba(255,255,255,.98)');emitter.addColorStop(.24,abduction?'rgba(129,249,255,.95)':'rgba(155,213,255,.55)');emitter.addColorStop(1,'rgba(47,172,255,0)');
+ emitter.addColorStop(0,'rgba(255,255,255,.98)');emitter.addColorStop(.24,abduction?'rgba(129,249,255,.95)':crash?'rgba(255,190,124,.88)':'rgba(155,213,255,.55)');emitter.addColorStop(1,crash?'rgba(255,102,55,0)':'rgba(47,172,255,0)');
  c.fillStyle=emitter;c.beginPath();c.ellipse(0,12,17,6,0,0,Math.PI*2);c.fill();
  c.shadowBlur=0;c.fillStyle='#172b3a';c.beginPath();c.ellipse(0,11,8,3,0,0,Math.PI*2);c.fill();
  if(['reunion','alien','speech','attack','fade'].includes(s.phase)){box(c,p.ink,-27,5,25,18);box(c,p.metal,-31,20,33,4);}
