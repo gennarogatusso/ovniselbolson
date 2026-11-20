@@ -1511,11 +1511,13 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(trail)enhanceExistingVioletMoon(c,art.trail,{x:(W-bw)/2,y:(H-bh)/2,w:bw,h:bh},s.t,1.65);
  if(road||battle){c.save();c.globalAlpha=road ? 0.17 : 0.23;box(c,'#392754',0,0,W,H);c.restore();}
  const actor=(x:number,y:number,h=112)=>{
-  if(a.stage==='soldierFight'){
-   if(a.specialAnim>0){
+  if(a.stage==='soldierFight'||(a.stage==='combat'&&!a.armed)){
+   if(a.stage==='soldierFight'&&a.specialAnim>0){
     c.save();c.translate(x,y);c.scale(a.face,1);specialPose(c,im.specialFrames,SPECIAL_ATTACK_ANIM_DURATION-a.specialAnim,0,0,h);c.restore();
    }else if(a.roll>0){
     c.save();c.translate(x,y);c.scale(a.face,1);pose(c,art.roll,Math.min(5,Math.floor((1-a.roll/SHIP.rollTime)*6)),6,0,0,h);c.restore();
+   }else if(a.push!=='none'){
+    c.save();c.translate(x,y);c.scale(a.face,1);pose(c,art.push,a.push==='lean'?0:a.push==='flight'?1:2,3,0,0,h);c.restore();
    }else{
     drawArmedPlayer(c,im.armedPlayer,x,y,h,a.face,a.walk,Boolean(s.keys.l||s.keys.r),s.fire,a.flash,s.t);
    }
@@ -1535,7 +1537,6 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   else if(walkingStage)pose(c,im.chapter.walk,Math.floor(a.walk)%4,4,0,0,h);
   else if(a.stage==='pickup'||a.armed)pose(c,art.pickup,a.stage==='pickup'?Math.min(3,Math.floor(a.time/2.4*4)):3,4,0,0,h);
   else pose(c,im.chapter.walk,Math.floor(a.walk)%4,4,0,0,h);
-  if(!a.armed&&a.stage==='combat'){const actorScale=h/112;drawTrimmed(c,im.gun,12*actorScale,-64*actorScale,27*actorScale,10*actorScale);if(a.flash>0)oval(c,p.gold,40*actorScale,-60*actorScale,9*actorScale,5*actorScale);}
   c.restore();
  };
  const line=(col:string,x:number,y:number,tx:number,ty:number,width:number)=>{c.strokeStyle=col;c.lineWidth=width;c.beginPath();c.moveTo(x,y);c.lineTo(tx,ty);c.stroke();};
