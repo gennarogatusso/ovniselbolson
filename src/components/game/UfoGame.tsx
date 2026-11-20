@@ -168,15 +168,36 @@ function prepareCrossRiseFrames(source:HTMLImageElement):CrossRiseFrames {
  }
 }
 
+const LOADING_PHRASES = [
+  'Cargando Cerro Piltriquitrón',
+  'Cargando OVNIS de El Bolsón',
+  'Cargando AWKA',
+  'Cargando extraterrestres',
+  'Sintonizando señales del Piltri',
+  'Buscando a Meowmie',
+  'Abriendo el cielo patagónico',
+  'Cargando la Comarca Andina',
+];
+
 export function UfoGame() {
  const cv=useRef<HTMLCanvasElement>(null), host=useRef<HTMLDivElement>(null), st=useRef(newState()), images=useRef<GameImages|null>(null), palette=useRef<Palette|null>(null);
- const [screen,setScreen]=useState<Screen>('title'), [ending,setEnding]=useState<Ending|null>(null), [touch,setTouch]=useState(false),[expanded,setExpanded]=useState(false),[loading,setLoading]=useState(true),[assetError,setAssetError]=useState(false),[context,setContext]=useState(false),[combat,setCombat]=useState(false);
+ const [screen,setScreen]=useState<Screen>('title'), [ending,setEnding]=useState<Ending|null>(null), [touch,setTouch]=useState(false),[expanded,setExpanded]=useState(false),[loading,setLoading]=useState(true),[loadingPhrase,setLoadingPhrase]=useState('Cargando Cerro Piltriquitrón'),[assetError,setAssetError]=useState(false),[context,setContext]=useState(false),[combat,setCombat]=useState(false);
  const [action,setAction]=useState<string|null>(null), [intro,setIntro]=useState(false), [freeRoom,setFreeRoom]=useState(false), [specialCooldown,setSpecialCooldown]=useState(0),[catUltimateUsed,setCatUltimateUsed]=useState(false),[catUltimateReady,setCatUltimateReady]=useState(false),[agentMana,setAgentMana]=useState(0),[agentUltimateReady,setAgentUltimateReady]=useState(false);
  const [skipScene,setSkipScene]=useState<'opening'|'aftermath'|null>(null);
  const audio=useRef<GameAudio|null>(null);
  const [computer,setComputer]=useState(false),[creditsOpen,setCreditsOpen]=useState(false),[controlsOpen,setControlsOpen]=useState(false);
  const [masterVolume,setMasterVolume]=useState(.8),[volumeOpen,setVolumeOpen]=useState(false);
  const screenRef=useRef(screen);screenRef.current=screen;
+ useEffect(()=>{
+  if(!loading)return;
+  const choosePhrase=()=>setLoadingPhrase(current=>{
+   const alternatives=LOADING_PHRASES.filter(phrase=>phrase!==current);
+   return alternatives[Math.floor(Math.random()*alternatives.length)]??LOADING_PHRASES[0]!;
+  });
+  choosePhrase();
+  const interval=window.setInterval(choosePhrase,1900);
+  return()=>window.clearInterval(interval);
+ },[loading]);
  useEffect(()=>{
   const mq=window.matchMedia('(pointer: coarse)');const changed=()=>setTouch(mq.matches);changed();mq.addEventListener('change',changed);
   const readPalette=()=>{if(!host.current)return;const css=getComputedStyle(host.current);const colors={} as Palette;for(const key of ['turquoise','sky','rose','gold','sunset','light','ice','panel','ink','forest','trunk','wall','roof','leaf','road','curb','lane','shadow','hill','metal','glass','laser','smoke','stone','skin','red','alien','energy'] as const)colors[key]=css.getPropertyValue('--game-'+key).trim();palette.current=colors;};readPalette();
@@ -323,17 +344,42 @@ export function UfoGame() {
        <button type="button" className="game-credits-close" onClick={()=>setCreditsOpen(false)}>VOLVER</button>
       </section>
      </div>}
-     {loading&&<div className="game-loading-overlay" role="status" aria-live="polite" aria-label="Cargando el juego">
+     {loading&&<div className="game-loading-overlay" role="status" aria-label="Cargando el juego">
       <div className="game-loading-card">
        <div className="game-loading-track" aria-hidden="true">
+        <span className="game-loading-stars"/>
+        <span className="game-loading-ridge"/>
         <span className="game-loading-track-glow"/>
+        <span className="game-loading-ufo">
+         <svg viewBox="0 0 88 54" className="game-loading-ufo-art">
+          <ellipse cx="44" cy="39" rx="34" ry="8" fill="#1a2940" opacity=".5"/>
+          <path d="M17 31 C22 20 66 20 71 31 C68 40 20 40 17 31Z" fill="#91c4d2" stroke="#e6f8ff" strokeWidth="2"/>
+          <path d="M29 29 C30 10 58 10 59 29Z" fill="url(#game-loading-dome)" stroke="#d9f8ff" strokeWidth="1.5"/>
+          <path d="M22 32 Q44 40 66 32" fill="none" stroke="#263c56" strokeWidth="2"/>
+          <g fill="#ffe8a8">
+           <circle cx="27" cy="33" r="2.1"/><circle cx="37" cy="35" r="2.1"/><circle cx="49" cy="35" r="2.1"/><circle cx="60" cy="33" r="2.1"/>
+          </g>
+          <defs><linearGradient id="game-loading-dome" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#f5ffff"/><stop offset="1" stopColor="#5c91ac"/></linearGradient></defs>
+         </svg>
+        </span>
         <span className="game-loading-cat">
-         <img className="game-loading-cat-frame game-loading-cat-frame-1" src="/imagens/gato%20caminando%20bosque%201.png" alt=""/>
-         <img className="game-loading-cat-frame game-loading-cat-frame-2" src="/imagens/gato%20caminando%20bosque%202.png" alt=""/>
-         <img className="game-loading-cat-frame game-loading-cat-frame-3" src="/imagens/gato%20caminando%20bosque%203.png" alt=""/>
+         <svg viewBox="0 0 92 62" className="game-loading-cat-art">
+          <path className="game-loading-cat-tail" d="M22 42 C6 47 7 27 16 25" fill="none" stroke="#171b29" strokeWidth="8" strokeLinecap="round"/>
+          <path d="M22 35 C21 27 31 23 44 25 C54 25 59 32 59 42 L54 48 L24 48Z" fill="#202638"/>
+          <path d="M41 26 L43 12 L54 21 L60 15 L69 28Z" fill="#202638" stroke="#0e1422" strokeWidth="2"/>
+          <path d="M43 17 L46 24 L52 22Z M61 20 L65 25 L67 19Z" fill="#c88778"/>
+          <path d="M47 31 C52 25 69 25 76 33 C80 41 74 49 64 49 L52 47 C46 43 44 37 47 31Z" fill="#222a3b"/>
+          <path d="M55 42 Q62 35 70 42 Q67 49 61 48Z" fill="#f3eee0"/>
+          <circle cx="58" cy="35" r="2.2" fill="#ffd96f"/><circle cx="71" cy="35" r="2.2" fill="#ffd96f"/>
+          <path d="M62 41 L67 41 L65 44Z" fill="#e88d94"/>
+          <g className="game-loading-cat-legs" fill="none" stroke="#202638" strokeWidth="6" strokeLinecap="round">
+           <path d="M29 45 L25 56"/><path d="M42 45 L44 56"/><path d="M61 46 L59 57"/><path d="M73 46 L78 56"/>
+          </g>
+          <path d="M61 44 Q67 47 71 44" stroke="#f5f1e9" strokeWidth="2" fill="none"/>
+         </svg>
         </span>
        </div>
-       <p className="game-loading-label">CARGANDO…</p>
+       <p className="game-loading-label" aria-live="polite">{loadingPhrase}</p>
       </div>
      </div>}
      {assetError&&<p className="game-menu-error" role="alert">No se pudieron cargar las imágenes. Recargá la página para reintentar.</p>}

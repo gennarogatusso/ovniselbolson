@@ -169,7 +169,7 @@ function drawNpc(c:CanvasRenderingContext2D,im:HTMLImageElement,x:number,y:numbe
  const width=h*sprite.width/sprite.height;c.save();c.imageSmoothingEnabled=false;c.drawImage(sprite,x-width/2,y-h,width,h);c.restore();
 }
 function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
- const {u}=s,abduction=['descend','beam','rise'].includes(s.phase),pulse=.5+.5*Math.sin(s.t*5.2);
+ const {u}=s,abduction=['descend','beam','rise'].includes(s.phase),crash=s.phase==='crash',pulse=.5+.5*Math.sin(s.t*5.2);
  c.save();c.translate(u.x,u.y-(u.recoil??0)*24);
  if(s.phase==='fight'&&(u.dash??0)>0){
   c.save();c.globalCompositeOperation='screen';
@@ -180,19 +180,20 @@ function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
  if(['arrive','reunion','alien','speech','attack','fade'].includes(s.phase))c.rotate(.25);
  // Halo exterior: el brillo se intensifica cuando el OVNI fija al gato.
  c.globalCompositeOperation='screen';
- const halo=c.createRadialGradient(0,7,5,0,7,abduction?112:76);
- halo.addColorStop(0,abduction?'rgba(150,246,255,.34)':'rgba(150,210,255,.12)');
- halo.addColorStop(.42,abduction?'rgba(75,196,255,.14)':'rgba(75,160,255,.045)');
+ const haloRadius=abduction?112:crash?126:76;
+ const halo=c.createRadialGradient(0,7,5,0,7,haloRadius);
+ halo.addColorStop(0,abduction?'rgba(150,246,255,.34)':crash?'rgba(255,185,120,.30)':'rgba(150,210,255,.12)');
+ halo.addColorStop(.42,abduction?'rgba(75,196,255,.14)':crash?'rgba(255,112,73,.13)':'rgba(75,160,255,.045)');
  halo.addColorStop(1,'rgba(70,160,255,0)');
- c.fillStyle=halo;c.fillRect(-120,-110,240,220);
- if(abduction||s.phase==='fight'){
-  c.save();c.globalAlpha=abduction?.38:.24+.12*Math.sin(s.t*8);c.strokeStyle=abduction?'#b9faff':'#ffd9a9';c.lineWidth=1.4;c.setLineDash([7,10]);c.lineDashOffset=-s.t*48;c.beginPath();c.ellipse(0,5,81+Math.sin(s.t*3)*4,24+Math.sin(s.t*3)*2,0,0,Math.PI*2);c.stroke();c.setLineDash([2,11]);c.lineDashOffset=s.t*65;c.beginPath();c.ellipse(0,5,92+Math.sin(s.t*2)*5,29,0,0,Math.PI*2);c.stroke();c.restore();
+ c.fillStyle=halo;c.fillRect(-140,-125,280,250);
+ if(abduction||crash||s.phase==='fight'){
+  c.save();c.globalAlpha=abduction?.38:crash?.32:.24+.12*Math.sin(s.t*8);c.strokeStyle=abduction?'#b9faff':crash?'#ffc27d':'#ffd9a9';c.lineWidth=1.4;c.setLineDash([7,10]);c.lineDashOffset=-s.t*48;c.beginPath();c.ellipse(0,5,81+Math.sin(s.t*3)*4,24+Math.sin(s.t*3)*2,0,0,Math.PI*2);c.stroke();c.setLineDash([2,11]);c.lineDashOffset=s.t*65;c.beginPath();c.ellipse(0,5,92+Math.sin(s.t*2)*5,29,0,0,Math.PI*2);c.stroke();c.restore();
  }
  c.globalCompositeOperation='source-over';
  // Cúpula superior de vidrio.
  const dome=c.createLinearGradient(0,-33,0,2);
  dome.addColorStop(0,'#f0fbff');dome.addColorStop(.28,'#9fc9dc');dome.addColorStop(.72,'#425b70');dome.addColorStop(1,'#1b2c3d');
- c.shadowColor=abduction?'#91f3ff':p.ice;c.shadowBlur=abduction?18+10*pulse:s.phase==='fight'?12:4;
+ c.shadowColor=abduction?'#91f3ff':crash?'#ff985c':p.ice;c.shadowBlur=abduction?18+10*pulse:crash?22+12*pulse:s.phase==='fight'?12:4;
  c.fillStyle=dome;c.beginPath();c.ellipse(0,-8,29,18,0,0,Math.PI*2);c.fill();
  c.strokeStyle='rgba(218,249,255,.72)';c.lineWidth=1.5;c.beginPath();c.ellipse(0,-8,28,17,0,Math.PI*1.08,Math.PI*1.9);c.stroke();
  // Casco metálico en capas y con reflejos.
@@ -206,7 +207,7 @@ function ufo(c:CanvasRenderingContext2D,s:S,p:Palette) {
  for(let i=0;i<15;i++){
   const angle=(Math.PI*2*i)/15,x=Math.cos(angle)*59,y=1+Math.sin(angle)*10.4;
   const active=(i+Math.floor(s.t*7))%3!==0;
-  const color=abduction?(active?'#c9ffff':'#54d9ff'):(active?p.laser:p.gold);
+  const color=abduction?(active?'#c9ffff':'#54d9ff'):crash?(active?'#ffe1a5':'#ff8254'):(active?p.laser:p.gold);
   c.shadowColor=abduction?'#8ff8ff':color;c.shadowBlur=abduction?10:5;
   oval(c,color,x,y,2.8,2.1);
  }
@@ -377,7 +378,7 @@ function drawCrossWreckSmoke(c:CanvasRenderingContext2D,s:S){
  }
  c.restore();
 }
-const OPENING_DUSK_PHASES = new Set<S['phase']>(['walk','descend','beam','rise','draw','fight','help','boom']);
+const OPENING_DUSK_PHASES = new Set<S['phase']>(['walk','descend','beam','rise','draw','fight','help','boom','crash']);
 function openingDuskActive(s:S){return OPENING_DUSK_PHASES.has(s.phase);}
 function drawOpeningDuskSky(c:CanvasRenderingContext2D,s:S){
  if(!openingDuskActive(s))return;
@@ -1489,6 +1490,47 @@ function drawPlayerHealthHud(c:CanvasRenderingContext2D,hp:number){
  c.restore();
 }
 
+function drawUfoHealthHud(c:CanvasRenderingContext2D,hp:number,time:number){
+ const x=304,y=14,w=352,h=54,ratio=Math.max(0,Math.min(1,hp/100));
+ c.save();
+ const panel=c.createLinearGradient(x,y,x,y+h);
+ panel.addColorStop(0,'rgba(24,34,52,.96)');panel.addColorStop(.55,'rgba(12,20,36,.96)');panel.addColorStop(1,'rgba(7,13,27,.97)');
+ c.shadowColor='rgba(0,0,0,.48)';c.shadowBlur=16;c.fillStyle=panel;c.beginPath();c.roundRect(x,y,w,h,11);c.fill();c.shadowBlur=0;
+ const border=c.createLinearGradient(x,y,x+w,y+h);border.addColorStop(0,'rgba(174,238,255,.7)');border.addColorStop(.5,'rgba(145,176,219,.28)');border.addColorStop(1,'rgba(255,183,128,.48)');
+ c.strokeStyle=border;c.lineWidth=1.1;c.beginPath();c.roundRect(x+.5,y+.5,w-1,h-1,11);c.stroke();
+ c.strokeStyle='rgba(255,255,255,.12)';c.beginPath();c.moveTo(x+13,y+1);c.lineTo(x+w-13,y+1);c.stroke();
+ // Emblema propio del platillo, dibujado en canvas para que acompañe al HUD sin depender de otro sprite.
+ const cx=x+28,cy=y+27,pulse=.76+.24*Math.sin(time*5);
+ const badge=c.createRadialGradient(cx-4,cy-7,2,cx,cy,23);
+ badge.addColorStop(0,'rgba(115,204,231,.32)');badge.addColorStop(1,'rgba(46,91,127,.08)');
+ c.fillStyle=badge;c.beginPath();c.arc(cx,cy,20,0,Math.PI*2);c.fill();
+ c.strokeStyle='rgba(177,232,249,.42)';c.lineWidth=1;c.beginPath();c.arc(cx,cy,19.2,0,Math.PI*2);c.stroke();
+ c.save();c.translate(cx,cy);c.globalCompositeOperation='screen';
+ c.shadowColor='#8cecff';c.shadowBlur=10*pulse;
+ const dome=c.createLinearGradient(0,-11,0,1);dome.addColorStop(0,'#f6ffff');dome.addColorStop(.5,'#8fc4da');dome.addColorStop(1,'#426780');
+ c.fillStyle=dome;c.beginPath();c.ellipse(0,-3,8.5,6,0,Math.PI,Math.PI*2);c.fill();
+ const hull=c.createLinearGradient(0,-2,0,8);hull.addColorStop(0,'#e8fbff');hull.addColorStop(.32,'#8caebb');hull.addColorStop(.7,'#40586e');hull.addColorStop(1,'#172b42');
+ c.fillStyle=hull;c.beginPath();c.ellipse(0,2,16,5.4,0,0,Math.PI*2);c.fill();
+ c.strokeStyle='rgba(235,252,255,.8)';c.lineWidth=1;c.beginPath();c.ellipse(0,1,15.5,5,0,Math.PI,Math.PI*2);c.stroke();
+ for(let i=0;i<5;i++){const lx=-10+i*5;c.globalAlpha=.68+.32*Math.sin(time*6+i);c.fillStyle=i%2?'#b7f6ff':'#ffe4a4';c.beginPath();c.arc(lx,3.4,1.05,0,Math.PI*2);c.fill();}
+ c.restore();
+ const textX=x+57,barW=w-73;
+ c.font='bold 11px "IBM Plex Mono", monospace';c.textBaseline='middle';c.textAlign='left';c.fillStyle='#e6f6ff';c.fillText('OVNI',textX,y+15);
+ c.textAlign='right';c.fillStyle='rgba(231,244,255,.88)';c.fillText(Math.round(hp)+'%',x+w-14,y+15);
+ const tx=textX,ty=y+32,th=9;
+ c.fillStyle='rgba(2,7,16,.88)';c.beginPath();c.roundRect(tx,ty,barW,th,5);c.fill();
+ c.strokeStyle='rgba(180,218,238,.16)';c.lineWidth=1;c.beginPath();c.roundRect(tx+.5,ty+.5,barW-1,th-1,4.5);c.stroke();
+ if(ratio>0){
+  const fw=Math.max(4,barW*ratio),gradient=c.createLinearGradient(tx,ty,tx+fw,ty+th);
+  if(hp<=30){gradient.addColorStop(0,'#ffc178');gradient.addColorStop(.52,'#ff806b');gradient.addColorStop(1,'#ed456a');}
+  else{gradient.addColorStop(0,'#a5f3ff');gradient.addColorStop(.55,'#68c8ee');gradient.addColorStop(1,'#9a8cff');}
+  c.save();c.globalAlpha=.58+.18*Math.sin(time*4);c.shadowColor=hp<=30?'#ff756b':'#72ddff';c.shadowBlur=hp<=30?13:10;c.fillStyle=gradient;c.beginPath();c.roundRect(tx,ty,fw,th,5);c.fill();c.restore();
+  c.fillStyle='rgba(255,255,255,.36)';c.beginPath();c.roundRect(tx+2,ty+1,Math.max(0,fw-4),1.5,1);c.fill();
+  for(let i=1;i<10;i++){const mark=tx+barW*i/10;if(mark<tx+fw-2){c.fillStyle='rgba(10,25,44,.25)';c.fillRect(mark,ty+2,1,th-4);}}
+ }
+ c.restore();
+}
+
 function drawAgentCombatHud(c:CanvasRenderingContext2D,hp:number,mana:number|null){
  const x=14,y=14,w=238,h=mana===null?48:84;
  c.save();
@@ -1828,6 +1870,55 @@ function drawAwkaOpeningTitle(c:CanvasRenderingContext2D,s:S) {
  c.restore();
 }
 
+function drawCrashHill(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette){
+ const surfaceY=(x:number)=>{
+  const t=Math.max(0,Math.min(1,(x-2660)/560));
+  return t<.47?GROUND-108*Math.pow(t/.47,1.25):GROUND-108+108*Math.pow((t-.47)/.53,1.22);
+ };
+ c.save();
+ // Lomas lejanas en violeta, detrás del terreno donde cae el platillo.
+ const far=c.createLinearGradient(0,GROUND-150,0,GROUND+24);
+ far.addColorStop(0,'#54465c');far.addColorStop(.58,'#66515b');far.addColorStop(1,'#353440');
+ c.fillStyle=far;c.beginPath();c.moveTo(2580,GROUND+22);c.quadraticCurveTo(2750,GROUND-96,2895,GROUND-105);c.quadraticCurveTo(3045,GROUND-130,3260,GROUND+25);c.closePath();c.fill();
+ // Ladera principal: tierra ocre, roca oscura y luz de atardecer en la cresta.
+ const slope=c.createLinearGradient(0,GROUND-155,0,GROUND+25);
+ slope.addColorStop(0,'#bd9168');slope.addColorStop(.22,'#92705b');slope.addColorStop(.62,'#65534e');slope.addColorStop(1,'#343943');
+ c.fillStyle=slope;c.beginPath();c.moveTo(2630,GROUND+25);c.quadraticCurveTo(2765,GROUND-31,2868,GROUND-93);c.quadraticCurveTo(2950,GROUND-157,3045,GROUND-87);c.quadraticCurveTo(3140,GROUND-28,3230,GROUND+25);c.closePath();c.fill();
+ // Segundo plano de piedra para dar volumen a la cara visible de la colina.
+ const shadow=c.createLinearGradient(0,GROUND-95,0,GROUND+28);
+ shadow.addColorStop(0,'rgba(54,48,55,.05)');shadow.addColorStop(.48,'rgba(44,43,51,.24)');shadow.addColorStop(1,'rgba(22,29,39,.42)');
+ c.fillStyle=shadow;c.beginPath();c.moveTo(2710,GROUND+20);c.quadraticCurveTo(2835,GROUND-36,2912,GROUND-75);c.quadraticCurveTo(3005,GROUND-105,3134,GROUND+22);c.closePath();c.fill();
+ // Contorno cálido del filo y reflejo suave sobre la roca.
+ c.save();c.shadowColor='rgba(255,187,127,.68)';c.shadowBlur=13;c.strokeStyle='rgba(255,202,146,.48)';c.lineWidth=2.4;
+ c.beginPath();c.moveTo(2630,GROUND+25);c.quadraticCurveTo(2765,GROUND-31,2868,GROUND-93);c.quadraticCurveTo(2950,GROUND-157,3045,GROUND-87);c.quadraticCurveTo(3140,GROUND-28,3230,GROUND+25);c.stroke();c.restore();
+ // Vetas diagonales, pequeñas rocas y matorrales con posiciones deterministas.
+ for(let i=0;i<34;i++){
+  const x=2672+(i*41)%520,y=surfaceY(x)+10+(i%5)*5,rx=3+(i%4)*2.2,ry=1.4+(i%3)*1.2;
+  c.save();c.globalAlpha=.24+(i%4)*.06;c.fillStyle=i%3===0?'#d7aa78':i%3===1?'#3d4148':'#8d7562';
+  c.beginPath();c.ellipse(x,y,rx,ry,(i%5-2)*.12,0,Math.PI*2);c.fill();
+  c.strokeStyle='rgba(255,213,160,.35)';c.lineWidth=.7;c.beginPath();c.moveTo(x-rx*.7,y-ry*.4);c.lineTo(x+rx*.5,y-ry*.6);c.stroke();c.restore();
+ }
+ for(const x of [2742,2792,3008,3096,3170]){
+  const y=surfaceY(x)+5;
+  c.save();c.globalAlpha=.82;c.fillStyle='#39463f';c.beginPath();c.ellipse(x,y,14,5,0,0,Math.PI*2);c.ellipse(x+9,y-3,11,6,-.25,0,Math.PI*2);c.fill();
+  c.fillStyle='rgba(216,151,91,.38)';c.beginPath();c.ellipse(x-3,y-5,7,2,-.2,0,Math.PI*2);c.fill();c.restore();
+ }
+ // Árboles de la ladera: se mecen con el mismo viento que las hojas del escenario.
+ if(im?.tree&&ready(im.tree)){
+  drawWindTree(c,im.tree,2712,surfaceY(2712)+5,82,s.t,27,.96);
+  drawWindTree(c,im.tree,2784,surfaceY(2784)+4,56,s.t,31,.76);
+  drawWindTree(c,im.tree,3052,surfaceY(3052)+4,67,s.t,30,.9);
+  drawWindTree(c,im.tree,3150,surfaceY(3150)+3,78,s.t,33,.98);
+ }
+ // Pastos y ramitas en primer plano para integrar la colina con el camino.
+ for(let i=0;i<28;i++){
+  const x=2680+(i*23)%530,y=surfaceY(x)+9+(i%4)*4;
+  c.globalAlpha=.48;c.strokeStyle=i%3===0?'#d6a06f':'#59644f';c.lineWidth=1;
+  c.beginPath();c.moveTo(x,y+4);c.quadraticCurveTo(x-2,y-2,x-5,y-5-(i%3)*2);c.moveTo(x,y+3);c.lineTo(x+4,y-3-(i%4));c.stroke();
+ }
+ c.restore();
+}
+
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
  if(im&&s.phase==='spaceship'){shipScene(c,s,im,p);return;}
  if(im&&s.phase==='bedroom'&&s.chapter.stage==='roomFade'&&s.chapter.time<1.2){
@@ -1884,13 +1975,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
   drawAwkaOpeningTitle(c,s);
   return;
  }
- // Outskirts crash hill, with a readable flat arrival area.
-  c.fillStyle='#465b50';c.beginPath();c.moveTo(2740,GROUND);c.quadraticCurveTo(2845,GROUND-82,2960,GROUND-98);c.quadraticCurveTo(3060,GROUND-116,3140,GROUND-34);c.lineTo(WORLD,GROUND+25);c.lineTo(2740,GROUND+25);c.fill();
- c.fillStyle=p.hill;c.beginPath();c.moveTo(2765,GROUND);c.quadraticCurveTo(2900,GROUND-145,3080,GROUND);c.lineTo(WORLD,GROUND+25);c.lineTo(2765,GROUND+25);c.fill();
- for(let i=0;i<18;i++){const x=2780+i*24,y=GROUND-18-Math.sin(i*.42)*35;box(c,i%3===0?'#8b8568':'#526c53',x,y,3+(i%3),12+(i%4)*3);}
- for(const [x,y,r] of [[2804,GROUND-12,8],[2872,GROUND-34,6],[3002,GROUND-18,10],[3105,GROUND-25,7]] as const){oval(c,'#8d8170',x,y,r,r*.62);oval(c,'#c0a888',x-r*.25,y-r*.25,r*.32,r*.16);}
- c.globalAlpha=.35;for(let i=0;i<10;i++){const x=2800+i*31,y=GROUND-24-Math.sin(i*.6)*32;box(c,p.gold,x,y,2,7);}c.globalAlpha=1;
- for(let i=0;i<25;i++){const x=(i*139+s.t*12)%WORLD;c.globalAlpha=.35;oval(c,p.gold,x,400+Math.sin(i+s.t)*25,2,1);}c.globalAlpha=1;
+ drawCrashHill(c,s,im,p);
  drawCatAbductionLighting(c,s,p);
  drawOpeningDuskGrade(c,s);
  drawUfoCombatLighting(c,s);drawUfoAttackTelegraph(c,s);drawCombatWind(c,s);
@@ -1947,7 +2032,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  c.font='13px "IBM Plex Mono", monospace';c.textBaseline='top';c.fillStyle=p.light;
  if(!['crash','arrive','reunion','alien','speech','attack','fade','aftermath'].includes(s.phase)){
  drawPlayerHealthHud(c,player.hp);
- if(s.phase==='fight'||s.phase==='help'){box(c,p.panel,310,14,330,39);c.fillStyle=p.light;c.fillText('OVNI',321,25);box(c,p.ink,367,26,257,10);box(c,p.laser,367,26,2.57*s.u.hp,10);}
+ if(s.phase==='fight'||s.phase==='help')drawUfoHealthHud(c,s.u.hp,s.t);
  }
  if(canAskHelp(s))bubble(c,'PEDIR AYUDA A LOS PIBES',460-s.cam,GROUND-95,p,320);
  if(s.phase==='help')bubble(c,'EH LOCO, DEVOLVELE EL GATO AL PIBE',s.allies[0].x-s.cam,GROUND-100,p,470);
