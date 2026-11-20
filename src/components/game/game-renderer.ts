@@ -6,7 +6,7 @@ export type CrossRiseFrame = { image: HTMLCanvasElement; bodyWidth: number; body
 export type CrossRiseFrames = { player: CrossRiseFrame[]; cat: CrossRiseFrame[] };
 export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: SpecialFrame[]; swordWalkFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; secretAgent: HTMLImageElement; secretAgentWalk: HTMLImageElement; secretAgentAim: HTMLImageElement; secretAgentShield: HTMLImageElement; secretAgentShieldAlt: HTMLImageElement; agentUltimateFrames: SpecialFrame[]; burnedSoldier: HTMLImageElement };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
-export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
+export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; armedPlayer: { idle: SpecialFrame; walk: SpecialFrame[]; aim: SpecialFrame[]; fire: SpecialFrame[] }; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
 function trimBounds(im:HTMLImageElement):[number,number,number,number]{
  let bounds=trims.get(im);
@@ -535,6 +535,36 @@ function drawAnchoredSprite(c:CanvasRenderingContext2D,frame:SpecialFrame,x:numb
  c.drawImage(frame.image,x-frame.anchorX*scale,y-frame.baseY*scale,frame.image.naturalWidth*scale,frame.image.naturalHeight*scale);
  c.restore();
 }
+function drawArmedPlayer(c:CanvasRenderingContext2D,frames:GameImages['armedPlayer'],x:number,y:number,height:number,face:number,walkProgress:number,firing:boolean,flash:number,time:number){
+ const moving=walkProgress>0;
+ let frame=frames.idle;
+ if(flash>0){
+  const elapsed=Math.max(0,.08-flash);
+  frame=frames.fire[Math.min(frames.fire.length-1,Math.floor(elapsed/.04))]??frames.fire[0]??frames.idle;
+ }else if(firing){
+  frame=frames.aim[Math.floor(time*8)%frames.aim.length]??frames.aim[0]??frames.idle;
+ }else if(moving){
+  frame=frames.walk[Math.floor(walkProgress*1.25)%frames.walk.length]??frames.walk[0]??frames.idle;
+ }
+ const bob=moving?Math.sin(time*15)*1.15:Math.sin(time*2.4)*.35;
+ // Light recoil and a restrained muzzle glow complement the drawn firing frames.
+ if(flash>0){
+  const mx=x+face*height*.39,my=y-height*.63,radius=height*.23;
+  c.save();c.globalCompositeOperation='screen';c.globalAlpha=.28;
+  const glow=c.createRadialGradient(mx,my,1,mx,my,radius);
+  glow.addColorStop(0,'rgba(255,246,190,.85)');glow.addColorStop(.35,'rgba(255,190,92,.34)');glow.addColorStop(1,'rgba(255,130,62,0)');
+  c.fillStyle=glow;c.fillRect(mx-radius,my-radius,radius*2,radius*2);c.restore();
+ }
+ c.save();c.translate(x-(flash>0?face*1.4:0),y+bob);c.scale(face,1);
+ drawAnchoredSprite(c,frame,0,0,height);
+ c.restore();
+ if(moving&&flash<=0){
+  c.save();c.globalAlpha=.10+.07*(.5+.5*Math.sin(time*18));
+  oval(c,'#b7c2d2',x-face*height*.13,y-2,height*.045,1.4);
+  c.restore();
+ }
+}
+
 function drawAgentStorm(c:CanvasRenderingContext2D,s:S,strength:number,active:boolean){
  if(strength<=0)return;const t=s.t;c.save();c.globalCompositeOperation='screen';
  // Auroras boreales violetas, en capas que ondulan.
@@ -1482,6 +1512,10 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(trail)enhanceExistingVioletMoon(c,art.trail,{x:(W-bw)/2,y:(H-bh)/2,w:bw,h:bh},s.t,1.65);
  if(road||battle){c.save();c.globalAlpha=road ? 0.17 : 0.23;box(c,'#392754',0,0,W,H);c.restore();}
  const actor=(x:number,y:number,h=112)=>{
+  if(a.stage==='soldierFight'){
+   drawArmedPlayer(c,im.armedPlayer,x,y,h,a.face,a.walk,s.fire,a.flash,s.t);
+   return;
+  }
   c.save();c.translate(x,y);c.scale(a.face,1);
   const walkingStage=['crossWalkIntro','crossWalk','militaryIntro','soldierFight','soldierEnd','soldierExit','baseFade','baseApproach','baseEnd'].includes(a.stage);
   if(a.stage==='soldierUltimateThrow'){
@@ -1496,7 +1530,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   else if(walkingStage)pose(c,im.chapter.walk,Math.floor(a.walk)%4,4,0,0,h);
   else if(a.stage==='pickup'||a.armed)pose(c,art.pickup,a.stage==='pickup'?Math.min(3,Math.floor(a.time/2.4*4)):3,4,0,0,h);
   else pose(c,im.chapter.walk,Math.floor(a.walk)%4,4,0,0,h);
-  if((!a.armed&&a.stage==='combat')||a.stage==='soldierFight'){const actorScale=h/112;drawTrimmed(c,im.gun,12*actorScale,-64*actorScale,27*actorScale,10*actorScale);if(a.flash>0)oval(c,p.gold,40*actorScale,-60*actorScale,9*actorScale,5*actorScale);}
+  if(!a.armed&&a.stage==='combat'){const actorScale=h/112;drawTrimmed(c,im.gun,12*actorScale,-64*actorScale,27*actorScale,10*actorScale);if(a.flash>0)oval(c,p.gold,40*actorScale,-60*actorScale,9*actorScale,5*actorScale);}
   c.restore();
  };
  const line=(col:string,x:number,y:number,tx:number,ty:number,width:number)=>{c.strokeStyle=col;c.lineWidth=width;c.beginPath();c.moveTo(x,y);c.lineTo(tx,ty);c.stroke();};
@@ -1829,15 +1863,16 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  for(const [i,a] of s.allies.entries()) { if(a.hurt>0 && Math.floor(a.hurt*15)%2)continue;if(im?.allies[i])person(c,im.allies[i]??im.allies[0],a.x,a.y,s.recruited?a.walk:s.t,i,a.dead||a.hp<=0);if(s.recruited && s.phase==='fight'){box(c,p.panel,a.x-18,a.y-83,36,4);box(c,p.ice,a.x-18,a.y-83,36*a.hp/100,4);}}
   const hugging=!s.cat.gone && ((s.phase==='reunion'&&Math.abs(s.cat.x-s.p.x)<45)||['alien','speech','attack','fade','aftermath'].includes(s.phase));
   if(im && !s.cat.gone && !hugging)catSprite(c,im.cat,s.cat.x,s.cat.y,s.cat.walk,s.cat.x>s.p.x?-1:1);
-  const player=s.p;
+  const player=s.p,useArmedPlayer=Boolean(im&&player.armed>0&&s.phase==='fight');
   if(im && hugging){
    const stand=s.phase==='reunion'?Math.max(0,Math.min(1,(s.pt-4.6)/.8)):1;
    pose(c,im.reunion,0,2,player.x,player.y,96,1-stand);
    pose(c,im.reunion,1,2,player.x,player.y,96,stand);
   }else if(im && s.specialAnim>0){c.save();c.translate(player.x,player.y);c.scale(player.face,1);specialPose(c,im.specialFrames,SPECIAL_ATTACK_ANIM_DURATION-s.specialAnim,0,0,86);c.restore();}
   else if(im && player.roll>0){c.save();c.translate(player.x,player.y);c.scale(player.rollFace,1);pose(c,im.ship.roll,Math.min(5,Math.floor((1-player.roll/SHIP.rollTime)*6)),6,0,0,86);c.restore();}
+  else if(im && useArmedPlayer)drawArmedPlayer(c,im.armedPlayer,player.x,player.y,86,player.face,player.walk,s.fire,player.flash,s.t);
   else if(im && !(player.hurt>0&&Math.floor(player.hurt*20)%2))sprite(c,im.player,player.x,player.y,86,player.face,player.walk,player.crouch);
-  if(im && player.roll===0 && player.armed>0 && !['reunion','alien','speech','attack','fade','jets','aftermath'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im.gun,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
+  if(im && player.roll===0 && player.armed>0 && !useArmedPlayer && !['reunion','alien','speech','attack','fade','jets','aftermath'].includes(s.phase)) {c.save();c.translate(player.x+player.face*18-4,player.y-(player.crouch?35:48));c.scale(player.face,1);drawTrimmed(c,im.gun,0,0,17,6);c.restore();if(player.flash>0)oval(c,p.gold,player.x+player.face*34,player.y-46,8,5);}
   if(s.phase==='crash'&&s.u.vis)drawUfoCrashTrail(c,s,p);
   if(s.phase==='aftermath'&&im){ufo(c,{...s,phase:'arrive'},p);drawUfoWreckage(c,s,p);military(c,s,im.chapter);}
   if(s.u.vis && !['boom','over'].includes(s.phase)){
