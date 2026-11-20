@@ -251,6 +251,14 @@ function drawCombatWind(c:CanvasRenderingContext2D,s:S){
   const y=188+(i*47%244)+Math.sin(s.t*1.5+i*2.1)*25,rotation=s.t*(1.8+(i%4)*.42)+i*1.7,size=3.2+(i%4)*.85;
   c.save();c.translate(x,y);c.rotate(rotation);c.globalAlpha=.42+(i%3)*.09;c.fillStyle=leaves[i%leaves.length];c.beginPath();c.moveTo(-size*1.7,0);c.quadraticCurveTo(-size*.3,-size*1.25,size*1.8,-size*.15);c.quadraticCurveTo(size*.35,size*1.2,-size*1.7,0);c.fill();c.strokeStyle='rgba(255,226,177,.62)';c.lineWidth=.65;c.beginPath();c.moveTo(-size*1.25,0);c.lineTo(size*1.35,-size*.08);c.stroke();c.restore();
  }
+ if(s.phase==='beam'||s.phase==='rise'){
+  // Las hojas cálidas ascienden en espiral hacia el haz durante la abducción.
+  for(let i=0;i<14;i++){
+   const q=(s.t*.46+i/14)%1,centerX=s.cat.x+(s.u.x-s.cat.x)*q,centerY=s.cat.y-(s.cat.y-(s.u.y+26))*q;
+   const angle=s.t*2.6+i*Math.PI*2/14,radius=12+(1-q)*76,x=centerX+Math.cos(angle)*radius,y=centerY+Math.sin(angle)*radius*.34,size=3.5+(i%3);
+   c.save();c.translate(x,y);c.rotate(angle*.8);c.globalAlpha=.48+(1-q)*.32;c.fillStyle=['#e9a14f','#d87945','#edc06e'][i%3];c.beginPath();c.moveTo(-size*1.4,0);c.quadraticCurveTo(-size*.2,-size,size*1.5,-size*.1);c.quadraticCurveTo(size*.2,size,-size*1.4,0);c.fill();c.restore();
+  }
+ }
  c.restore();
 }
 function drawUfoCrashTrail(c:CanvasRenderingContext2D,s:S,p:Palette){
