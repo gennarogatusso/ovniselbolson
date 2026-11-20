@@ -1537,14 +1537,14 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
     const entering=a.stage==='agentEntrance';
     const stagger=([0,.22,.44,.66] as const)[agent.id]??0;
     const rawProgress=entering?Math.max(0,Math.min(1,(a.time-stagger)/(AGENT_WARNING_DURATION-stagger))):1;
-    const eased=1-Math.pow(1-rawProgress,3);
+    const eased=rawProgress*rawProgress*(3-2*rawProgress);
     const startX=agent.id<2?-100:W+100;
     const drawX=entering?startX+(agent.x-startX)*eased:agent.x;
-    const drawY=agent.y+(entering?Math.sin(s.t*9+agent.id)*1.4*(1-rawProgress):0);
+    const drawY=agent.y+(entering?Math.sin(s.t*9+agent.id)*1.4*(1-eased):0);
     const artAgent=entering?art.secretAgentWalk:agent.kind==='shield'?(agent.firePose>0?art.secretAgentShieldAlt:art.secretAgentShield):agent.state==='aim'?art.secretAgentAim:agent.state==='advance'?art.secretAgentWalk:art.secretAgent;
     if(agent.hp<=0&&agent.deadTime>1.8)continue;
     const agentH=agent.kind==='shield'?112:108,agentW=ready(artAgent)?agentH*trimBounds(artAgent)[2]/trimBounds(artAgent)[3]:68;
-    c.save();c.globalAlpha=entering?.12+.88*rawProgress:1;c.translate(drawX,drawY);c.scale(agent.face??-1,1);
+    c.save();c.globalAlpha=entering?.05+.95*eased:1;c.translate(drawX,drawY);c.scale(agent.face??-1,1);
     if(agent.hp<=0){c.globalAlpha*=Math.max(0,1-agent.deadTime*.45);c.rotate(-Math.min(1,agent.deadTime*3)*.38);}
     else if(agent.hurt>0&&Math.floor(s.t*18)%2)c.globalAlpha*=.42;
     oval(c,'rgba(0,0,0,.4)',0,-2,34,7);drawTrimmed(c,artAgent,-agentW/2,-agentH,agentW,agentH);

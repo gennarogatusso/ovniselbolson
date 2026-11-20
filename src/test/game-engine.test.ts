@@ -269,6 +269,17 @@ describe('OVNI difficulty and narrative', () => {
   });
 
 
+  it('does not move the player automatically after contemplating La Cruz',()=>{
+    const s=newState();enterShip(s);s.ship.stage='crossSunset';
+    update(s,7);
+    expect(s.ship.stage).toBe('crossWalk');
+    expect(s.ship.x).toBe(112);
+    update(s,1);
+    expect(s.ship.x).toBe(112);
+    s.keys.r=true;update(s,1);
+    expect(s.ship.x).toBeGreaterThan(112);
+  });
+
   it('starts the mandatory secret-agent ambush after the sword pickup and displays the restricted-area warning',()=>{
     const s=newState();s.phase='spaceship';s.ship.stage='swordPickup';s.ship.x=590;
     update(s,2.5);
@@ -279,7 +290,11 @@ describe('OVNI difficulty and narrative', () => {
     expect(AGENT_WARNING_MESSAGE).toBe('Esta es un área restringida, un paso más y disparo');
     expect(s.ship.agentWarning).toBeGreaterThan(0);
     expect(shipIsCombat(s)).toBe(false);
-    update(s,3.5);
+    update(s,1.75);
+    expect(s.ship.stage).toBe('agentEntrance');
+    expect(s.ship.bolts).toHaveLength(0);
+    expect(s.ship.agentWarning).toBeGreaterThan(0);
+    update(s,1.75);
     expect(s.ship.stage).toBe('agentFight');
     expect(s.ship.agentWarning).toBe(0);
     expect(shipIsCombat(s)).toBe(true);
