@@ -6,7 +6,7 @@ export type CrossRiseFrame = { image: HTMLCanvasElement; bodyWidth: number; body
 export type CrossRiseFrames = { player: CrossRiseFrame[]; cat: CrossRiseFrame[] };
 export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: SpecialFrame[]; swordWalkFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; secretAgent: HTMLImageElement; secretAgentWalk: HTMLImageElement; secretAgentAim: HTMLImageElement; secretAgentShield: HTMLImageElement; secretAgentShieldAlt: HTMLImageElement; agentUltimateFrames: SpecialFrame[]; burnedSoldier: HTMLImageElement };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
-export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; armedPlayer: { idle: SpecialFrame; walk: SpecialFrame[]; aim: SpecialFrame[]; fire: SpecialFrame[] }; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
+export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; armedPlayer: { idle: SpecialFrame; walk: SpecialFrame[]; aim: SpecialFrame[]; fire: SpecialFrame[] }; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; restaurant?: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
 function trimBounds(im:HTMLImageElement):[number,number,number,number]{
  let bounds=trims.get(im);
@@ -757,11 +757,89 @@ function bedPose(c:CanvasRenderingContext2D,im:HTMLImageElement,alpha=1){
  const width=143,height=width*im.naturalHeight/im.naturalWidth;
  c.save();c.globalAlpha=alpha;c.translate(531,202);c.rotate(.36);c.drawImage(im,-width/2,-height/2,width,height);c.restore();
 }
+function drawBedroomWindowAlien(c:CanvasRenderingContext2D,s:S){
+ const time=s.chapter.time;
+ const fadeIn=Math.max(0,Math.min(1,time/.65)),fadeOut=Math.max(0,Math.min(1,(4.35-time)/.8)),alpha=fadeIn*fadeOut;
+ if(alpha<=.01)return;
+ const x=715+Math.sin(s.t*.8)*1.5,y=211;
+ c.save();c.globalCompositeOperation='screen';
+ const aura=c.createRadialGradient(x,y+8,2,x,y+8,78);
+ aura.addColorStop(0,'rgba(155,255,190,.26)');aura.addColorStop(.48,'rgba(90,232,151,.12)');aura.addColorStop(1,'rgba(55,210,127,0)');
+ c.globalAlpha=alpha;c.fillStyle=aura;c.fillRect(x-86,y-75,172,170);
+ c.globalCompositeOperation='source-over';c.globalAlpha=alpha;
+ // Cabeza gris asomándose por la ventana: queda parcialmente oculta por el marco.
+ const head=c.createLinearGradient(x-24,y-34,x+22,y+42);
+ head.addColorStop(0,'#c4ceca');head.addColorStop(.36,'#8d9c97');head.addColorStop(.72,'#667671');head.addColorStop(1,'#3e504d');
+ c.shadowColor='rgba(155,255,189,.6)';c.shadowBlur=11;
+ c.fillStyle='#526560';c.beginPath();
+ c.moveTo(x-26,y+28);c.quadraticCurveTo(x-34,y+3,x-26,y-18);c.quadraticCurveTo(x-20,y-39,x,y-40);
+ c.quadraticCurveTo(x+23,y-39,x+28,y-14);c.quadraticCurveTo(x+34,y+8,x+24,y+29);
+ c.quadraticCurveTo(x+13,y+42,x,y+44);c.quadraticCurveTo(x-15,y+40,x-26,y+28);c.fill();
+ c.fillStyle=head;c.beginPath();
+ c.moveTo(x-23,y+22);c.quadraticCurveTo(x-30,y+1,x-22,y-18);c.quadraticCurveTo(x-15,y-34,x,y-35);
+ c.quadraticCurveTo(x+17,y-34,x+23,y-16);c.quadraticCurveTo(x+29,y+4,x+20,y+22);
+ c.quadraticCurveTo(x+11,y+35,x,y+38);c.quadraticCurveTo(x-12,y+35,x-23,y+22);c.fill();
+ c.shadowBlur=0;
+ // Ojos negros grandes, inclinados y brillantes.
+ c.fillStyle='#050b12';
+ c.beginPath();c.moveTo(x-21,y-2);c.quadraticCurveTo(x-11,y-12,x-3,y-1);c.quadraticCurveTo(x-9,y+13,x-20,y+9);c.quadraticCurveTo(x-25,y+4,x-21,y-2);c.fill();
+ c.beginPath();c.moveTo(x+3,y-1);c.quadraticCurveTo(x+12,y-12,x+22,y-2);c.quadraticCurveTo(x+25,y+5,x+20,y+10);c.quadraticCurveTo(x+8,y+13,x+3,y-1);c.fill();
+ c.fillStyle='rgba(219,255,232,.72)';oval(c,'rgba(219,255,232,.72)',x-15,y-3,2,3);oval(c,'rgba(219,255,232,.72)',x+10,y-3,2,3);
+ c.strokeStyle='rgba(213,255,225,.48)';c.lineWidth=1;c.beginPath();c.moveTo(x-18,y+22);c.quadraticCurveTo(x,y+29,x+18,y+22);c.stroke();
+ // Reflejo de vidrio delante del rostro, para que parezca estar detrás de la ventana.
+ c.globalAlpha=alpha*.34;c.strokeStyle='rgba(218,255,229,.9)';c.lineWidth=2;
+ c.beginPath();c.moveTo(x-38,y-42);c.lineTo(x-31,y+25);c.moveTo(x+37,y-43);c.lineTo(x+31,y+25);c.stroke();
+ c.restore();
+}
+function drawBedroomUfoLight(c:CanvasRenderingContext2D,s:S,p:Palette){
+ const a=s.chapter,progress=Math.max(0,Math.min(1,a.time/8));
+ const envelope=Math.sin(Math.PI*progress),pulse=.86+.14*Math.sin(s.t*6.4);
+ const intensity=envelope*.82*pulse,windowX=715-a.time*14,windowY=214;
+ if(intensity<=.005)return;
+ c.save();c.globalCompositeOperation='screen';
+ // Halo concentrado en la ventana: la nave se acerca desde el exterior.
+ const windowGlow=c.createRadialGradient(715,207,2,715,207,225);
+ windowGlow.addColorStop(0,'rgba(202,255,215,.62)');windowGlow.addColorStop(.22,'rgba(116,255,165,.30)');
+ windowGlow.addColorStop(.58,'rgba(58,220,133,.12)');windowGlow.addColorStop(1,'rgba(45,197,119,0)');
+ c.globalAlpha=intensity;c.fillStyle=windowGlow;c.fillRect(470,0,490,455);
+ // Haz volumétrico inclinado que entra por el marco y baña la cama.
+ const sway=Math.sin(s.t*.75)*17;
+ const beam=c.createLinearGradient(710,windowY,630+sway,510);
+ beam.addColorStop(0,'rgba(217,255,220,.54)');beam.addColorStop(.24,'rgba(122,255,164,.29)');
+ beam.addColorStop(.67,'rgba(69,225,139,.13)');beam.addColorStop(1,'rgba(54,190,119,0)');
+ c.globalAlpha=intensity*.88;c.fillStyle=beam;c.beginPath();
+ c.moveTo(692,windowY-8);c.lineTo(738,windowY-8);c.lineTo(878+sway,518);c.lineTo(454+sway,518);c.closePath();c.fill();
+ const core=c.createLinearGradient(716,windowY,620+sway,495);
+ core.addColorStop(0,'rgba(239,255,235,.48)');core.addColorStop(.35,'rgba(166,255,191,.18)');core.addColorStop(1,'rgba(100,236,151,0)');
+ c.globalAlpha=intensity*.72;c.fillStyle=core;c.beginPath();
+ c.moveTo(706,windowY);c.lineTo(724,windowY);c.lineTo(706+sway,495);c.lineTo(566+sway,495);c.closePath();c.fill();
+ // Reflejo extendido sobre el colchón y el suelo.
+ const floor=c.createRadialGradient(615,463,2,615,463,255);
+ floor.addColorStop(0,'rgba(174,255,190,.30)');floor.addColorStop(.35,'rgba(89,238,143,.15)');floor.addColorStop(1,'rgba(46,197,119,0)');
+ c.globalAlpha=intensity*.9;c.fillStyle=floor;c.fillRect(350,265,530,275);
+ c.globalAlpha=intensity*.42;c.strokeStyle='rgba(179,255,197,.7)';c.lineWidth=2;
+ c.beginPath();c.ellipse(615+sway*.35,476,105+Math.sin(s.t*2)*8,19,0,0,Math.PI*2);c.stroke();
+ // Haces finos y partículas suspendidas, como polvo iluminado dentro de la luz.
+ for(let i=0;i<7;i++){
+  const offset=(i-3)*21+Math.sin(s.t*.8+i)*5;
+  c.globalAlpha=intensity*(.08+(i%3)*.025);c.strokeStyle=i%2?'rgba(185,255,200,.8)':'rgba(239,255,222,.9)';
+  c.lineWidth=i===3?2:1;c.beginPath();c.moveTo(715+offset*.18,windowY);c.lineTo(648+offset+sway,495);c.stroke();
+ }
+ for(let i=0;i<24;i++){
+  const phase=s.t*1.1+i*2.399;
+  const x=windowX+Math.sin(phase)*((i%5)*8+16);
+  const y=windowY+((i*37+s.t*(28+(i%4)*9))%270);
+  c.globalAlpha=intensity*(.22+(i%4)*.09);c.shadowColor='#a9ffbc';c.shadowBlur=7;
+  oval(c,i%5===0?'#f2ffe9':'#a5ffbd',x,y,1.2+(i%3)*.55,1.5+(i%2)*.6);
+ }
+ c.restore();
+}
 function bedroom(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  const a=s.chapter,art=im.chapter;box(c,p.ink,0,0,W,H);
  if(!a.night)roomBackground(c,art.bedroom);
  else if(a.stage==='quiet'){roomBackground(c,art.bedroom);roomBackground(c,art.dark,Math.min(1,a.time/2));}
  else roomBackground(c,art.dark);
+ if(a.stage==='light')drawBedroomWindowAlien(c,s);
  const sleeping=['quiet','light','wakeChoice','settle'].includes(a.stage);
  if(sleeping)bedPose(c,art.sleeping);
  else if(a.stage==='toBed'){
@@ -774,11 +852,7 @@ function bedroom(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(a.fed&&['meal','sleepChoice','toBed'].includes(a.stage))still(c,art.eating,775,452,37);
   else pose(c,art.restingCat,Math.floor(s.t*1.4)%3,3,829,433,34);
  }
- if(a.stage==='light'){
-  const intensity=Math.sin(Math.PI*Math.min(1,a.time/8))*.72;
-  c.save();c.globalCompositeOperation='screen';c.globalAlpha=intensity;
-  const glow=c.createRadialGradient(715-a.time*15,220,20,680,260,600);glow.addColorStop(0,p.turquoise);glow.addColorStop(1,'transparent');c.fillStyle=glow;c.fillRect(0,0,W,H);c.restore();
- }
+ if(a.stage==='light')drawBedroomUfoLight(c,s,p);
  if(a.stage==='sleepChoice'&&a.time<4)bubble(c,'Ha sido un largo día',a.roomX,a.roomY-120,p,500);
  if(a.stage==='missing')bubble(c,'¿DÓNDE ESTÁ EL GATO?',520,155,p,600);
  if(a.stage==='roomFade'){c.globalAlpha=Math.max(0,1-(a.time-1.2)/1.2);box(c,p.ink,0,0,W,H);c.globalAlpha=1;}
@@ -1979,10 +2053,25 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  // Bosque lejano con la nueva textura y movimiento de viento.
  c.save();c.translate(-s.cam*.35,0);for(let x=-200;x<WORLD;x+=112){if(im?.tree&&ready(im.tree))drawWindTree(c,im.tree,x,GROUND-20,92+Math.abs(Math.sin(x*.013))*20,s.t,x*.017,.58);else{box(c,p.trunk,x,360,5,90);c.fillStyle=p.forest;c.beginPath();c.moveTo(x-27,415);c.lineTo(x+3,320+(x%3)*12);c.lineTo(x+33,415);c.fill();}}c.restore();
  c.save();c.translate(-s.cam,0);
- for(let x=40;x<WORLD-500;x+=300){const special=x===340, width=special?205:145;
+ const restaurant=im?.restaurant&&ready(im.restaurant)?im.restaurant:null;
+ const restaurantBounds=restaurant?trimBounds(restaurant):null;
+ const restaurantX=28,restaurantHeight=300;
+ const restaurantAspect=restaurantBounds?restaurantBounds[2]/Math.max(1,restaurantBounds[3]):0;
+ const restaurantDrawHeight=restaurantAspect>0?Math.min(restaurantHeight,540/restaurantAspect):0;
+ const restaurantWidth=restaurantAspect>0?restaurantDrawHeight*restaurantAspect:0;
+ const restaurantRight=restaurantX+restaurantWidth;
+ for(let x=40;x<WORLD-500;x+=300){const special=x===340,width=special?205:145;
+    const overlapsRestaurant=Boolean(restaurantBounds&&x-10<restaurantRight+36&&x+width+150>restaurantX-28);
+    if(overlapsRestaurant)continue;
     oval(c,p.shadow,x+width/2,GROUND+6,width*.65,9);if(im)drawTrimmed(c,im.house,x-10,GROUND-137,width+20,137);
   for(let j=0;j<3;j++)box(c,p.trunk,x+width+18+j*15,GROUND-22,3,23);box(c,p.trunk,x+width+14,GROUND-15,52,3);
   const tx=x+width+72;if(im?.tree&&ready(im.tree))drawWindTree(c,im.tree,tx,GROUND+2,126,s.t,x*.021,.98);else{box(c,p.trunk,tx,GROUND-85,9,85);const wind=Math.sin(s.t*1.5+x)*3;for(let j=0;j<3;j++){c.fillStyle=p.leaf;c.beginPath();c.moveTo(tx-25+j*4,GROUND-50-j*24);c.lineTo(tx+4+wind,GROUND-115-j*18);c.lineTo(tx+35-j*4,GROUND-50-j*24);c.fill();}}
+ }
+ if(restaurant&&restaurantBounds&&restaurantWidth>0){
+  oval(c,p.shadow,restaurantX+restaurantWidth*.52,GROUND+7,restaurantWidth*.57,12);
+  c.save();c.shadowColor='rgba(13,18,28,.30)';c.shadowBlur=13;c.shadowOffsetY=4;
+  drawTrimmed(c,restaurant,restaurantX,GROUND-restaurantDrawHeight,restaurantWidth,restaurantDrawHeight);
+  c.restore();
  }
  drawStreetSurface(c,p);
  if(im && s.cam < 0){
