@@ -172,6 +172,7 @@ const LOADING_PHRASES = [
   'Cargando Cerro Piltriquitron',
   'Cargando OVNIS de El Bolsón',
   'Cargando Awka',
+  'Cargando Cerro La Cruz',
   'Cargando Extraterrestres',
 ];
 

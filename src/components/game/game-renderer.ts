@@ -1872,53 +1872,92 @@ function drawAwkaOpeningTitle(c:CanvasRenderingContext2D,s:S) {
 
 function drawCrashHill(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette){
  const surfaceY=(x:number)=>{
-  const t=Math.max(0,Math.min(1,(x-2660)/560));
-  return t<.47?GROUND-108*Math.pow(t/.47,1.25):GROUND-108+108*Math.pow((t-.47)/.53,1.22);
+  const t=Math.max(0,Math.min(1,(x-2570)/670));
+  return GROUND+12-190*Math.pow(t,1.08)+Math.sin(t*4.8)*5;
  };
  c.save();
- // Lomas lejanas en violeta, detrás del terreno donde cae el platillo.
- const far=c.createLinearGradient(0,GROUND-150,0,GROUND+24);
- far.addColorStop(0,'#54465c');far.addColorStop(.58,'#66515b');far.addColorStop(1,'#353440');
- c.fillStyle=far;c.beginPath();c.moveTo(2580,GROUND+22);c.quadraticCurveTo(2750,GROUND-96,2895,GROUND-105);c.quadraticCurveTo(3045,GROUND-130,3260,GROUND+25);c.closePath();c.fill();
- // Ladera principal: tierra ocre, roca oscura y luz de atardecer en la cresta.
- const slope=c.createLinearGradient(0,GROUND-155,0,GROUND+25);
- slope.addColorStop(0,'#bd9168');slope.addColorStop(.22,'#92705b');slope.addColorStop(.62,'#65534e');slope.addColorStop(1,'#343943');
- c.fillStyle=slope;c.beginPath();c.moveTo(2630,GROUND+25);c.quadraticCurveTo(2765,GROUND-31,2868,GROUND-93);c.quadraticCurveTo(2950,GROUND-157,3045,GROUND-87);c.quadraticCurveTo(3140,GROUND-28,3230,GROUND+25);c.closePath();c.fill();
- // Segundo plano de piedra para dar volumen a la cara visible de la colina.
- const shadow=c.createLinearGradient(0,GROUND-95,0,GROUND+28);
- shadow.addColorStop(0,'rgba(54,48,55,.05)');shadow.addColorStop(.48,'rgba(44,43,51,.24)');shadow.addColorStop(1,'rgba(22,29,39,.42)');
- c.fillStyle=shadow;c.beginPath();c.moveTo(2710,GROUND+20);c.quadraticCurveTo(2835,GROUND-36,2912,GROUND-75);c.quadraticCurveTo(3005,GROUND-105,3134,GROUND+22);c.closePath();c.fill();
- // Contorno cálido del filo y reflejo suave sobre la roca.
- c.save();c.shadowColor='rgba(255,187,127,.68)';c.shadowBlur=13;c.strokeStyle='rgba(255,202,146,.48)';c.lineWidth=2.4;
- c.beginPath();c.moveTo(2630,GROUND+25);c.quadraticCurveTo(2765,GROUND-31,2868,GROUND-93);c.quadraticCurveTo(2950,GROUND-157,3045,GROUND-87);c.quadraticCurveTo(3140,GROUND-28,3230,GROUND+25);c.stroke();c.restore();
- // Vetas diagonales, pequeñas rocas y matorrales con posiciones deterministas.
- for(let i=0;i<34;i++){
-  const x=2672+(i*41)%520,y=surfaceY(x)+10+(i%5)*5,rx=3+(i%4)*2.2,ry=1.4+(i%3)*1.2;
-  c.save();c.globalAlpha=.24+(i%4)*.06;c.fillStyle=i%3===0?'#d7aa78':i%3===1?'#3d4148':'#8d7562';
-  c.beginPath();c.ellipse(x,y,rx,ry,(i%5-2)*.12,0,Math.PI*2);c.fill();
-  c.strokeStyle='rgba(255,213,160,.35)';c.lineWidth=.7;c.beginPath();c.moveTo(x-rx*.7,y-ry*.4);c.lineTo(x+rx*.5,y-ry*.6);c.stroke();c.restore();
+ // Cordón de cerros más altos detrás de la subida principal.
+ const far=c.createLinearGradient(0,GROUND-230,0,GROUND+30);
+ far.addColorStop(0,'#51465b');far.addColorStop(.45,'#70606a');far.addColorStop(1,'#303744');
+ c.fillStyle=far;c.beginPath();c.moveTo(2470,GROUND+28);c.quadraticCurveTo(2650,GROUND-28,2800,GROUND-72);c.quadraticCurveTo(3050,GROUND-202,3290,GROUND-190);c.lineTo(3370,GROUND+35);c.closePath();c.fill();
+ // Ladera larga y ascendente: la cumbre queda hacia la derecha, como una subida de montaña.
+ const slope=c.createLinearGradient(0,GROUND-205,0,GROUND+35);
+ slope.addColorStop(0,'#c49a72');slope.addColorStop(.2,'#a77c61');slope.addColorStop(.48,'#806452');slope.addColorStop(.76,'#584b49');slope.addColorStop(1,'#303743');
+ c.fillStyle=slope;c.beginPath();
+ c.moveTo(2515,GROUND+35);
+ c.bezierCurveTo(2665,GROUND+23,2770,GROUND-10,2885,GROUND-66);
+ c.bezierCurveTo(3015,GROUND-125,3118,GROUND-181,3245,GROUND-180);
+ c.lineTo(3340,GROUND+38);c.closePath();c.fill();
+ // Cara rocosa en sombra, para que se note la inclinación y la altura.
+ const cliff=c.createLinearGradient(0,GROUND-175,0,GROUND+32);
+ cliff.addColorStop(0,'rgba(50,47,55,.10)');cliff.addColorStop(.42,'rgba(46,45,52,.26)');cliff.addColorStop(1,'rgba(20,28,39,.64)');
+ c.fillStyle=cliff;c.beginPath();c.moveTo(2570,GROUND+27);
+ c.bezierCurveTo(2750,GROUND+4,2865,GROUND-60,2995,GROUND-114);
+ c.bezierCurveTo(3090,GROUND-151,3160,GROUND-165,3250,GROUND-168);
+ c.lineTo(3325,GROUND+30);c.closePath();c.fill();
+ // Estratos de piedra siguiendo la subida, con bordes rotos y reflejos cálidos.
+ for(let i=0;i<7;i++){
+  const x=2645+i*77,y=surfaceY(x)+34+i*1.5;
+  c.globalAlpha=.23+(i%3)*.045;c.strokeStyle=i%2?'#d4a078':'#292e39';c.lineWidth=2+(i%2);
+  c.beginPath();c.moveTo(x-48,y+23);c.lineTo(x-17,y+8);c.lineTo(x+9,y+13);c.lineTo(x+38,y-5);c.stroke();
+  c.globalAlpha=.2;c.strokeStyle='#efc18d';c.lineWidth=1;c.beginPath();c.moveTo(x-27,y+9);c.lineTo(x+5,y-1);c.stroke();
  }
- for(const x of [2742,2792,3008,3096,3170]){
-  const y=surfaceY(x)+5;
-  c.save();c.globalAlpha=.82;c.fillStyle='#39463f';c.beginPath();c.ellipse(x,y,14,5,0,0,Math.PI*2);c.ellipse(x+9,y-3,11,6,-.25,0,Math.PI*2);c.fill();
-  c.fillStyle='rgba(216,151,91,.38)';c.beginPath();c.ellipse(x-3,y-5,7,2,-.2,0,Math.PI*2);c.fill();c.restore();
+ // Camino de tierra que sube en zigzag por la ladera.
+ const trail=new Path2D();
+ trail.moveTo(2588,GROUND+7);
+ trail.bezierCurveTo(2650,GROUND-2,2687,GROUND-16,2720,GROUND-22);
+ trail.bezierCurveTo(2785,GROUND-31,2794,GROUND-49,2848,GROUND-65);
+ trail.bezierCurveTo(2902,GROUND-82,2910,GROUND-91,2966,GROUND-111);
+ trail.bezierCurveTo(3020,GROUND-130,3051,GROUND-143,3110,GROUND-158);
+ c.lineCap='round';c.lineJoin='round';
+ c.strokeStyle='rgba(30,31,39,.56)';c.lineWidth=49;c.stroke(trail);
+ c.strokeStyle='#765947';c.lineWidth=39;c.stroke(trail);
+ c.strokeStyle='rgba(204,157,112,.62)';c.lineWidth=2.2;c.stroke(trail);
+ c.setLineDash([8,13]);c.strokeStyle='rgba(240,194,143,.25)';c.lineWidth=1.1;c.stroke(trail);c.setLineDash([]);
+ // Bloques de roca: siluetas angulosas, caras iluminadas y pequeñas grietas.
+ const boulder=(x:number,y:number,scale:number,tone:number)=>{
+  c.save();c.translate(x,y);c.scale(scale,scale);
+  const stone=c.createLinearGradient(-14,-19,13,8);
+  stone.addColorStop(0,tone===0?'#a99a88':tone===1?'#897f7a':'#776d69');
+  stone.addColorStop(.48,tone===0?'#655f60':tone===1?'#625c60':'#4b5059');
+  stone.addColorStop(1,'#303943');
+  c.shadowColor='rgba(12,17,27,.42)';c.shadowBlur=5;c.shadowOffsetY=3;
+  c.fillStyle=stone;c.beginPath();c.moveTo(-19,2);c.lineTo(-15,-10);c.lineTo(-5,-19);c.lineTo(7,-16);c.lineTo(18,-7);c.lineTo(20,3);c.lineTo(11,11);c.lineTo(-8,12);c.closePath();c.fill();
+  c.shadowBlur=0;c.shadowOffsetY=0;
+  c.strokeStyle='rgba(241,205,164,.58)';c.lineWidth=1.3;c.beginPath();c.moveTo(-14,-9);c.lineTo(-5,-17);c.lineTo(5,-14);c.lineTo(12,-8);c.stroke();
+  c.strokeStyle='rgba(22,28,39,.72)';c.lineWidth=1.2;c.beginPath();c.moveTo(-1,-12);c.lineTo(-4,-2);c.lineTo(3,3);c.moveTo(10,-5);c.lineTo(7,2);c.stroke();
+  c.restore();
+ };
+ const rocks:[[number,number,number,number],[number,number,number,number],[number,number,number,number],[number,number,number,number],[number,number,number,number],[number,number,number,number],[number,number,number,number],[number,number,number,number]]=[
+  [2632,surfaceY(2632)+13,1.24,0],[2704,surfaceY(2704)+20,.92,1],[2792,surfaceY(2792)+13,1.35,2],[2874,surfaceY(2874)+19,.92,0],
+  [2960,surfaceY(2960)+13,1.28,1],[3040,surfaceY(3040)+14,.9,2],[3138,surfaceY(3138)+18,1.26,0],[3210,surfaceY(3210)+12,.96,1]
+ ];
+ for(const [x,y,scale,tone] of rocks)boulder(x,y,scale,tone);
+ // Grava y piedras sueltas sobre el camino y a los costados.
+ for(let i=0;i<72;i++){
+  const x=2585+(i*47)%640,y=surfaceY(x)+18+(i*19)%43,size=1.4+(i%4)*.75;
+  c.globalAlpha=.32+(i%4)*.08;c.fillStyle=i%3===0?'#d9b18a':i%3===1?'#343b46':'#a18b79';
+  c.beginPath();c.ellipse(x,y,size*1.5,size*.72,(i%5-2)*.12,0,Math.PI*2);c.fill();
  }
- // Árboles de la ladera: se mecen con el mismo viento que las hojas del escenario.
- if(im?.tree&&ready(im.tree)){
-  drawWindTree(c,im.tree,2712,surfaceY(2712)+5,82,s.t,27,.96);
-  drawWindTree(c,im.tree,2784,surfaceY(2784)+4,56,s.t,31,.76);
-  drawWindTree(c,im.tree,3052,surfaceY(3052)+4,67,s.t,30,.9);
-  drawWindTree(c,im.tree,3150,surfaceY(3150)+3,78,s.t,33,.98);
- }
- // Pastos y ramitas en primer plano para integrar la colina con el camino.
- for(let i=0;i<28;i++){
-  const x=2680+(i*23)%530,y=surfaceY(x)+9+(i%4)*4;
+ c.globalAlpha=1;
+ // Arbustos y pastos secos creciendo entre las rocas.
+ for(let i=0;i<31;i++){
+  const x=2590+(i*31)%645,y=surfaceY(x)+7+(i%4)*5;
   c.globalAlpha=.48;c.strokeStyle=i%3===0?'#d6a06f':'#59644f';c.lineWidth=1;
   c.beginPath();c.moveTo(x,y+4);c.quadraticCurveTo(x-2,y-2,x-5,y-5-(i%3)*2);c.moveTo(x,y+3);c.lineTo(x+4,y-3-(i%4));c.stroke();
  }
+ // Árboles patagónicos a distintas alturas de la pendiente.
+ if(im?.tree&&ready(im.tree)){
+  drawWindTree(c,im.tree,2670,surfaceY(2670)+7,70,s.t,27,.88);
+  drawWindTree(c,im.tree,2822,surfaceY(2822)+8,54,s.t,31,.72);
+  drawWindTree(c,im.tree,3067,surfaceY(3067)+7,64,s.t,30,.86);
+  drawWindTree(c,im.tree,3180,surfaceY(3180)+5,58,s.t,33,.8);
+ }
+ // Línea superior iluminada por el atardecer y reflejo tenue en el terreno.
+ c.save();c.shadowColor='rgba(255,188,127,.72)';c.shadowBlur=15;c.strokeStyle='rgba(255,210,158,.62)';c.lineWidth=2.6;
+ c.beginPath();c.moveTo(2515,GROUND+35);c.bezierCurveTo(2665,GROUND+23,2770,GROUND-10,2885,GROUND-66);c.bezierCurveTo(3015,GROUND-125,3118,GROUND-181,3245,GROUND-180);c.stroke();c.restore();
  c.restore();
 }
-
 export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette) {
  if(im&&s.phase==='spaceship'){shipScene(c,s,im,p);return;}
  if(im&&s.phase==='bedroom'&&s.chapter.stage==='roomFade'&&s.chapter.time<1.2){
