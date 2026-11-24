@@ -7,7 +7,7 @@ export const Route = createFileRoute("/reportes")({
     meta: [
       { title: "Publicaciones — Gennaro Montecino" },
       { name: "description", content: "Publicaciones, análisis de casos y notas de investigación de Gennaro Montecino." },
-      { property: "og:title", content: "Reportes — APFAA" },
+      { property: "og:title", content: "Publicaciones — Gennaro Montecino" },
       { property: "og:description", content: "Publicaciones y análisis sobre videojuegos, ufología e investigaciones de la zona." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
