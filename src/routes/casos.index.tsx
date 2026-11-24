@@ -7,10 +7,10 @@ import { expedientes, localidades, tiposFenomeno, estados } from "@/lib/archive"
 export const Route = createFileRoute("/casos/")({
   head: () => ({
     meta: [
-      { title: "Archivo de Casos — APFAA" },
+      { title: "Casos ufológicos — Gennaro Montecino" },
       { name: "description", content: "Catálogo documental de expedientes de fenómenos aéreos anómalos de la Comarca Andina y la Patagonia." },
       { property: "og:title", content: "Archivo de Casos — APFAA" },
-      { property: "og:description", content: "Catálogo de expedientes con fuentes, fechas y estado de investigación." },
+      { property: "og:description", content: "Casos ufológicos de la zona, con fechas, fuentes y estado de investigación." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -57,7 +57,7 @@ function Casos() {
 
         {list.length === 0 ? (
           <EmptyState code="Catálogo · En preparación" title="El archivo se encuentra en proceso de catalogación.">
-            Los expedientes se incorporarán a medida que cada testimonio y sus fuentes sean verificados y documentados. APFAA no publica casos sin respaldo documental.
+            Los casos se incorporarán a medida que los testimonios y sus fuentes sean documentados. Se distinguirán los relatos, las hipótesis y la información corroborada.
           </EmptyState>
         ) : (
           <ul className="divide-y divide-border border-y border-border">
