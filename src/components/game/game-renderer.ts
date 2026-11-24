@@ -652,7 +652,7 @@ function drawAgentUltimateVfx(c:CanvasRenderingContext2D,s:S){
 function drawCombatFx(c:CanvasRenderingContext2D,s:S,p:Palette){
  for(const f of s.fx){
   const maxLife=f.maxLife??.4,progress=Math.max(0,Math.min(1,1-f.life/maxLife)),color=p[f.c as keyof Palette]??p.gold;
-  c.save();c.globalAlpha=Math.min(1,f.life/maxLife);
+  c.save();if(f.glow){c.globalCompositeOperation='screen';c.shadowColor=color;c.shadowBlur=f.shape==='spark'?15:10;c.lineCap='round';}c.globalAlpha=Math.min(1,f.life/maxLife);
   if(f.shape==='ring'){
    const radius=(f.size??7)+progress*(f.size??7)*1.8;c.strokeStyle=color;c.lineWidth=1.2+f.life*3;
    c.beginPath();c.ellipse(f.x,f.y,radius,radius*.68,0,0,Math.PI*2);c.stroke();
@@ -1832,11 +1832,21 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
     }
     oval(c,'rgba(0,0,0,.4)',0,-2,34,7);drawTrimmed(c,artAgent,-agentW/2,-agentH,agentW,agentH);
     if(!entering&&agent.hp>0&&agent.kind==='shield'&&(agent.blockFlash??0)>0){
-     const shieldX=agentW*.22,alpha=Math.min(1,(agent.blockFlash??0)/.24);
+     const shieldX=agentW*.22,alpha=Math.min(1,(agent.blockFlash??0)/.52);
      c.save();c.globalCompositeOperation='screen';c.globalAlpha=.42+.58*alpha;c.shadowColor='#a9eaff';c.shadowBlur=17;
      c.beginPath();c.moveTo(shieldX,-agentH*.91);c.quadraticCurveTo(shieldX+38,-agentH*.83,shieldX+39,-agentH*.57);c.quadraticCurveTo(shieldX+36,-agentH*.31,shieldX+3,-agentH*.13);c.quadraticCurveTo(shieldX-13,-agentH*.39,shieldX,-agentH*.91);c.closePath();
      c.fillStyle='rgba(117,205,255,.22)';c.fill();c.strokeStyle='rgba(211,247,255,.96)';c.lineWidth=2;c.stroke();
-     c.lineWidth=1;c.strokeStyle='rgba(171,224,255,.86)';c.beginPath();c.moveTo(shieldX+5,-agentH*.77);c.lineTo(shieldX+27,-agentH*.55);c.lineTo(shieldX+8,-agentH*.34);c.stroke();
+     c.lineWidth=1.5;c.strokeStyle='rgba(235,251,255,.98)';c.beginPath();c.moveTo(shieldX+5,-agentH*.77);c.lineTo(shieldX+27,-agentH*.55);c.lineTo(shieldX+8,-agentH*.34);c.stroke();
+     // Chispas dibujadas directamente sobre el escudo para que destaquen incluso en pantallas pequeñas.
+     const sparkX=shieldX+20,sparkY=-agentH*.54,fade=Math.max(.18,alpha);
+     c.save();c.globalCompositeOperation='screen';c.globalAlpha=fade;c.lineCap='round';c.shadowColor='#8eeaff';c.shadowBlur=18;
+     for(let i=0;i<10;i++){
+      const angle=i*Math.PI/5+s.t*2.8,inner=4+(1-alpha)*5,outer=19+(1-alpha)*9;
+      c.strokeStyle=i%2===0?'#ffffff':'#63dcff';c.lineWidth=i%2===0?3.2:2.4;
+      c.beginPath();c.moveTo(sparkX+Math.cos(angle)*inner,sparkY+Math.sin(angle)*inner);
+      c.lineTo(sparkX+Math.cos(angle)*outer,sparkY+Math.sin(angle)*outer);c.stroke();
+     }
+     c.fillStyle='#f4ffff';c.beginPath();c.arc(sparkX,sparkY,3.2,0,Math.PI*2);c.fill();c.restore();
      c.restore();
     }else if(!entering&&agent.hp>0&&agent.kind==='shield'&&(agent.shieldBreak??0)>0){
      const q=Math.min(1,(agent.shieldBreak??0)/.45),shieldX=agentW*.22;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { shouldStartCrossMusic } from '../components/game/game-audio';
-import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, respawnAtAgentCheckpoint, AGENT_WARNING_MESSAGE, AGENT_DAMAGE_FACTOR, UFO_PLAYER_DAMAGE, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, triggerAgentUltimate, shipIsFree, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, SWORD_PRIMARY_DAMAGE, SWORD_PRIMARY_RANGE, SWORD_PRIMARY_FRAME_COUNT, SWORD_PRIMARY_FRAME_DURATION, SWORD_PRIMARY_DURATION, SWORD_PRIMARY_IMPACT_TIME, AGENT_ULTIMATE_BLAST_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
+import { DIFFICULTY, GROUND, ALIEN_SPEECH_DURATION, ALIEN_ATTACK_DURATION, newState, newIntroState, canSkipOpeningScene, skipOpeningScene, canSkipAftermathScene, skipAftermathScene, update, shotInterval, projectileDamage, canAskHelp, respawnAtShipCheckpoint, respawnAtSoldierCheckpoint, respawnAtAgentCheckpoint, AGENT_WARNING_MESSAGE, AGENT_DAMAGE_FACTOR, UFO_PLAYER_DAMAGE, enterShip, shipAction, interactShip, shipIsCombat, triggerSpecial, triggerCatUltimate, triggerAgentUltimate, shipIsFree, SOLDIER_DAMAGE_FACTOR, CAT_ULTIMATE_READY_DELAY, CAT_ULTIMATE_THROW_DURATION, CAT_ULTIMATE_BEAM_DURATION, SPECIAL_ATTACK_ANIM_DURATION, SPECIAL_ATTACK_RELEASE_DELAY, SPECIAL_PROJECTILE_SPEED, SPECIAL_ATTACK_DAMAGE_FACTOR, SPECIAL_ATTACK_UFO_DAMAGE, SPECIAL_ATTACK_SHIP_DAMAGE, SWORD_PRIMARY_DAMAGE, SWORD_PRIMARY_RANGE, SWORD_PRIMARY_FRAME_COUNT, SWORD_PRIMARY_FRAME_DURATION, SWORD_PRIMARY_DURATION, SWORD_PRIMARY_IMPACT_TIME, SWORD_PRIMARY_SOUND_TIME, AGENT_ULTIMATE_BLAST_DURATION, COMBAT_TIP_SLIDE_DURATION, COMBAT_TIP_HOLD_DURATION, COMBAT_TIP_CARD_DURATION, COMBAT_TIP_SEQUENCE_DURATION, CROSS_RISE_DURATION, CROSS_RISE_FRAME_COUNT } from '../components/game/game-engine';
 
 describe('OVNI difficulty and narrative', () => {
   it('shows both combat-tip images once when the UFO fight begins and keeps each readable for 3.4 seconds',()=>{
@@ -175,6 +175,7 @@ describe('OVNI difficulty and narrative', () => {
      expect(SWORD_PRIMARY_FRAME_DURATION).toBe(.1425);
      expect(SWORD_PRIMARY_DURATION).toBe(1.14);
      expect(SWORD_PRIMARY_IMPACT_TIME).toBeCloseTo(.4275);
+      expect(SWORD_PRIMARY_SOUND_TIME).toBeCloseTo(.3075);
      const s=newState();s.phase='spaceship';s.ship.stage='swordEquipped';s.ship.x=300;s.ship.y=452;s.ship.face=1;
      s.ship.enemies=[
        {x:440,y:452,hp:100,kind:'direct',cd:99,windup:0,hurt:0,deadTime:0,face:-1},
@@ -317,8 +318,10 @@ describe('OVNI difficulty and narrative', () => {
     s.fire=true;update(s,.016);
     expect(s.ship.stage).toBe('agentFight');expect(s.ship.agents[0]!.hp).toBe(150);expect(s.ship.sounds).not.toContain('swordPrimary');
     const particleBefore=s.fx.length;
-    update(s,SWORD_PRIMARY_IMPACT_TIME+.02);
-    expect(s.ship.agents[0]!.hp).toBe(104.5);expect(s.ship.sounds).toContain('swordPrimary');
+    update(s,SWORD_PRIMARY_SOUND_TIME+.02);
+    expect(s.ship.agents[0]!.hp).toBe(150);expect(s.ship.sounds).toContain('swordPrimary');
+    update(s,SWORD_PRIMARY_IMPACT_TIME-SWORD_PRIMARY_SOUND_TIME+.02);
+    expect(s.ship.agents[0]!.hp).toBe(104.5);
     const particle=s.fx.slice(particleBefore).find(f=>f.c==='energy'&&f.shape==='spark'&&f.vx!==undefined);
     expect(particle).toBeDefined();
     const particleX=particle!.x,particleLife=particle!.life;

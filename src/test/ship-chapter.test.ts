@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newIntroState, enterShip, update, interactChapter, crossCanStand, SHIP, SWORD_PRIMARY_IMPACT_TIME, triggerSpecial, type S } from '../components/game/game-engine';
+import { newIntroState, enterShip, update, interactChapter, crossCanStand, SHIP, SWORD_PRIMARY_IMPACT_TIME, SWORD_PRIMARY_SOUND_TIME, triggerSpecial, type S } from '../components/game/game-engine';
 function tick(s:S,seconds:number){for(let t=0;t<seconds;t+=.02)update(s,.02);}
 function makeAgent(id:number,x:number,kind:S['ship']['agents'][number]['kind']):S['ship']['agents'][number]{
  return {id,x,y:SHIP.floor,hp:160,maxHp:160,kind,cd:100,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,knockbackX:0,stagger:0};
@@ -39,29 +39,39 @@ describe('Ship stabilization through Cerro de la Cruz',()=>{
   expect(s.ship.swordSwingRemaining).toBeGreaterThan(1);
   expect(target.hp).toBe(160);
   const boltX=bolt.x,targetX=target.x;
-  s.fire=false;tick(s,SWORD_PRIMARY_IMPACT_TIME+.06);
+  s.fire=false;tick(s,SWORD_PRIMARY_SOUND_TIME+.02);expect(s.ship.sounds).toContain('swordPrimary');expect(target.hp).toBe(160);tick(s,SWORD_PRIMARY_IMPACT_TIME-SWORD_PRIMARY_SOUND_TIME+.06);
   expect(bolt.x).toBeLessThan(boltX);
   expect(target.x).not.toBe(targetX);
   expect(target.hp).toBeLessThan(160);
   expect(target.knockbackX).toBeGreaterThan(0);
  });
- it('blocks sword and R hits with shield agents, then exposes a broken shield briefly',()=>{
+ it('shows shield sparks, breaks after two sword blocks and lets R break it immediately',()=>{
   const sword=newIntroState();enterShip(sword);sword.ship.stage='agentFight';sword.ship.agentCombatActive=true;sword.ship.agentWarning=0;sword.ship.x=100;sword.ship.face=1;
   const shield=makeAgent(0,210,'shield');sword.ship.agents=[shield];
-  for(let i=0;i<3;i++){
+  for(let i=0;i<2;i++){
    sword.fire=true;update(sword,.02);sword.fire=false;
-   tick(sword,SWORD_PRIMARY_IMPACT_TIME+.06);
+   tick(sword,SWORD_PRIMARY_SOUND_TIME+.02);
+   expect(sword.ship.sounds).toContain('swordPrimary');
    expect(shield.hp).toBe(160);
-   if(i<2)tick(sword,SWORD_PRIMARY_DURATION);
+   tick(sword,SWORD_PRIMARY_IMPACT_TIME-SWORD_PRIMARY_SOUND_TIME+.06);
+   expect(shield.hp).toBe(160);
+   expect(sword.fx.filter(f=>f.glow&&f.shape==='spark').length).toBeGreaterThanOrEqual(12);
+   if(i===0){expect(shield.shieldBlocks).toBe(1);tick(sword,SWORD_PRIMARY_DURATION);}
   }
   expect(shield.shieldBreak).toBeGreaterThan(0);
+
+  tick(sword,SWORD_PRIMARY_DURATION);
+  sword.fire=true;update(sword,.02);sword.fire=false;
+  tick(sword,SWORD_PRIMARY_IMPACT_TIME+.06);
+  expect(shield.hp).toBeCloseTo(160-45.5);
 
   const special=newIntroState();enterShip(special);special.ship.stage='agentFight';special.ship.agentCombatActive=true;special.ship.agentWarning=0;special.ship.x=100;special.ship.face=1;
   const specialShield=makeAgent(0,210,'shield');special.ship.agents=[specialShield];
   expect(triggerSpecial(special)).toBe(true);
   tick(special,1.25);
   expect(specialShield.hp).toBe(160);
-  expect(specialShield.shieldBlocks).toBe(2);
+  expect(specialShield.shieldBlocks).toBe(0);
+  expect(specialShield.shieldBreak).toBeGreaterThan(0);
  });
  it('reduces damage from laboratory alien attacks without changing their triggers',()=>{
   const projectile=newIntroState();enterShip(projectile);projectile.ship.stage='combat';projectile.ship.x=400;
