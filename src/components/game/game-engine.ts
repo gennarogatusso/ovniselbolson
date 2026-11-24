@@ -399,6 +399,23 @@ function spawnCombatImpact(s:S,x:number,y:number,power=1){
  for(let i=0,n=Math.round(8+power*5);i<n;i++){const angle=i/n*Math.PI*2+s.t*1.7,speed=(62+(i%4)*24)*power,duration=.22+(i%4)*.055;s.fx.push({x,y,life:duration,maxLife:duration,c:i%4===0?'light':'energy',shape:'spark',size:1.4+(i%3)*.7,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});}
  for(let i=0;i<Math.round(power*4);i++){const angle=i*2.399+s.t*2,r=8+(i%3)*8,duration=.36+(i%3)*.08;s.fx.push({x:x+Math.cos(angle)*r,y:y+Math.sin(angle)*r,life:duration,maxLife:duration,c:'gold',shape:'dust',size:2+i%3});}
 }
+function spawnSpecialImpact(s:S,x:number,y:number,power=1){
+ spawnCombatImpact(s,x,y,1.35*power);
+ // Dos ondas de choque superpuestas y un destello central.
+ for(const [size,life,color] of [[34,.34,'light'],[66,.52,'energy']] as const){
+  s.fx.push({x,y,life,maxLife:life,c:color,shape:'ring',size:size*power});
+ }
+ const count=18;
+ for(let i=0;i<count;i++){
+  const angle=i/count*Math.PI*2+s.t*.55,speed=(88+(i%5)*24)*power,duration=.3+(i%4)*.075;
+  s.fx.push({x,y,life:duration,maxLife:duration,c:i%6===0?'gold':i%4===0?'light':'energy',shape:'spark',size:2+(i%3)*.75,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
+ }
+ for(let i=0;i<7;i++){
+  const angle=i*2.399+s.t*1.3,speed=(28+(i%4)*14)*power,duration=.38+(i%3)*.08;
+  s.fx.push({x:x+Math.cos(angle)*5,y:y+Math.sin(angle)*4,life:duration,maxLife:duration,c:'energy',shape:'dust',size:2.5+(i%3),vx:Math.cos(angle)*speed,vy:-20-(i%4)*12});
+ }
+ if(s.phase==='spaceship')s.ship.shake=Math.max(s.ship.shake,.14);
+}
 function spawnSwordStrikeFx(s:S,x:number,y:number){
  const ringLife=.42;s.fx.push({x,y,life:ringLife,maxLife:ringLife,c:'energy',shape:'ring',size:12});
  const count=22,groundY=SHIP.floor-5;
@@ -442,7 +459,8 @@ function hitUfo(s:S,damage:number,x:number,y:number){
  const u=s.u;if(u.hp<=0)return;
  u.hp=Math.max(0,u.hp-damage);u.hit=.12;u.recoil=.18;
  s.fx.push({x,y,life:.38,c:'energy'});
- spawnCombatImpact(s,x,y,damage>=10?1.8:1);
+ if(damage>=SPECIAL_ATTACK_UFO_DAMAGE-.01)spawnSpecialImpact(s,x,y,1.05);
+ else spawnCombatImpact(s,x,y,damage>=10?1.8:1);
  if(u.hp<=0){
   u.hp=0;u.attack='idle';u.windup=0;s.pt=0;s.lasers=[];s.fire=false;
   if(s.recruited){s.phase='crash';s.crashStart={x:u.x,y:u.y};s.shots=[];}else s.phase='boom';
@@ -511,7 +529,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
           if(!target||target.hp<=0){let index=-1,best=Infinity;for(let i=0;i<a.enemies.length;i++){const e=a.enemies[i];if(e&&e.hp>0){const d=Math.hypot(e.x-b.x,(e.y-48)-b.y);if(d<best){best=d;index=i;target=e;}}}b.targetIndex=index;}
           if(!target||target.hp<=0){b.life=0;continue;}
           const dx=target.x-b.x,dy=(target.y-48)-b.y,L=Math.hypot(dx,dy)||1;b.vx=dx/L*SPECIAL_PROJECTILE_SPEED;b.vy=dy/L*SPECIAL_PROJECTILE_SPEED;
-          if(L<40+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;target.hp=Math.max(0,target.hp-SPECIAL_ATTACK_SHIP_DAMAGE);target.hurt=.3;if(target.hp<=0)defeat(s,target);s.fx.push({x:target.x,y:target.y-48,life:.55,c:'energy'});}
+          if(L<40+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;target.hp=Math.max(0,target.hp-SPECIAL_ATTACK_SHIP_DAMAGE);target.hurt=.3;if(target.hp<=0)defeat(s,target);spawnSpecialImpact(s,target.x,target.y-48,1);}
           else{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;}
           continue;
         }
@@ -578,7 +596,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
           if(!target||target.hp<=0){let index=-1,best=Infinity;for(let i=0;i<a.soldiers.length;i++){const e=a.soldiers[i];if(e&&e.hp>0){const d=Math.hypot(e.x-b.x,(e.y-50)-b.y);if(d<best){best=d;index=i;target=e;}}}b.targetIndex=index;}
           if(!target||target.hp<=0){b.life=0;continue;}
           const dx=target.x-b.x,dy=(target.y-50)-b.y,L=Math.hypot(dx,dy)||1;b.vx=dx/L*SPECIAL_PROJECTILE_SPEED;b.vy=dy/L*SPECIAL_PROJECTILE_SPEED;
-          if(L<42+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;target.hp=Math.max(0,target.hp-42);target.hurt=.45;if(target.hp<=0){target.deadTime=.001;shipSound(s,'impact');}s.fx.push({x:target.x,y:target.y-50,life:.6,c:'energy'});}
+          if(L<42+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;target.hp=Math.max(0,target.hp-42);target.hurt=.45;if(target.hp<=0){target.deadTime=.001;shipSound(s,'impact');}spawnSpecialImpact(s,target.x,target.y-50,1.05);}
           else{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;}
           continue;
         }
@@ -682,7 +700,7 @@ case 'agentUltimate':{
           if(!target||target.hp<=0){let index=-1,best=Infinity;for(let i=0;i<a.agents.length;i++){const e=a.agents[i];if(e&&e.hp>0){const distance=Math.hypot(e.x-b.x,(e.y-52)-b.y);if(distance<best){best=distance;index=i;target=e;}}}b.targetIndex=index;}
           if(!target||target.hp<=0){b.life=0;continue;}
           const dx=target.x-b.x,dy=(target.y-52)-b.y,length=Math.hypot(dx,dy)||1;b.vx=dx/length*SPECIAL_PROJECTILE_SPEED;b.vy=dy/length*SPECIAL_PROJECTILE_SPEED;
-          if(length<42+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;damageAgent(s,target,42,.45);spawnCombatImpact(s,target.x,target.y-52,1.7);}
+          if(length<42+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;damageAgent(s,target,42,.45);spawnSpecialImpact(s,target.x,target.y-52,1.1);}
           else{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;}
           continue;
         }

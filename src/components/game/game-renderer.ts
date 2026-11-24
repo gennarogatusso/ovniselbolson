@@ -512,10 +512,36 @@ function specialPose(c:CanvasRenderingContext2D,frames:SpecialFrame[],elapsed:nu
  c.save();c.imageSmoothingEnabled=false;c.drawImage(sprite.image,x-sprite.anchorX*scale,y-sprite.baseY*scale,w,drawH);c.restore();
 }
 function drawSpecialProjectile(c:CanvasRenderingContext2D,frames:[HTMLImageElement,HTMLImageElement],b:{x:number;y:number;vx:number;vy:number},time:number){
- const im=frames[Math.floor(time*8)%frames.length];
+ // El cuerpo del proyectil usa un cuadro fijo: la animación se traslada a la estela
+ // para evitar el cambio brusco entre dos sprites que parecía hacerlo titilar.
+ const im=frames[0];
  if(!ready(im))return;
  const width=88,height=width*im.naturalHeight/im.naturalWidth,angle=Math.atan2(b.vy,b.vx);
- c.save();c.translate(b.x,b.y);c.rotate(angle);c.imageSmoothingEnabled=false;c.globalAlpha=.98;c.drawImage(im,-width/2,-height/2,width,height);c.restore();
+ c.save();c.translate(b.x,b.y);c.rotate(angle);c.imageSmoothingEnabled=false;c.globalCompositeOperation='screen';
+ // Aura constante alrededor del núcleo.
+ const aura=c.createRadialGradient(-7,0,2,-7,0,58);
+ aura.addColorStop(0,'rgba(238,215,255,.34)');aura.addColorStop(.34,'rgba(172,105,255,.25)');
+ aura.addColorStop(.72,'rgba(116,62,255,.12)');aura.addColorStop(1,'rgba(85,42,210,0)');
+ c.fillStyle=aura;c.fillRect(-72,-54,120,108);
+ // Estela violeta con un centro claro y bordes suaves.
+ const plume=c.createLinearGradient(-82,0,8,0);
+ plume.addColorStop(0,'rgba(123,73,255,0)');plume.addColorStop(.38,'rgba(151,91,255,.18)');
+ plume.addColorStop(.78,'rgba(205,157,255,.38)');plume.addColorStop(1,'rgba(255,241,255,.18)');
+ c.strokeStyle=plume;c.lineCap='round';c.shadowColor='#9e62ff';c.shadowBlur=18;c.lineWidth=17;
+ c.beginPath();c.moveTo(-78,0);c.lineTo(-9,0);c.stroke();
+ c.shadowBlur=7;c.lineWidth=4.5;c.strokeStyle='rgba(236,216,255,.58)';
+ c.beginPath();c.moveTo(-66,0);c.lineTo(-8,0);c.stroke();
+ // Filamentos móviles: cambian de posición, pero mantienen una intensidad estable.
+ c.shadowBlur=0;
+ for(let i=0;i<5;i++){
+  const phase=time*8+i*1.72,px=-15-((time*92+i*19)%62),py=Math.sin(phase)* (4+i%3*2.2);
+  c.globalAlpha=.48;c.fillStyle=i%3===0?'#fff0ff':'#c49aff';
+  c.beginPath();c.ellipse(px,py,2.4+(i%2)*.8,1.35,Math.sin(phase)*.18,0,Math.PI*2);c.fill();
+ }
+ // Sprite original nítido y siempre opaco.
+ c.globalCompositeOperation='screen';c.globalAlpha=1;c.shadowColor='#c28bff';c.shadowBlur=16;
+ c.drawImage(im,-width/2,-height/2,width,height);
+ c.shadowBlur=0;c.restore();
 }
 function pose(c:CanvasRenderingContext2D,im:HTMLImageElement,frame:number,count:number,x:number,y:number,h:number,alpha=1) {
  if(!ready(im)||alpha<=0)return;
