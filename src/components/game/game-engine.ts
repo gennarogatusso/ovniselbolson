@@ -49,7 +49,7 @@ export function forestIsFree(s:S){return s.phase==='bedroom'&&['forestRun','burn
 export function computerAvailable(s:S){return roomIsFree(s)&&!s.chapter.night&&Math.hypot(s.chapter.roomX-350,s.chapter.roomY-418)<80;}
 export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=false;}
 export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'soldierExit'|'agentEntrance'|'agentFight'|'agentUltimate'|'agentUltimateBlast'|'agentEnd'|'trailWalk'|'trailEnd'|'swordIntro'|'swordReady'|'swordPickup'|'swordEquipped'|'swordAttack'|'baseFade'|'baseApproach'|'baseEnd'|'end';
-type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number};
+type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number;knockbackX?:number;stagger?:number};
 type GroundSoldier = {id:number;x:number;y:number;hp:number;maxHp:number;role:'bazooka'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose?:number;state:'cover'|'advance'|'fire'|'hit'};
 export type GroundAgent = {id:number;x:number;y:number;hp:number;maxHp:number;kind:'regular'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose:number;face?:-1|1;state:'guard'|'advance'|'aim'|'hit'};
 function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,vy:0,jumpHeld:false,catUltimateUsed:false,trailProgress:0,baseProgress:0,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],agents:[] as GroundAgent[],agentCombatActive:false,agentMana:0,agentKills:0,agentBurned:false,agentBurnedTime:0,agentWarning:0,sounds:[] as string[],labDead:0,swordAttackHeld:false};}
@@ -416,6 +416,27 @@ function spawnSpecialImpact(s:S,x:number,y:number,power=1){
  }
  if(s.phase==='spaceship')s.ship.shake=Math.max(s.ship.shake,.14);
 }
+function spawnShipEnemyHitFx(s:S,x:number,y:number,power=1){
+ const life=.22;
+ s.fx.push({x,y,life,maxLife:life,c:'light',shape:'ring',size:7+power*4});
+ for(let i=0;i<7;i++){
+  const angle=i/7*Math.PI*2+s.t*1.3,speed=(56+(i%3)*20)*power,duration=.18+(i%3)*.045;
+  s.fx.push({x,y,life:duration,maxLife:duration,c:i%3===0?'light':'energy',shape:'spark',size:1.6+(i%2)*.6,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
+ }
+}
+function damageShipEnemy(s:S,e:ShipEnemy,damage:number,direction:number,power=1,showFx=true){
+ if(e.hp<=0)return;
+ e.hp=Math.max(0,e.hp-damage);
+ e.hurt=Math.max(e.hurt,.38*power);
+ e.stagger=Math.max(e.stagger??0,.14*power);
+ const impulse=(95+Math.min(damage,16)*3.4)*power;
+ const next=(e.knockbackX??0)+(Math.sign(direction)||-1)*impulse;
+ e.knockbackX=Math.max(-220,Math.min(220,next));
+ // A hit interrupts the psychic enemy's charge instead of letting it finish through the impact.
+ e.windup=0;
+ if(e.hp<=0)defeat(s,e);
+ else if(showFx)spawnShipEnemyHitFx(s,e.x,e.y-48,power);
+}
 function spawnSwordStrikeFx(s:S,x:number,y:number){
  const ringLife=.42;s.fx.push({x,y,life:ringLife,maxLife:ringLife,c:'energy',shape:'ring',size:12});
  const count=22,groundY=SHIP.floor-5;
@@ -487,7 +508,7 @@ function superShot(s:S){
 function updateShip(s:S,dt:number):'continue'|'lose'|null{
   const a=s.ship;a.time+=dt;if(a.agentBurned)a.agentBurnedTime+=dt;a.hurt=Math.max(0,a.hurt-dt);a.shake=Math.max(0,a.shake-dt);a.beam=Math.max(0,a.beam-dt);a.beamCd=Math.max(0,a.beamCd-dt);a.flash=Math.max(0,a.flash-dt);a.rollCd=Math.max(0,a.rollCd-dt);a.specialCd=Math.max(0,a.specialCd-dt);a.specialAnim=Math.max(0,a.specialAnim-dt);a.agentWarning=Math.max(0,a.agentWarning-dt);a.reactorHit=Math.max(0,a.reactorHit-dt);
   if(s.keys.e&&!a.eHeld)interactShip(s);a.eHeld=Boolean(s.keys.e);
-  for(const e of a.enemies){e.hurt=Math.max(0,e.hurt-dt);if(e.hp<=0)e.deadTime+=dt;}
+  for(const e of a.enemies){e.hurt=Math.max(0,e.hurt-dt);e.stagger=Math.max(0,(e.stagger??0)-dt);if(e.hp<=0)e.deadTime+=dt;}
   for(const e of a.agents){e.hurt=Math.max(0,e.hurt-dt);e.firePose=Math.max(0,e.firePose-dt);if(e.hp<=0)e.deadTime+=dt;}
   const timed=(seconds:number,stage:ShipStage)=>{if(a.time>=seconds)shipAdvance(s,stage);};
   switch(a.stage){
@@ -513,9 +534,22 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
       else{a.x=Math.max(SHIP.left,Math.min(SHIP.right,a.x+move*210*dt));if(move){a.face=move;a.walk+=dt*10;}}
       if(a.boxBroken&&!a.armed){a.weaponVy+=650*dt;a.weaponY=Math.min(SHIP.floor,a.weaponY+a.weaponVy*dt);}
       for(const e of a.enemies){
-        if(e.hp<=0)continue;e.face=a.x>e.x?1:-1;e.cd-=dt;
-        if(e.kind==='direct'){e.x=Math.max(230,Math.min(850,e.x+Math.sin(s.t+e.x*.001)*32*dt));if(e.cd<=0){const dx=a.x-e.x,dy=a.y-45-(e.y-52),L=Math.hypot(dx,dy)||1;a.bolts.push({x:e.x,y:e.y-52,vx:dx/L*270,vy:dy/L*270,life:4});e.cd=2.8;shipSound(s,'laser');}}
-        else if(e.cd<=0){e.windup+=dt;if(e.windup>=1){if(a.roll===0&&a.push==='none'){a.push='lean';a.pushTime=0;a.pushFrom=e.x;shipSound(s,'psychic');}e.windup=0;e.cd=7;}}
+        if(e.hp<=0)continue;
+        e.face=a.x>e.x?1:-1;
+        e.cd-=dt;
+        if(Math.abs(e.knockbackX??0)>.5){
+          e.x=Math.max(230,Math.min(850,e.x+(e.knockbackX??0)*dt));
+          e.knockbackX=(e.knockbackX??0)*Math.max(0,1-dt*10);
+          if(Math.abs(e.knockbackX)<6)e.knockbackX=0;
+        }
+        if((e.stagger??0)>0){e.windup=0;continue;}
+        if(e.kind==='direct'){
+          e.x=Math.max(230,Math.min(850,e.x+Math.sin(s.t+e.x*.001)*32*dt));
+          if(e.cd<=0){const dx=a.x-e.x,dy=a.y-45-(e.y-52),L=Math.hypot(dx,dy)||1;a.bolts.push({x:e.x,y:e.y-52,vx:dx/L*270,vy:dy/L*270,life:4});e.cd=2.8;shipSound(s,'laser');}
+        }else if(e.cd<=0){
+          e.windup+=dt;
+          if(e.windup>=1){if(a.roll===0&&a.push==='none'){a.push='lean';a.pushTime=0;a.pushFrom=e.x;shipSound(s,'psychic');}e.windup=0;e.cd=7;}
+        }
       }
       a.fireCd-=dt;
       if(s.fire&&a.push==='none'&&a.roll===0){
@@ -529,13 +563,13 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
           if(!target||target.hp<=0){let index=-1,best=Infinity;for(let i=0;i<a.enemies.length;i++){const e=a.enemies[i];if(e&&e.hp>0){const d=Math.hypot(e.x-b.x,(e.y-48)-b.y);if(d<best){best=d;index=i;target=e;}}}b.targetIndex=index;}
           if(!target||target.hp<=0){b.life=0;continue;}
           const dx=target.x-b.x,dy=(target.y-48)-b.y,L=Math.hypot(dx,dy)||1;b.vx=dx/L*SPECIAL_PROJECTILE_SPEED;b.vy=dy/L*SPECIAL_PROJECTILE_SPEED;
-          if(L<40+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;target.hp=Math.max(0,target.hp-SPECIAL_ATTACK_SHIP_DAMAGE);target.hurt=.3;if(target.hp<=0)defeat(s,target);spawnSpecialImpact(s,target.x,target.y-48,1);}
+          if(L<40+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;damageShipEnemy(s,target,SPECIAL_ATTACK_SHIP_DAMAGE,Math.sign(b.vx)||a.face,1.25,false);spawnSpecialImpact(s,target.x,target.y-48,1);}
           else{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;}
           continue;
         }
         b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
         if(!a.boxBroken&&Math.abs(b.x-SHIP.boxX)<32&&Math.abs(b.y-SHIP.boxY)<30){b.life=0;a.boxHp--;shipSound(s,'impact');if(a.boxHp<=0){a.boxBroken=true;a.aimActive=false;shipSound(s,'break');a.shake=.25;}}
-        for(const e of a.enemies)if(b.life>0&&e.hp>0&&Math.abs(b.x-e.x)<25&&Math.abs(b.y-(e.y-48))<50){b.life=0;e.hp-=4;e.hurt=.2;if(e.hp<=0)defeat(s,e);}
+        for(const e of a.enemies)if(b.life>0&&e.hp>0&&Math.abs(b.x-e.x)<25&&Math.abs(b.y-(e.y-48))<50){b.life=0;damageShipEnemy(s,e,4,Math.sign(b.vx)||a.face);}
       }
       for(const b of a.bolts){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(Math.abs(b.x-a.x)<23&&Math.abs(b.y-(a.y-50))<48){b.life=0;shipHit(s,5);}}
       a.shots=a.shots.filter(b=>b.life>0);a.bolts=a.bolts.filter(b=>b.life>0);
