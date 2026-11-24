@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight, Eye, Gamepad2, Radio, Star } from "lucide-react";
 import hero from "@/assets/hero.jpg.asset.json";
+import valle from "@/assets/valle.jpg.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -58,6 +59,91 @@ function Index() {
           <div className="mt-14 flex items-center gap-3 text-foreground/55">
             <span className="h-px w-10 bg-silver/40" />
             <span className="label-mono">Desarrollado en El Bolsón · Patagonia argentina</span>
+          </div>
+        </div>
+      </section>
+
+
+      <section
+        id="proximo-lanzamiento"
+        aria-labelledby="proximo-lanzamiento-titulo"
+        className="grain relative isolate overflow-hidden border-y border-cyan-100/10 bg-[#07101a]"
+      >
+        <img
+          src={valle.url}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-35 saturate-[0.55]"
+        />
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(4,9,16,0.98)_0%,rgba(4,10,18,0.93)_48%,rgba(4,10,18,0.72)_100%)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_82%_45%,rgba(73,190,220,0.20),transparent_34%)]" />
+
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-16 md:grid-cols-12 md:px-10 md:py-24">
+          <div className="md:col-span-8">
+            <div className="rise inline-flex flex-wrap items-center gap-3 border border-cyan-200/30 bg-cyan-200/[0.08] px-4 py-2.5 text-cyan-100 shadow-[0_0_30px_rgba(74,211,235,0.10)] backdrop-blur-sm">
+              <Star size={15} fill="currentColor" strokeWidth={1.5} />
+              <span className="label-mono !text-cyan-100">Próximamente</span>
+              <span className="h-4 w-px bg-cyan-100/30" />
+              <span className="label-mono !text-cyan-100/70">Nuevo videojuego</span>
+            </div>
+
+            <p className="label-mono mt-8 !text-cyan-200/75">Proyecto 02 · En desarrollo</p>
+            <h2
+              id="proximo-lanzamiento-titulo"
+              className="display-serif mt-4 max-w-4xl text-5xl leading-[0.98] text-white md:text-7xl"
+            >
+              LA SEÑAL
+              <span className="mt-2 block text-cyan-200">EN LA RUTA 40</span>
+            </h2>
+            <p className="mt-7 max-w-2xl text-lg leading-relaxed text-white/80 md:text-xl">
+              Algo oculto se esconde en el Cerro de La Cruz. Explora el pueblo y sus secretos.
+            </p>
+
+            <div className="mt-9 flex flex-wrap gap-3">
+              <span className="inline-flex items-center gap-2 border border-white/15 bg-black/25 px-4 py-3 text-sm text-white/90 backdrop-blur-sm">
+                <Gamepad2 size={17} className="text-cyan-200" />
+                Videojuego 3D
+              </span>
+              <span className="inline-flex items-center gap-2 border border-white/15 bg-black/25 px-4 py-3 text-sm text-white/90 backdrop-blur-sm">
+                <Eye size={17} className="text-cyan-200" />
+                Primera persona
+              </span>
+              <span className="inline-flex items-center gap-2 border border-white/15 bg-black/25 px-4 py-3 text-sm text-white/90 backdrop-blur-sm">
+                <Radio size={17} className="text-cyan-200" />
+                Terror y misterio
+              </span>
+            </div>
+          </div>
+
+          <div className="relative mx-auto w-full max-w-sm md:col-span-4">
+            <div className="absolute inset-5 rounded-full bg-cyan-300/15 blur-3xl" />
+            <div className="relative overflow-hidden border border-cyan-100/25 bg-[#07131e]/75 p-6 shadow-[0_20px_70px_rgba(0,0,0,0.40),0_0_45px_rgba(54,190,220,0.10)] backdrop-blur-md">
+              <div className="flex items-center justify-between border-b border-cyan-100/15 pb-4">
+                <span className="label-mono !text-cyan-100/75">Registro de campo</span>
+                <span className="flex items-center gap-2 label-mono !text-cyan-100/65">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.9)]" />
+                  En desarrollo
+                </span>
+              </div>
+
+              <div className="relative flex flex-col items-center py-9 text-center">
+                <div className="absolute inset-x-8 top-8 h-40 rounded-full bg-cyan-300/10 blur-2xl" />
+                <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-cyan-200/35 bg-cyan-100/[0.04] shadow-[0_0_45px_rgba(103,232,249,0.12)]">
+                  <div className="absolute inset-3 rounded-full border border-dashed border-cyan-100/20" />
+                  <div className="absolute inset-7 rounded-full border border-cyan-100/15" />
+                  <Radio size={62} strokeWidth={1.1} className="text-cyan-100 drop-shadow-[0_0_16px_rgba(103,232,249,0.65)]" />
+                  <span className="absolute right-7 top-7 h-2 w-2 rounded-full bg-cyan-200 shadow-[0_0_14px_rgba(103,232,249,1)]" />
+                </div>
+                <p className="label-mono mt-7 !text-cyan-100/60">Ruta Nacional</p>
+                <p className="mt-1 font-mono text-6xl font-semibold tracking-[-0.08em] text-white">40</p>
+                <p className="label-mono mt-2 !text-cyan-100/55">Cerro de La Cruz · Patagonia</p>
+              </div>
+
+              <div className="border-t border-cyan-100/15 pt-4 text-center">
+                <p className="font-mono text-lg font-semibold tracking-[0.18em] text-cyan-100">PRÓXIMAMENTE</p>
+                <p className="label-mono mt-2 !text-white/45">Videojuego 3D en primera persona</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
