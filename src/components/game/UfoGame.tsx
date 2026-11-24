@@ -356,9 +356,26 @@ export function UfoGame() {
       </section>
      </div>}
      {creditsOpen&&<div className="game-credits-backdrop" onClick={()=>setCreditsOpen(false)}>
-      <section className="game-credits-card" role="dialog" aria-modal="true" aria-labelledby="game-credits-title" onClick={e=>e.stopPropagation()}>
+      <section className="game-credits-card game-credits-panel" role="dialog" aria-modal="true" aria-labelledby="game-credits-title" onClick={e=>e.stopPropagation()}>
        <h2 id="game-credits-title">CRÉDITOS</h2>
-       <p>Creado por Gennaro Montecino &amp; la SI (Super Inteligencia)</p>
+       <div className="game-credit-sections">
+        <div className="game-credit-section">
+         <span className="game-credit-heading">CREACIÓN</span>
+         <p className="game-credit-author">Creado por <strong>Gennaro Montecino</strong></p>
+        </div>
+        <div className="game-credit-section">
+         <span className="game-credit-heading">IMÁGENES, EFECTOS Y ANIMACIONES</span>
+         <p>Realizados con ChatGPT de <strong>OpenAI</strong>.</p>
+        </div>
+        <div className="game-credit-section">
+         <span className="game-credit-heading">MÚSICA</span>
+         <ul>
+          <li><em>Interstellar</em> — Soundtrack</li>
+          <li><em>Project Hail Mary</em> — Soundtrack</li>
+          <li><em>The Vast of Night</em> — Soundtrack</li>
+         </ul>
+        </div>
+       </div>
        <button type="button" className="game-credits-close" onClick={()=>setCreditsOpen(false)}>VOLVER</button>
       </section>
      </div>}

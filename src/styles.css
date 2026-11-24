@@ -473,3 +473,19 @@
 .game-loading-meta .game-loading-label { flex: 1; text-align: left; }
 .game-loading-percent { flex: none; color: #ffe5c7; font: 700 12px var(--font-mono); font-variant-numeric: tabular-nums; text-shadow: 0 0 10px rgb(255 186 130 / 44%); }
 @media(max-width:600px) { .game-loading-progress { height: 6px; margin-top: 8px; } .game-loading-percent { font-size: 11px; } }
+
+
+/* Créditos del juego: secciones claras y adaptables a móvil. */
+.game-credits-panel { width: min(600px, 92%); max-height: min(88%, 680px); overflow-y: auto; }
+.game-credits-panel h2 { margin-bottom: 22px; }
+.game-credit-sections { display: grid; gap: 12px; margin: 0 0 24px; text-align: left; }
+.game-credit-section { padding: 13px 16px; border: 1px solid rgb(162 201 236 / 18%); border-radius: 8px; background: linear-gradient(120deg, rgb(164 207 246 / 7%), rgb(164 207 246 / 2%)); }
+.game-credit-heading { display: block; margin-bottom: 7px; color: #9fc9ef; font: 700 10px var(--font-mono); letter-spacing: .16em; }
+.game-credit-section p { margin: 0; color: #edf4ff; font: 500 clamp(13px, 1.6vw, 16px) var(--font-sans); line-height: 1.5; }
+.game-credit-author { font-size: clamp(16px, 2vw, 20px) !important; }
+.game-credit-author strong { color: #fff; }
+.game-credit-section ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; color: #edf4ff; font: 500 clamp(12px, 1.5vw, 15px) var(--font-sans); line-height: 1.45; }
+.game-credit-section li { padding-left: 14px; position: relative; }
+.game-credit-section li::before { content: "✦"; position: absolute; left: 0; color: #c9a8ed; font-size: 10px; top: 3px; }
+.game-credit-section em { color: #fff; font-style: italic; }
+@media(max-width:600px) { .game-credits-panel { padding: 20px 16px; } .game-credit-sections { gap: 9px; margin-bottom: 18px; } .game-credit-section { padding: 11px 12px; } .game-credit-heading { font-size: 9px; } }
