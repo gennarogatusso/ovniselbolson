@@ -63,6 +63,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#080d18" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "OVNIS: El Bolsón" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { title: "APFAA — Archivo Patagónico de Fenómenos Aéreos Anómalos" },
       { name: "description", content: "Archivo independiente de fenómenos aéreos anómalos de la Comarca Andina y la Patagonia argentina." },
       { property: "og:type", content: "website" },
@@ -71,6 +75,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/gato%20volando%20en%20el%20aire.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
