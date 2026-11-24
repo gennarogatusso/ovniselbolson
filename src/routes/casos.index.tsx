@@ -9,7 +9,7 @@ export const Route = createFileRoute("/casos/")({
     meta: [
       { title: "Casos ufológicos — Gennaro Montecino" },
       { name: "description", content: "Catálogo documental de expedientes de fenómenos aéreos anómalos de la Comarca Andina y la Patagonia." },
-      { property: "og:title", content: "Archivo de Casos — APFAA" },
+      { property: "og:title", content: "Casos ufológicos — Gennaro Montecino" },
       { property: "og:description", content: "Casos ufológicos de la zona, con fechas, fuentes y estado de investigación." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
