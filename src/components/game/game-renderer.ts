@@ -6,7 +6,7 @@ export type CrossRiseFrame = { image: HTMLCanvasElement; bodyWidth: number; body
 export type CrossRiseFrames = { player: CrossRiseFrame[]; cat: CrossRiseFrame[] };
 export type ShipImages = { grey: HTMLImageElement; pickup: HTMLImageElement; push: HTMLImageElement; roll: HTMLImageElement; contemplate: HTMLImageElement; cat: HTMLImageElement; weapon: HTMLImageElement; laboratory: HTMLImageElement; main: HTMLImageElement; cross: HTMLImageElement; road: HTMLImageElement; afterCross: HTMLImageElement; trail: HTMLImageElement; walkDown: HTMLImageElement; base: HTMLImageElement; soldiers: SoldierImages; catThrow: HTMLImageElement[]; catFlying: HTMLImageElement; lying: HTMLImageElement; crossRiseFrames: CrossRiseFrames; trailCat: [HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordScene: HTMLImageElement; swordGround: HTMLImageElement; swordPickupFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; swordAttackFrames: SpecialFrame[]; swordWalkFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; secretAgent: HTMLImageElement; secretAgentWalk: HTMLImageElement; secretAgentAim: HTMLImageElement; secretAgentShield: HTMLImageElement; secretAgentShieldAlt: HTMLImageElement; agentUltimateFrames: SpecialFrame[]; burnedSoldier: HTMLImageElement };
 export type SpecialFrame = { image: HTMLImageElement; anchorX: number; baseY: number; bodyHeight: number };
-export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; armedPlayer: { idle: SpecialFrame; walk: SpecialFrame[]; aim: SpecialFrame[]; fire: SpecialFrame[] }; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; restaurant?: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
+export type GameImages = { ship: ShipImages; chapter: ChapterImages; intro: IntroImages; specialFrames: SpecialFrame[]; specialProjectileFrames: [HTMLImageElement, HTMLImageElement]; combatTips: [HTMLImageElement, HTMLImageElement]; mountain: HTMLImageElement; player: HTMLImageElement; cat: HTMLImageElement; alien: HTMLImageElement; fighter: HTMLImageElement; gun: HTMLImageElement; armedPlayer: { idle: SpecialFrame; walk: SpecialFrame[]; aim: SpecialFrame[]; fire: SpecialFrame[] }; allies: [HTMLImageElement, HTMLImageElement]; house: HTMLImageElement; tree: HTMLImageElement; restaurant?: HTMLImageElement; sureste?: HTMLImageElement; alienFrames: [HTMLImageElement, HTMLImageElement, HTMLImageElement, HTMLImageElement]; reunion: HTMLImageElement };
 const trims=new WeakMap<HTMLImageElement,[number,number,number,number]>();
 function trimBounds(im:HTMLImageElement):[number,number,number,number]{
  let bounds=trims.get(im);
@@ -1644,17 +1644,26 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   if(a.agentCombatActive||a.stage==='agentEnd'||(a.agentBurned&&swordScene)){
    for(const agent of a.agents){
     if(a.agentBurned){const corpseX=([135,365,595,825] as const)[agent.id]??agent.x,corpseH=40+(agent.id%2)*3,angles=[-.035,.025,-.018,.04] as const;c.save();c.translate(corpseX,SHIP.floor-1);c.rotate(angles[agent.id]??0);const g=c.createRadialGradient(0,-12,2,0,-12,76);g.addColorStop(0,'rgba(155,91,226,.28)');g.addColorStop(1,'rgba(66,22,115,0)');c.fillStyle=g;c.fillRect(-90,-62,180,62);oval(c,'rgba(0,0,0,.72)',0,-1,72,7);stillTrimmed(c,art.burnedSoldier,0,0,corpseH,.98);c.restore();continue;}
-    const entering=a.stage==='agentEntrance';
-    const stagger=([0,.22,.44,.66] as const)[agent.id]??0;
-    const rawProgress=entering?Math.max(0,Math.min(1,(a.time-stagger)/(AGENT_WARNING_DURATION-stagger))):1;
-    const eased=rawProgress*rawProgress*(3-2*rawProgress);
-    const startX=agent.id<2?-100:W+100;
-    const drawX=entering?startX+(agent.x-startX)*eased:agent.x;
-    const drawY=agent.y+(entering?Math.sin(s.t*9+agent.id)*1.4*(1-eased):0);
-    const artAgent=entering?art.secretAgentWalk:agent.kind==='shield'?(agent.firePose>0?art.secretAgentShieldAlt:art.secretAgentShield):agent.state==='aim'?art.secretAgentAim:agent.state==='advance'?art.secretAgentWalk:art.secretAgent;
     if(agent.hp<=0&&agent.deadTime>1.8)continue;
+    const entering=a.stage==='agentEntrance';
+    const artAgent=entering?art.secretAgentWalk:agent.kind==='shield'?(agent.firePose>0?art.secretAgentShieldAlt:art.secretAgentShield):agent.state==='aim'?art.secretAgentAim:agent.state==='advance'?art.secretAgentWalk:art.secretAgent;
     const agentH=agent.kind==='shield'?112:108,agentW=ready(artAgent)?agentH*trimBounds(artAgent)[2]/trimBounds(artAgent)[3]:68;
-    c.save();c.globalAlpha=entering?.05+.95*eased:1;c.translate(drawX,drawY);c.scale(agent.face??-1,1);
+    const entryDirection=agent.id<2?1:-1;
+    const stagger=([0,.9,.65,.2] as const)[agent.id]??0;
+    const rawProgress=entering?Math.max(0,Math.min(1,(a.time-stagger)/Math.max(.1,AGENT_WARNING_DURATION-stagger))):1;
+    const eased=1-Math.pow(1-rawProgress,2.2);
+    const startX=entryDirection>0?-agentW/2-34:W+agentW/2+34;
+    const drawX=entering?startX+(agent.x-startX)*eased:agent.x;
+    const walkPhase=(a.time-stagger)*14+agent.id*1.7;
+    const drawY=agent.y+(entering?Math.abs(Math.sin(walkPhase))*2.2*(1-eased*.55):0);
+    if(entering&&rawProgress>.06&&rawProgress<.98){
+     c.save();c.globalAlpha=(1-rawProgress)*.22;
+     for(let puff=0;puff<3;puff++)oval(c,'rgba(183,169,196,.7)',drawX-entryDirection*(18+puff*10),SHIP.floor-3,4+puff*1.4,2.2+puff*.7);
+     c.restore();
+    }
+    c.save();c.globalAlpha=entering?.14+.86*eased:1;c.translate(drawX,drawY);
+    if(entering)c.rotate(Math.sin(walkPhase)*.018*(1-eased));
+    c.scale(agent.face??-1,1);
     if(agent.hp<=0){c.globalAlpha*=Math.max(0,1-agent.deadTime*.45);c.rotate(-Math.min(1,agent.deadTime*3)*.38);}
     else if(agent.hurt>0&&Math.floor(s.t*18)%2)c.globalAlpha*=.42;
     oval(c,'rgba(0,0,0,.4)',0,-2,34,7);drawTrimmed(c,artAgent,-agentW/2,-agentH,agentW,agentH);
@@ -1986,9 +1995,17 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  const restaurantDrawHeight=restaurantAspect>0?Math.min(restaurantHeight,620/restaurantAspect):0;
  const restaurantWidth=restaurantAspect>0?restaurantDrawHeight*restaurantAspect:0;
  const restaurantRight=restaurantX+restaurantWidth;
+ const sureste=im?.sureste&&ready(im.sureste)?im.sureste:null;
+ const suresteBounds=sureste?trimBounds(sureste):null;
+ const suresteAspect=suresteBounds?suresteBounds[2]/Math.max(1,suresteBounds[3]):0;
+ const suresteDrawHeight=suresteAspect>0?Math.min(238,620/suresteAspect):0;
+ const suresteWidth=suresteAspect>0?suresteDrawHeight*suresteAspect:0;
+ const suresteX=restaurantWidth>0?restaurantRight+26:restaurantX;
+ const suresteRight=suresteX+suresteWidth;
  for(let x=40;x<WORLD-500;x+=300){const special=x===340,width=special?205:145;
     const overlapsRestaurant=Boolean(restaurantBounds&&x-10<restaurantRight+36&&x+width+150>restaurantX-28);
-    if(overlapsRestaurant)continue;
+    const overlapsSureste=Boolean(suresteBounds&&x-10<suresteRight+36&&x+width+150>suresteX-28);
+    if(overlapsRestaurant||overlapsSureste)continue;
     oval(c,p.shadow,x+width/2,GROUND+6,width*.65,9);if(im)drawTrimmed(c,im.house,x-10,GROUND-137,width+20,137);
   for(let j=0;j<3;j++)box(c,p.trunk,x+width+18+j*15,GROUND-22,3,23);box(c,p.trunk,x+width+14,GROUND-15,52,3);
   const tx=x+width+72;if(im?.tree&&ready(im.tree))drawWindTree(c,im.tree,tx,GROUND+2,126,s.t,x*.021,.98);else{box(c,p.trunk,tx,GROUND-85,9,85);const wind=Math.sin(s.t*1.5+x)*3;for(let j=0;j<3;j++){c.fillStyle=p.leaf;c.beginPath();c.moveTo(tx-25+j*4,GROUND-50-j*24);c.lineTo(tx+4+wind,GROUND-115-j*18);c.lineTo(tx+35-j*4,GROUND-50-j*24);c.fill();}}
@@ -1997,6 +2014,12 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
   oval(c,p.shadow,restaurantX+restaurantWidth*.52,GROUND+7,restaurantWidth*.57,12);
   c.save();c.shadowColor='rgba(13,18,28,.30)';c.shadowBlur=13;c.shadowOffsetY=4;
   drawTrimmed(c,restaurant,restaurantX,GROUND-restaurantDrawHeight,restaurantWidth,restaurantDrawHeight);
+  c.restore();
+ }
+ if(sureste&&suresteBounds&&suresteWidth>0){
+  oval(c,p.shadow,suresteX+suresteWidth*.52,GROUND+7,suresteWidth*.56,11);
+  c.save();c.shadowColor='rgba(13,18,28,.32)';c.shadowBlur=12;c.shadowOffsetY=4;
+  drawTrimmed(c,sureste,suresteX,GROUND-suresteDrawHeight,suresteWidth,suresteDrawHeight);
   c.restore();
  }
  drawStreetSurface(c,p);

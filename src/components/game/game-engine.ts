@@ -43,7 +43,7 @@ export const AGENT_ULTIMATE_FRAME_DURATION = .2;
 export const AGENT_ULTIMATE_SEQUENCE_DURATION = AGENT_ULTIMATE_FRAME_COUNT * AGENT_ULTIMATE_FRAME_DURATION;
 export const AGENT_ULTIMATE_BLAST_DURATION = 4.25;
 export const AGENT_WARNING_MESSAGE = 'Esta es un área restringida, un paso más y disparo';
-export const AGENT_WARNING_DURATION = 3.5;
+export const AGENT_WARNING_DURATION = 4.8;
 export const FOREST = { deer: 1820, ship: 3640, abduction: 3900, top: 410, bottom: 490, speed: 260 } as const;
 export function forestIsFree(s:S){return s.phase==='bedroom'&&['forestRun','burned','ship'].includes(s.chapter.stage);}
 export function computerAvailable(s:S){return roomIsFree(s)&&!s.chapter.night&&Math.hypot(s.chapter.roomX-350,s.chapter.roomY-418)<80;}
