@@ -404,14 +404,13 @@ function spawnAgentShieldBreakFx(s:S,e:GroundAgent){
   s.fx.push({x,y,life:duration,maxLife:duration,c:'light',shape:'spark',size:2.4+(i%3)*.7,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
  }
 }
-function damageAgent(s:S,e:GroundAgent,damage:number,hurt=.4,attackDirection=-1):AgentDamageResult{
+function damageAgent(s:S,e:GroundAgent,damage:number,hurt=.4,attackDirection=-1,blockPressure=1):AgentDamageResult{
  if(e.hp<=0)return 'hit';
  const incoming=Math.sign(attackDirection)||1;
  const facingAttacker=(e.face??-1)===-incoming;
  if(e.kind==='shield'&&(e.shieldBreak??0)<=0&&facingAttacker){
-  const pressure=damage>=40?2:1;
-  e.shieldBlocks=(e.shieldBlocks??0)+pressure;e.blockFlash=Math.max(e.blockFlash??0,.36);e.stagger=Math.max(e.stagger??0,.18);e.state='hit';
-  shipSound(s,'shieldBlock');spawnAgentShieldBlockFx(s,e,damage>=40?1.25:1);
+  e.shieldBlocks=(e.shieldBlocks??0)+blockPressure;e.blockFlash=Math.max(e.blockFlash??0,.36);e.stagger=Math.max(e.stagger??0,.18);e.state='hit';
+  shipSound(s,'shieldBlock');spawnAgentShieldBlockFx(s,e,blockPressure>=2?1.25:1);
   if(e.shieldBlocks>=3){
    e.shieldBlocks=0;e.shieldBreak=1.35;
    shipSound(s,'shieldBreak');spawnAgentShieldBreakFx(s,e);
@@ -810,7 +809,7 @@ case 'agentUltimate':{
           if(!target||target.hp<=0){let index=-1,best=Infinity;for(let i=0;i<a.agents.length;i++){const e=a.agents[i];if(e&&e.hp>0){const distance=Math.hypot(e.x-b.x,(e.y-52)-b.y);if(distance<best){best=distance;index=i;target=e;}}}b.targetIndex=index;}
           if(!target||target.hp<=0){b.life=0;continue;}
           const dx=target.x-b.x,dy=(target.y-52)-b.y,length=Math.hypot(dx,dy)||1;b.vx=dx/length*SPECIAL_PROJECTILE_SPEED;b.vy=dy/length*SPECIAL_PROJECTILE_SPEED;
-          if(length<42+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;const result=damageAgent(s,target,42,.45,Math.sign(b.vx)||a.face);if(result!=='blocked')spawnSpecialImpact(s,target.x,target.y-52,1.1);}
+          if(length<42+SPECIAL_PROJECTILE_SPEED*dt){b.life=0;const result=damageAgent(s,target,42,.45,Math.sign(b.vx)||a.face,2);if(result!=='blocked')spawnSpecialImpact(s,target.x,target.y-52,1.1);}
           else{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;}
           continue;
         }
