@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Eye, Gamepad2, Radio, Star } from "lucide-react";
+import { ArrowRight, Eye, Gamepad2, Play, Radio, Star } from "lucide-react";
 import hero from "@/assets/hero.jpg.asset.json";
 import valle from "@/assets/valle.jpg.asset.json";
 
@@ -51,8 +51,20 @@ function Index() {
                 Una noche tranquila en la Patagonia. Un OVNI aparece sobre El Bolsón y se lleva a tu gato. Ahora depende de vos perseguirlo.
               </p>
               <div className="rise mt-9 flex flex-wrap items-center gap-5" style={{ animationDelay: "320ms" }}>
-                <Link to="/juego" className="group inline-flex items-center gap-3 bg-foreground px-7 py-4 font-mono text-sm font-semibold tracking-[0.14em] text-background shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all hover:-translate-y-0.5 hover:bg-amber-200">
-                  JUGAR AHORA <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
+                <Link
+                  to="/juego"
+                  aria-label="Jugar ahora a OVNIS: El Bolsón"
+                  className="group relative inline-flex min-h-[62px] items-center gap-4 overflow-hidden rounded-sm border border-amber-100/80 bg-gradient-to-r from-amber-200 via-amber-300 to-yellow-400 px-5 py-3.5 font-mono text-sm font-bold tracking-[0.12em] text-[#17120a] shadow-[0_8px_30px_rgba(251,191,36,0.24),inset_0_1px_0_rgba(255,255,255,0.55)] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_14px_42px_rgba(251,191,36,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-100 focus-visible:ring-offset-4 focus-visible:ring-offset-[#07101a]"
+                >
+                  <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/35 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                  <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#17120a] text-amber-200 shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
+                    <Play size={15} fill="currentColor" />
+                  </span>
+                  <span className="relative flex flex-col items-start gap-0.5">
+                    <span>JUGAR AHORA</span>
+                    <span className="text-[9px] font-medium tracking-[0.16em] text-[#49340c]/75">ABRIR VIDEOJUEGO</span>
+                  </span>
+                  <ArrowRight size={18} className="relative ml-2 transition-transform duration-300 group-hover:translate-x-1.5" />
                 </Link>
                 <span className="label-mono text-foreground/65">Un videojuego de Gennaro Montecino</span>
               </div>
