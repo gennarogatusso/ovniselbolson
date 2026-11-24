@@ -4,8 +4,8 @@ import { UfoGame } from "@/components/game/UfoGame";
 export const Route = createFileRoute("/juego")({
   head: () => ({
     meta: [
-      { title: "OVNIS EN EL BOLSÓN — Juego test · APFAA" },
-      { name: "description", content: "Un OVNI aparece sobre El Bolsón y se lleva a tu gato. Juego 2D gratuito en la web de APFAA." },
+      { title: "OVNIS EN EL BOLSÓN — Videojuego · Gennaro Montecino" },
+      { name: "description", content: "Un OVNI aparece sobre El Bolsón y se lleva a tu gato. Juego 2D gratuito en la página de Gennaro Montecino." },
       { property: "og:title", content: "OVNIS EN EL BOLSÓN — Juego test · APFAA" },
       { property: "og:description", content: "Perseguí al platillo volador y recuperá a tu gato en la Comarca Andina." },
       { property: "og:type", content: "website" },
