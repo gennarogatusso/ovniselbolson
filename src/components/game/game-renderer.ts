@@ -2016,13 +2016,14 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
   drawTrimmed(c,restaurant,restaurantX,GROUND-restaurantDrawHeight,restaurantWidth,restaurantDrawHeight);
   c.restore();
  }
+ drawStreetSurface(c,p);
  if(sureste&&suresteBounds&&suresteWidth>0){
-  oval(c,p.shadow,suresteX+suresteWidth*.52,GROUND+7,suresteWidth*.56,11);
+  const suresteGroundOffset=36;
+  oval(c,p.shadow,suresteX+suresteWidth*.52,GROUND+suresteGroundOffset+7,suresteWidth*.56,11);
   c.save();c.shadowColor='rgba(13,18,28,.32)';c.shadowBlur=12;c.shadowOffsetY=4;
-  drawTrimmed(c,sureste,suresteX,GROUND-suresteDrawHeight,suresteWidth,suresteDrawHeight);
+  drawTrimmed(c,sureste,suresteX,GROUND+suresteGroundOffset-suresteDrawHeight,suresteWidth,suresteDrawHeight);
   c.restore();
  }
- drawStreetSurface(c,p);
  if(im && s.cam < 0){
   const art=im.intro, width=1050, height=width*art.building.naturalHeight/art.building.naturalWidth;
   if(ready(art.building))c.drawImage(art.building,-1050,GROUND-height+6,width,height);
