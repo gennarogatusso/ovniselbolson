@@ -81,6 +81,9 @@ export class GameAudio {
  private crossTrack:HTMLAudioElement|null=null;
  private trailTrack:HTMLAudioElement|null=null;
  private swordTrack:HTMLAudioElement|null=null;
+ private swordBuffer:AudioBuffer|null=null;
+ private swordBufferLoading:Promise<void>|null=null;
+ private swordBufferOffset=0;
  private forestMusicStarted=false;
  private crossMusicStarted=false;
  private trailMusicTransitionAt:number|null=null;
@@ -123,7 +126,46 @@ export class GameAudio {
   this.trailTrack??=new Audio('/imagens/cancion%20despues%20de%20la%20pelea%20militar.mp3');
   this.trailTrack.loop=true;this.trailTrack.preload='auto';
   this.swordTrack??=new Audio('/imagens/sonido%20espada.mp3');
-  this.swordTrack.loop=false;this.swordTrack.preload='auto';
+  this.swordTrack.loop=false;this.swordTrack.preload='auto';this.swordTrack.load();
+  this.preloadSwordBuffer();
+ }
+
+ private preloadSwordBuffer(){
+  const context=this.context;
+  if(!context||this.swordBuffer||this.swordBufferLoading)return;
+  this.swordBufferLoading=fetch('/imagens/sonido%20espada.mp3')
+   .then(response=>{if(!response.ok)throw new Error('No se pudo cargar el sonido de espada');return response.arrayBuffer();})
+   .then(data=>context.decodeAudioData(data))
+   .then(buffer=>{
+    const block=Math.max(1,Math.floor(buffer.sampleRate*.004));
+    const limit=Math.min(buffer.length,Math.floor(buffer.sampleRate*.5));
+    let onset=0;
+    for(let start=0;start<limit;start+=block){
+     let peak=0;
+     for(let channel=0;channel<buffer.numberOfChannels;channel++){
+      const samples=buffer.getChannelData(channel);
+      for(let i=start;i<Math.min(start+block,limit);i+=4)peak=Math.max(peak,Math.abs(samples[i]??0));
+     }
+     if(peak>.012){onset=Math.max(0,start/buffer.sampleRate-.01);break;}
+    }
+    this.swordBuffer=buffer;this.swordBufferOffset=Math.min(onset,Math.max(0,buffer.duration-.02));
+   })
+   .catch(()=>{this.swordBufferLoading=null;});
+ }
+ private playSwordSound(){
+  const context=this.context,buffer=this.swordBuffer;
+  if(context&&buffer&&context.state==='running'){
+   const source=context.createBufferSource(),gain=context.createGain();
+   source.buffer=buffer;gain.gain.setValueAtTime(.82*this.volume,context.currentTime);
+   source.connect(gain);gain.connect(context.destination);
+   source.onended=()=>{source.disconnect();gain.disconnect();};
+   source.start(context.currentTime,this.swordBufferOffset);
+   return;
+  }
+  if(this.swordTrack){
+   this.swordTrack.currentTime=0;
+   void this.swordTrack.play().catch(()=>{});
+  }
  }
 
  setVolume(value:number){
@@ -485,8 +527,12 @@ export class GameAudio {
   if(s.phase!=='spaceship'){a.sounds=[];return;}
   for(const event of a.sounds.splice(0)){
    if(event==='pistol')this.tone(380,.09,'square',60,.32);
-   else if(event==='swordPrimary'){
-    if(this.swordTrack){this.swordTrack.currentTime=0;void this.swordTrack.play().catch(()=>{});}
+   else if(event==='swordPrimary')this.playSwordSound();
+   else if(event==='shieldBlock'){
+    this.noise(.105,.24,5200,650);this.tone(760,.13,'triangle',260,.25);this.tone(1540,.075,'sine',520,.11);
+   }
+   else if(event==='shieldBreak'){
+    this.noise(.28,.22,4200,180);this.tone(520,.28,'sawtooth',95,.23);this.tone(1280,.18,'triangle',260,.12);
    }
    else if(event==='agentArrival'){this.noise(.18,.16,1900,460);this.tone(260,.24,'square',150,.18);this.tone(720,.18,'triangle',340,.10);}
    else if(event==='agentShot'){this.noise(.075,.15,2600,650);this.tone(430,.065,'square',115,.22);}
@@ -525,7 +571,7 @@ export class GameAudio {
   this.rainTrack?.pause();this.rainTrack=null;
   this.crossTrack?.pause();this.crossTrack=null;
   this.trailTrack?.pause();this.trailTrack=null;
-  this.swordTrack?.pause();this.swordTrack=null;
+  this.swordTrack?.pause();this.swordTrack=null;this.swordBuffer=null;this.swordBufferLoading=null;
   this.forestMusicStarted=false;this.crossMusicStarted=false;this.trailMusicTransitionAt=null;this.trailMusicStarted=false;this.trailMusicFadeInAt=null;this.pausedAt=null;this.rainActive=false;this.gamePaused=false;
   this.stopMusic();
   for(const oscillator of this.musicNodes){try{oscillator.stop();}catch{/* Ya estaba detenido. */}}

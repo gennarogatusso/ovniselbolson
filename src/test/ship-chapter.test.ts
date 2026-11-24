@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { newIntroState, enterShip, update, interactChapter, crossCanStand, SHIP, type S } from '../components/game/game-engine';
+import { newIntroState, enterShip, update, interactChapter, crossCanStand, SHIP, SWORD_PRIMARY_IMPACT_TIME, triggerSpecial, type S } from '../components/game/game-engine';
 function tick(s:S,seconds:number){for(let t=0;t<seconds;t+=.02)update(s,.02);}
+function makeAgent(id:number,x:number,kind:S['ship']['agents'][number]['kind']):S['ship']['agents'][number]{
+ return {id,x,y:SHIP.floor,hp:160,maxHp:160,kind,cd:100,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,knockbackX:0,stagger:0};
+}
 describe('Ship stabilization through Cerro de la Cruz',()=>{
  it('finishes the laboratory rescue and requires walking to its exit',()=>{const s=newIntroState();enterShip(s);tick(s,21);expect(s.ship.stage).toBe('labFree');expect(s.ship.labDead).toBe(1);s.keys.l=true;tick(s,2);interactChapter(s);tick(s,1.3);expect(s.ship.stage).toBe('combat');expect(s.ship.enemies).toHaveLength(4);});
  it('connects aimed box hits, pickup, charged reactor shot and Cross ending',()=>{
@@ -26,6 +29,39 @@ describe('Ship stabilization through Cerro de la Cruz',()=>{
   const enemyXAfterHit=enemy.x;
   tick(s,.1);
   expect(enemy.x).toBeGreaterThan(enemyXAfterHit);
+ });
+ it('keeps agent combat running during a sword swing and applies damage on the contact frame',()=>{
+  const s=newIntroState();enterShip(s);s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.agentWarning=0;s.ship.x=100;s.ship.face=1;
+  const target=makeAgent(0,210,'regular');s.ship.agents=[target];s.fire=true;
+  const bolt={x:800,y:20,vx:-100,vy:0,life:3,kind:'rifle' as const};s.ship.bolts=[bolt];
+  update(s,.02);
+  expect(s.ship.stage).toBe('agentFight');
+  expect(s.ship.swordSwingRemaining).toBeGreaterThan(1);
+  expect(target.hp).toBe(160);
+  const boltX=bolt.x,targetX=target.x;
+  s.fire=false;tick(s,SWORD_PRIMARY_IMPACT_TIME+.06);
+  expect(bolt.x).toBeLessThan(boltX);
+  expect(target.x).not.toBe(targetX);
+  expect(target.hp).toBeLessThan(160);
+  expect(target.knockbackX).toBeGreaterThan(0);
+ });
+ it('blocks sword and R hits with shield agents, then exposes a broken shield briefly',()=>{
+  const sword=newIntroState();enterShip(sword);sword.ship.stage='agentFight';sword.ship.agentCombatActive=true;sword.ship.agentWarning=0;sword.ship.x=100;sword.ship.face=1;
+  const shield=makeAgent(0,210,'shield');sword.ship.agents=[shield];
+  for(let i=0;i<3;i++){
+   sword.fire=true;update(sword,.02);sword.fire=false;
+   tick(sword,SWORD_PRIMARY_IMPACT_TIME+.06);
+   expect(shield.hp).toBe(160);
+   if(i<2)tick(sword,SWORD_PRIMARY_DURATION);
+  }
+  expect(shield.shieldBreak).toBeGreaterThan(0);
+
+  const special=newIntroState();enterShip(special);special.ship.stage='agentFight';special.ship.agentCombatActive=true;special.ship.agentWarning=0;special.ship.x=100;special.ship.face=1;
+  const specialShield=makeAgent(0,210,'shield');special.ship.agents=[specialShield];
+  expect(triggerSpecial(special)).toBe(true);
+  tick(special,1.25);
+  expect(specialShield.hp).toBe(160);
+  expect(specialShield.shieldBlocks).toBe(2);
  });
  it('reduces damage from laboratory alien attacks without changing their triggers',()=>{
   const projectile=newIntroState();enterShip(projectile);projectile.ship.stage='combat';projectile.ship.x=400;

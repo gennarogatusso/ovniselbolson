@@ -1772,12 +1772,15 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
   const swordX=650,swordY=H*.84;
   if(a.stage==='swordIntro'||a.stage==='swordReady'){
    c.save();c.translate(swordX,swordY);c.rotate(Math.PI/2);drawTrimmed(c,art.swordGround,-8,-32,16,64);c.restore();
-   actor(a.x,a.y,112);
-  }else if(a.stage==='swordAttack'){
+   actor(a.x,a.y,a.stage==='swordIntro'||a.stage==='swordReady'?124:112);
+  }else if(a.specialAnim>0&&a.agentCombatActive){
+   c.save();c.translate(a.x,a.y);c.scale(a.face,1);specialPose(c,im.specialFrames,SPECIAL_ATTACK_ANIM_DURATION-a.specialAnim,0,0,112);c.restore();
+  }else if(a.swordSwingRemaining>0||a.stage==='swordAttack'){
    const frames=art.swordAttackFrames;
-   const frameIndex=Math.min(frames.length-1,Math.floor(a.time/SWORD_PRIMARY_DURATION*frames.length));
+   const elapsed=a.swordSwingRemaining>0?SWORD_PRIMARY_DURATION-a.swordSwingRemaining:a.time;
+   const frameIndex=Math.min(frames.length-1,Math.floor(elapsed/SWORD_PRIMARY_DURATION*frames.length));
    const frame=frames[frameIndex]??frames[frames.length-1];
-   if(frame){c.save();c.translate(a.x,a.y);c.scale(a.face,1);drawAnchoredSprite(c,frame,0,0,112);c.restore();}
+   if(frame){c.save();c.translate(a.x,a.y);c.scale(a.swordSwingRemaining>0?a.swordSwingFace:a.face,1);drawAnchoredSprite(c,frame,0,0,112);c.restore();}
   }else if(a.stage==='agentUltimate'||a.stage==='agentUltimateBlast'){
    const frames=art.agentUltimateFrames;
    const frameIndex=a.stage==='agentUltimate'?Math.min(frames.length-1,Math.floor(a.time/AGENT_ULTIMATE_SEQUENCE_DURATION*frames.length)):frames.length-1;
@@ -1804,7 +1807,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
     if(a.agentBurned){const corpseX=([135,365,595,825] as const)[agent.id]??agent.x,corpseH=40+(agent.id%2)*3,angles=[-.035,.025,-.018,.04] as const;c.save();c.translate(corpseX,SHIP.floor-1);c.rotate(angles[agent.id]??0);const g=c.createRadialGradient(0,-12,2,0,-12,76);g.addColorStop(0,'rgba(155,91,226,.28)');g.addColorStop(1,'rgba(66,22,115,0)');c.fillStyle=g;c.fillRect(-90,-62,180,62);oval(c,'rgba(0,0,0,.72)',0,-1,72,7);stillTrimmed(c,art.burnedSoldier,0,0,corpseH,.98);c.restore();continue;}
     if(agent.hp<=0&&agent.deadTime>1.8)continue;
     const entering=a.stage==='agentEntrance';
-    const artAgent=entering?art.secretAgentWalk:agent.kind==='shield'?(agent.firePose>0?art.secretAgentShieldAlt:art.secretAgentShield):agent.state==='aim'?art.secretAgentAim:agent.state==='advance'?art.secretAgentWalk:art.secretAgent;
+    const artAgent=entering?art.secretAgentWalk:agent.kind==='shield'?((agent.blockFlash??0)>0||agent.firePose>0?art.secretAgentShieldAlt:art.secretAgentShield):agent.state==='aim'?art.secretAgentAim:agent.state==='advance'?art.secretAgentWalk:art.secretAgent;
     const agentH=agent.kind==='shield'?112:108,agentW=ready(artAgent)?agentH*trimBounds(artAgent)[2]/trimBounds(artAgent)[3]:68;
     const entryDirection=agent.id<2?1:-1;
     const stagger=([0,.9,.65,.2] as const)[agent.id]??0;
@@ -1823,8 +1826,24 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
     if(entering)c.rotate(Math.sin(walkPhase)*.018*(1-eased));
     c.scale(agent.face??-1,1);
     if(agent.hp<=0){c.globalAlpha*=Math.max(0,1-agent.deadTime*.45);c.rotate(-Math.min(1,agent.deadTime*3)*.38);}
-    else if(agent.hurt>0&&Math.floor(s.t*18)%2)c.globalAlpha*=.42;
+    else{
+     if(agent.hurt>0&&Math.floor(s.t*18)%2)c.globalAlpha*=.42;
+     if((agent.stagger??0)>0)c.translate(Math.sin(s.t*58+agent.id)*2.2,0);
+    }
     oval(c,'rgba(0,0,0,.4)',0,-2,34,7);drawTrimmed(c,artAgent,-agentW/2,-agentH,agentW,agentH);
+    if(!entering&&agent.hp>0&&agent.kind==='shield'&&(agent.blockFlash??0)>0){
+     const shieldX=agentW*.22,alpha=Math.min(1,(agent.blockFlash??0)/.24);
+     c.save();c.globalCompositeOperation='screen';c.globalAlpha=.42+.58*alpha;c.shadowColor='#a9eaff';c.shadowBlur=17;
+     c.beginPath();c.moveTo(shieldX,-agentH*.91);c.quadraticCurveTo(shieldX+38,-agentH*.83,shieldX+39,-agentH*.57);c.quadraticCurveTo(shieldX+36,-agentH*.31,shieldX+3,-agentH*.13);c.quadraticCurveTo(shieldX-13,-agentH*.39,shieldX,-agentH*.91);c.closePath();
+     c.fillStyle='rgba(117,205,255,.22)';c.fill();c.strokeStyle='rgba(211,247,255,.96)';c.lineWidth=2;c.stroke();
+     c.lineWidth=1;c.strokeStyle='rgba(171,224,255,.86)';c.beginPath();c.moveTo(shieldX+5,-agentH*.77);c.lineTo(shieldX+27,-agentH*.55);c.lineTo(shieldX+8,-agentH*.34);c.stroke();
+     c.restore();
+    }else if(!entering&&agent.hp>0&&agent.kind==='shield'&&(agent.shieldBreak??0)>0){
+     const q=Math.min(1,(agent.shieldBreak??0)/.45),shieldX=agentW*.22;
+     c.save();c.globalCompositeOperation='screen';c.globalAlpha=.7*q;c.strokeStyle='rgba(190,207,255,.84)';c.lineWidth=1.6;
+     c.beginPath();c.moveTo(shieldX+2,-agentH*.82);c.lineTo(shieldX+18,-agentH*.62);c.lineTo(shieldX+6,-agentH*.48);c.lineTo(shieldX+28,-agentH*.28);c.stroke();
+     c.beginPath();c.moveTo(shieldX+26,-agentH*.76);c.lineTo(shieldX+10,-agentH*.59);c.lineTo(shieldX+31,-agentH*.43);c.stroke();c.restore();
+    }
     if(!entering&&agent.hp>0&&agent.firePose>0){c.fillStyle='#ffe7a0';c.shadowColor='#ffb85c';c.shadowBlur=16;c.beginPath();c.arc(-agentW*.42,-agentH*.52,5+Math.sin(s.t*65)*1.5,0,Math.PI*2);c.fill();}
     c.restore();
     if(!entering&&agent.hp>0&&!['agentUltimate','agentUltimateBlast'].includes(a.stage)){const barW=62,bx=agent.x-barW/2,by=agent.y-agentH-17;c.fillStyle='rgba(8,8,18,.92)';c.fillRect(bx-2,by-3,barW+4,9);c.fillStyle='#5b171f';c.fillRect(bx,by,barW,4);c.fillStyle=agent.hp/agent.maxHp>.35?'#b9f2cf':'#ff6a72';c.fillRect(bx,by,barW*agent.hp/agent.maxHp,4);}
