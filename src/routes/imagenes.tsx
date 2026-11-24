@@ -7,10 +7,10 @@ import { materiales } from "@/lib/archive";
 export const Route = createFileRoute("/imagenes")({
   head: () => ({
     meta: [
-      { title: "Imágenes y videos — APFAA" },
-      { name: "description", content: "Archivo visual de fotografías, videos y documentos escaneados asociados a los casos de APFAA." },
+      { title: "Imágenes y videos — Gennaro Montecino" },
+      { name: "description", content: "Fotografías, videos y documentos relacionados con los casos ufológicos de la zona." },
       { property: "og:title", content: "Imágenes y videos — APFAA" },
-      { property: "og:description", content: "Material visual documentado del archivo patagónico." },
+      { property: "og:description", content: "Material visual relacionado con los casos e investigaciones." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -37,7 +37,7 @@ function Imagenes() {
 
   return (
     <>
-      <PageHeader code="Sección 03" title="Imágenes y videos" lead="Archivo audiovisual de APFAA: fotografías, videos, capturas, registros históricos, documentos y reconstrucciones. Cada pieza consigna su procedencia." />
+      <PageHeader code="Sección 03" title="Imágenes y videos" lead="Material audiovisual de los casos e investigaciones: fotografías, videos, capturas, documentos y reconstrucciones. Cada pieza consigna su procedencia." />
       <section className="mx-auto max-w-7xl px-6 pb-28 md:px-10">
         {pendientes.length > 0 && (
           <div className="mb-10 grid gap-6 md:grid-cols-2">
@@ -75,7 +75,7 @@ function Imagenes() {
         )}
         {n === 0 && pendientes.length > 0 ? null : n === 0 ? (
           <EmptyState code="Galería · Sin materiales" title="No hay materiales visuales publicados todavía.">
-            Solo se incorporarán imágenes con procedencia verificable. APFAA no publica material generado ni lo presenta como evidencia.
+            Se priorizan imágenes con procedencia identificable. El material ilustrativo o generado no se presenta como evidencia.
           </EmptyState>
         ) : (
           <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
