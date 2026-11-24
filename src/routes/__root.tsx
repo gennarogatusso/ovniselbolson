@@ -62,7 +62,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "APFAA — Archivo Patagónico de Fenómenos Aéreos Anómalos" },
       { name: "description", content: "Archivo independiente de fenómenos aéreos anómalos de la Comarca Andina y la Patagonia argentina." },
       { property: "og:type", content: "website" },

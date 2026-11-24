@@ -153,8 +153,13 @@
   background: var(--background); overscroll-behavior: none; touch-action: none;
 }
 .game-stage { position: relative; width: min(100%, calc((100svh - 5rem) * 16 / 9)); aspect-ratio: 16 / 9; overflow: hidden; }
-.game-expanded, .ufo-game:fullscreen { position: fixed; inset: 0; z-index: 100; width: 100%; height: 100svh; }
-.game-expanded .game-stage, .ufo-game:fullscreen .game-stage { width: min(100%, calc(100svh * 16 / 9)); }
+.game-expanded, .ufo-game:fullscreen { position: fixed; inset: 0; z-index: 100; width: 100vw; height: 100vh; height: 100dvh; min-height: 100svh; overflow: hidden; background: var(--background); overscroll-behavior: none; }
+.game-expanded .game-stage, .ufo-game:fullscreen .game-stage { width: min(100vw, calc(100dvh * 16 / 9)); }
+.game-trail-forward-control { pointer-events: auto; }
+.game-expanded .game-stage > .absolute.right-2.top-2, .ufo-game:fullscreen .game-stage > .absolute.right-2.top-2 { top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); }
+.game-expanded .game-touch, .ufo-game:fullscreen .game-touch { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.game-expanded .game-special-hud, .game-expanded .game-agent-ultimate-hud, .ufo-game:fullscreen .game-special-hud, .ufo-game:fullscreen .game-agent-ultimate-hud { right: max(8px, env(safe-area-inset-right)); }
+.game-stage > .absolute.right-2.top-2 > button { min-width: 44px; min-height: 44px; }
 .game-title { font-size: 56px; line-height: 1.05; max-width: 780px; }
 .game-overlay[data-menu="title"] { background: linear-gradient(90deg, rgb(8 12 25 / 0.72), rgb(8 12 25 / 0.18) 58%, rgb(8 12 25 / 0.1)); }
 .game-title-card { position: absolute; inset: 0 auto 0 0; width: min(48%, 470px); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 18px; padding: clamp(18px, 5vw, 56px); text-align: left; text-shadow: 0 2px 12px #000; }
