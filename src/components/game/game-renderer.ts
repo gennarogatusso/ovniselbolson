@@ -699,7 +699,7 @@ function drawPsychicTelekinesis(c:CanvasRenderingContext2D,s:S,p:Palette){
  if(!active&&(!psychic||psychic.windup<=0))return;
  const charge=active?1:Math.max(0,Math.min(1,(psychic?.windup??0)/1));
  const sourceX=active?a.pushFrom:(psychic?.x??a.x),sourceY=(psychic?.y??SHIP.floor)-84;
- const x=a.x,y=a.y-58,pulse=.72+.28*Math.sin(s.t*16),intensity=active?1:.35+charge*.65;
+ const x=a.x,y=a.y-58,pulse=.72+.28*Math.sin(s.t*16),intensity=(active?1:.35+charge*.65)*(.82+.18*pulse);
  c.save();c.globalCompositeOperation='screen';c.globalAlpha=intensity;
  for(let i=0;i<3;i++){
   const offset=(i-1)*8,phase=s.t*3.5+i*2.1;
@@ -729,7 +729,6 @@ function drawPsychicTelekinesis(c:CanvasRenderingContext2D,s:S,p:Palette){
  const sourceGlow=c.createRadialGradient(sourceX,sourceY,1,sourceX,sourceY,20+charge*8);
  sourceGlow.addColorStop(0,'rgba(246,235,255,.92)');sourceGlow.addColorStop(.3,'rgba(167,119,255,.65)');sourceGlow.addColorStop(1,'rgba(136,75,255,0)');
  c.fillStyle=sourceGlow;c.fillRect(sourceX-30,sourceY-30,60,60);
- c.globalAlpha*=.3+.7*pulse;
  c.restore();
 }
 
