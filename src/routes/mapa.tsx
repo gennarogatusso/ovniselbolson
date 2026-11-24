@@ -11,7 +11,7 @@ export const Route = createFileRoute("/mapa")({
     meta: [
       { title: "Mapa de casos — Gennaro Montecino" },
       { name: "description", content: "Mapa interactivo de fenómenos aéreos anómalos en la Comarca Andina: El Bolsón, Lago Puelo, El Hoyo, Epuyén y Bariloche." },
-      { property: "og:title", content: "Mapa de Casos — APFAA" },
+      { property: "og:title", content: "Mapa de casos — Gennaro Montecino" },
       { property: "og:description", content: "Explorá en el mapa las ubicaciones asociadas a los casos ufológicos de la zona." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
