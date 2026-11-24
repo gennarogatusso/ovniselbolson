@@ -10,6 +10,23 @@ describe('Ship stabilization through Cerro de la Cruz',()=>{
   s.keys={l:true};tick(s,3.5);s.keys={j:true};tick(s,.95);expect(crossCanStand(s.chapter.roomX,s.chapter.roomY)).toBe(true);interactChapter(s);expect(s.ship.stage).toBe('contemplate');let result:string|null=null;for(let i=0;i<310;i++)result=update(s,.02)??result;expect(result).toBe('continue');expect(s.ship.stage).toBe('end');
  });
  it('limits rolling and returns telekinesis victims to the ground',()=>{const s=newIntroState();enterShip(s);s.ship.stage='combat';s.keys['roll']=true;tick(s,.2);expect(s.ship.roll).toBeGreaterThan(0);tick(s,.4);expect(s.ship.roll).toBe(0);tick(s,2);expect(s.ship.roll).toBe(0);s.ship.push='lean';s.ship.pushFrom=700;tick(s,4);expect(s.ship.push).toBe('none');expect(s.ship.y).toBe(SHIP.floor);expect(s.ship.x).toBeGreaterThanOrEqual(SHIP.left);});
+ it('reacts to hits in the first ship combat room without freezing player movement',()=>{
+  const s=newIntroState();enterShip(s);s.ship.stage='combat';s.ship.x=360;
+  const enemy={x:500,y:SHIP.floor,hp:32,kind:'direct' as const,cd:3,windup:0,hurt:0,deadTime:0,face:-1};
+  s.ship.enemies=[enemy];
+  s.ship.shots=[{x:482,y:SHIP.floor-48,vx:700,vy:0,life:1}];
+  s.keys.r=true;
+  const playerX=s.ship.x;
+  update(s,.02);
+  expect(enemy.hp).toBe(28);
+  expect(enemy.hurt).toBeGreaterThan(.3);
+  expect(enemy.stagger).toBeGreaterThan(0);
+  expect(enemy.knockbackX).toBeGreaterThan(0);
+  expect(s.ship.x).toBeGreaterThan(playerX);
+  const enemyXAfterHit=enemy.x;
+  tick(s,.1);
+  expect(enemy.x).toBeGreaterThan(enemyXAfterHit);
+ });
  it('reduces damage from laboratory alien attacks without changing their triggers',()=>{
   const projectile=newIntroState();enterShip(projectile);projectile.ship.stage='combat';projectile.ship.x=400;
   projectile.ship.enemies=[{x:400,y:SHIP.floor,hp:32,kind:'direct',cd:0,windup:0,hurt:0,deadTime:0,face:-1}];
