@@ -1941,7 +1941,22 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
  }else{
   if(!a.boxBroken){line(p.metal,SHIP.boxX,70,SHIP.boxX,SHIP.boxY-25,3);box(c,p.panel,SHIP.boxX-27,SHIP.boxY-22,54,44);c.strokeStyle=p.metal;c.lineWidth=2;c.strokeRect(SHIP.boxX-27,SHIP.boxY-22,54,44);still(c,art.weapon,SHIP.boxX,SHIP.boxY+8,25);}
   else if(!a.armed&&a.stage!=='pickup')still(c,art.weapon,SHIP.boxX,a.weaponY,28);
-  for(const e of a.enemies){const f=e.hp<=0?Math.min(8,3+Math.floor(e.deadTime*5)):e.hurt>0?1:e.windup>0?2:0;c.save();c.translate(e.x,e.y);c.scale(e.face,1);pose(c,art.grey,f,9,0,0,115);c.restore();if(e.windup>0)oval(c,p.energy,e.x,e.y-84,8,8);}
+  for(const e of a.enemies){
+   const f=e.hp<=0?Math.min(8,3+Math.floor(e.deadTime*5)):e.hurt>0?1:e.windup>0?2:0;
+   const hitShake=e.hurt>0?Math.sin(s.t*76+e.x*.07)*2.2:0;
+   c.save();c.translate(e.x+hitShake,e.y);c.scale(e.face,1);
+   if(e.hurt>0){
+    const strength=Math.min(1,e.hurt/.38);
+    const flash=c.createRadialGradient(0,-49,4,0,-49,64);
+    flash.addColorStop(0,`rgba(210,235,255,${.18*strength})`);
+    flash.addColorStop(.42,`rgba(129,179,255,${.16*strength})`);
+    flash.addColorStop(1,'rgba(129,179,255,0)');
+    c.globalCompositeOperation='screen';c.fillStyle=flash;c.fillRect(-68,-117,136,117);
+    c.globalCompositeOperation='source-over';
+   }
+   pose(c,art.grey,f,9,0,0,115);c.restore();
+   if(e.windup>0)oval(c,p.energy,e.x,e.y-84,8,8);
+  }
   drawPsychicTelekinesis(c,s,p);
   actor(a.x,a.y);catSprite(c,im.cat,a.catX,a.catY,0,1,52);
   for(const b of a.shots){if(b.kind==='special'){if((b.delay??0)<=0)drawSpecialProjectile(c,im.specialProjectileFrames,b,s.t);}else line(p.ice,b.x,b.y,b.x-b.vx*.025,b.y-b.vy*.025,3);}
