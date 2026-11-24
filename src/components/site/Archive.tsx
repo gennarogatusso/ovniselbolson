@@ -6,7 +6,7 @@ export function PageHeader({ code, title, lead }: { code: string; title: string;
       <div className="rise flex items-center gap-4">
         <span className="label-mono !text-celeste">{code}</span>
         <span className="h-px w-16 bg-border" />
-        <span className="label-mono">APFAA</span>
+        <span className="label-mono">Gennaro Montecino</span>
       </div>
       <h1 className="rise display-serif mt-6 text-5xl md:text-7xl" style={{ animationDelay: "80ms" }}>{title}</h1>
       <p className="rise mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg" style={{ animationDelay: "160ms" }}>
