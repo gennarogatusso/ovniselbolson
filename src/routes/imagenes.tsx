@@ -9,7 +9,7 @@ export const Route = createFileRoute("/imagenes")({
     meta: [
       { title: "Imágenes y videos — Gennaro Montecino" },
       { name: "description", content: "Fotografías, videos y documentos relacionados con los casos ufológicos de la zona." },
-      { property: "og:title", content: "Imágenes y videos — APFAA" },
+      { property: "og:title", content: "Imágenes y videos — Gennaro Montecino" },
       { property: "og:description", content: "Material visual relacionado con los casos e investigaciones." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
