@@ -12,7 +12,7 @@ describe('Ship stabilization through Cerro de la Cruz',()=>{
  it('limits rolling and returns telekinesis victims to the ground',()=>{const s=newIntroState();enterShip(s);s.ship.stage='combat';s.keys['roll']=true;tick(s,.2);expect(s.ship.roll).toBeGreaterThan(0);tick(s,.4);expect(s.ship.roll).toBe(0);tick(s,2);expect(s.ship.roll).toBe(0);s.ship.push='lean';s.ship.pushFrom=700;tick(s,4);expect(s.ship.push).toBe('none');expect(s.ship.y).toBe(SHIP.floor);expect(s.ship.x).toBeGreaterThanOrEqual(SHIP.left);});
  it('reacts to hits in the first ship combat room without freezing player movement',()=>{
   const s=newIntroState();enterShip(s);s.ship.stage='combat';s.ship.x=360;
-  const enemy={x:500,y:SHIP.floor,hp:32,kind:'direct' as const,cd:3,windup:0,hurt:0,deadTime:0,face:-1};
+  const enemy:(typeof s.ship.enemies)[number]={x:500,y:SHIP.floor,hp:32,kind:'direct',cd:3,windup:0,hurt:0,deadTime:0,face:-1};
   s.ship.enemies=[enemy];
   s.ship.shots=[{x:482,y:SHIP.floor-48,vx:700,vy:0,life:1}];
   s.keys.r=true;
