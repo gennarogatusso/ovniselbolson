@@ -539,8 +539,8 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
         e.cd-=dt;
         if(Math.abs(e.knockbackX??0)>.5){
           e.x=Math.max(230,Math.min(850,e.x+(e.knockbackX??0)*dt));
-          e.knockbackX=(e.knockbackX??0)*Math.max(0,1-dt*10);
-          if(Math.abs(e.knockbackX)<6)e.knockbackX=0;
+          const remainingKnockback=(e.knockbackX??0)*Math.max(0,1-dt*10);
+          e.knockbackX=Math.abs(remainingKnockback)<6?0:remainingKnockback;
         }
         if((e.stagger??0)>0){e.windup=0;continue;}
         if(e.kind==='direct'){
