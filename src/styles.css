@@ -489,3 +489,13 @@
 .game-credit-section li::before { content: "✦"; position: absolute; left: 0; color: #c9a8ed; font-size: 10px; top: 3px; }
 .game-credit-section em { color: #fff; font-style: italic; }
 @media(max-width:600px) { .game-credits-panel { padding: 20px 16px; } .game-credit-sections { gap: 9px; margin-bottom: 18px; } .game-credit-section { padding: 11px 12px; } .game-credit-heading { font-size: 9px; } }
+
+
+/* Botón de cierre siempre visible en el panel de controles. */
+.game-controls-card { position: relative; max-height: calc(100% - 8px); overflow-y: auto; overscroll-behavior: contain; }
+.game-controls-heading { position: sticky; top: -1px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -2px -2px 16px; padding: 2px 2px 12px; background: linear-gradient(145deg, rgb(12 22 43 / 99%), rgb(20 27 50 / 99%)); }
+.game-controls-heading h2 { margin: 0; }
+.game-controls-dismiss { display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; border: 1px solid rgb(210 230 255 / 45%); border-radius: 6px; background: rgb(120 170 220 / 13%); color: #fff; font: 600 11px var(--font-mono); letter-spacing: .06em; cursor: pointer; }
+.game-controls-dismiss:hover { background: rgb(120 170 220 / 28%); }
+.game-controls-dismiss:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+@media(max-width:600px) { .game-controls-heading { margin-bottom: 12px; } .game-controls-dismiss { padding: 7px 8px; font-size: 10px; } }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Link } from '@tanstack/react-router';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crosshair, Hand, Maximize, Minimize, Pause, Play, RotateCcw, Volume2, VolumeX, Zap } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crosshair, Hand, Maximize, Minimize, Pause, Play, RotateCcw, Volume2, VolumeX, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import mountain from '@/assets/piltriquitron-cartoon.png.asset.json';
 import player from '@/assets/personaje-juego.png.asset.json';
@@ -214,7 +214,7 @@ export function UfoGame() {
   fire:[armedFrames[5]!,armedFrames[6]!]
  };
  loadPhase='restaurant';const restaurantSource=await load('/imagens/restaurante.png').catch(()=>null);reportProgress(99);
-  loadPhase='sureste';const suresteImage=(await load('/imagens/suereste.png').catch(()=>null))??undefined;reportProgress(99);
+  loadPhase='sureste';const suresteImage=(await load('/imagens/sureste.png').catch(()=>null))??undefined;reportProgress(99);
  let restaurantImage:HTMLImageElement|undefined;
  if(restaurantSource){
   try{restaurantImage=(await prepareTransparentSprite(restaurantSource)).image;}
@@ -332,7 +332,10 @@ export function UfoGame() {
      <Link to="/" className="game-menu-hit game-menu-exit" aria-label="Salir de UFOCAT"/>
      {controlsOpen&&<div className="game-credits-backdrop" onClick={()=>setControlsOpen(false)}>
       <section id="game-controls-dialog" className="game-credits-card game-controls-card" role="dialog" aria-modal="true" aria-labelledby="game-controls-title" onClick={e=>e.stopPropagation()}>
-       <h2 id="game-controls-title">CONTROLES</h2>
+       <div className="game-controls-heading">
+        <h2 id="game-controls-title">CONTROLES</h2>
+        <button type="button" className="game-controls-dismiss" aria-label="Cerrar controles" onClick={()=>setControlsOpen(false)}><X size={16} aria-hidden="true"/> CERRAR</button>
+       </div>
        <div className="game-controls-list">
         <p><kbd>W A S D</kbd><span>Moverse. A/D para los lados; W/S para subir y bajar según la escena.</span></p>
         <p><kbd>W / ESPACIO</kbd><span>Saltar durante la aventura y los combates.</span></p>
