@@ -223,7 +223,6 @@ export function UfoGame() {
  },[]);
  useEffect(()=>{
   const map:Record<string,string>={a:'l',arrowleft:'l',d:'r',arrowright:'r',w:'j',arrowup:'j',' ':'j',s:'c',arrowdown:'c',e:'e',shift:'roll'};
-  const clear=()=>{st.current.keys={};st.current.fire=false;};
   const down=(e:KeyboardEvent)=>{if(st.current.chapter.computer)return;const key=e.key.toLowerCase();if(st.current.phase==='spaceship'&&['trailWalk','trailEnd'].includes(st.current.ship.stage)&&key!=='w'&&key!=='escape'){e.preventDefault();return;}if(key==='r'&&screenRef.current==='play'&&!e.repeat){e.preventDefault();if(triggerSpecial(st.current))setSpecialCooldown(5);return;}if(key==='x'&&screenRef.current==='play'&&!e.repeat){e.preventDefault();if(triggerAgentUltimate(st.current)){setAgentMana(0);setAgentUltimateReady(false);return;}if(triggerCatUltimate(st.current)){setCatUltimateUsed(true);setCatUltimateReady(false);}return;}if(key==='escape'){clear();setCreditsOpen(false);setScreen(s=>s==='play'?'paused':s==='paused'?'play':s);return;}if(map[key]&&screenRef.current==='play'){e.preventDefault();st.current.keys[map[key]]=true;}};
   const up=(e:KeyboardEvent)=>{const k=map[e.key.toLowerCase()];if(k)st.current.keys[k]=false;};
   const blur=()=>{clear();setScreen(s=>s==='play'?'paused':s);};
