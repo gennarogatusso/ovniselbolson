@@ -2018,7 +2018,7 @@ export function draw(c:CanvasRenderingContext2D,s:S,im:GameImages|null,p:Palette
  }
  drawStreetSurface(c,p);
  if(sureste&&suresteBounds&&suresteWidth>0){
-  const suresteGroundOffset=36;
+  const suresteGroundOffset=28;
   oval(c,p.shadow,suresteX+suresteWidth*.52,GROUND+suresteGroundOffset+7,suresteWidth*.56,11);
   c.save();c.shadowColor='rgba(13,18,28,.32)';c.shadowBlur=12;c.shadowOffsetY=4;
   drawTrimmed(c,sureste,suresteX,GROUND+suresteGroundOffset-suresteDrawHeight,suresteWidth,suresteDrawHeight);
