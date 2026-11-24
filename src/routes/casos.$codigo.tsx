@@ -12,14 +12,14 @@ export const Route = createFileRoute("/casos/$codigo")({
   head: ({ loaderData }) => ({
     meta: loaderData
       ? [
-          { title: `${loaderData.codigo} · ${loaderData.titulo} — APFAA` },
+          { title: `${loaderData.codigo} · ${loaderData.titulo} — Gennaro Montecino` },
           { name: "description", content: loaderData.descripcion },
           { property: "og:title", content: `${loaderData.codigo} · ${loaderData.titulo}` },
           { property: "og:description", content: loaderData.descripcion },
           { property: "og:type", content: "article" },
           { name: "twitter:card", content: "summary" },
         ]
-      : [{ title: "Expediente no encontrado — APFAA" }, { name: "robots", content: "noindex" }],
+      : [{ title: "Expediente no encontrado — Gennaro Montecino" }, { name: "robots", content: "noindex" }],
   }),
   notFoundComponent: () => (
     <div className="mx-auto max-w-3xl px-6 pb-28 pt-40 text-center">
