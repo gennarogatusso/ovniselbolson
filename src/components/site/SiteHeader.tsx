@@ -1,14 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
-import logo from "@/assets/logo.png.asset.json";
+import { Menu, Star, X } from "lucide-react";
 
 export const NAV = [
   { to: "/casos", label: "Casos" },
   { to: "/mapa", label: "Mapa de Casos" },
-  { to: "/imagenes", label: "Imágenes y videos" },
-  { to: "/reportes", label: "Reportes" },
-  { to: "/about", label: "About" },
+  { to: "/imagenes", label: "Galería" },
+  { to: "/reportes", label: "Publicaciones" },
+  { to: "/juego", label: "Jugar" },
+  { to: "/about", label: "Sobre mí" },
 ] as const;
 
 export function SiteHeader() {
@@ -34,11 +34,11 @@ export function SiteHeader() {
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 md:h-20 md:px-10">
-        <Link to="/" className="flex items-center gap-3" aria-label="APFAA — inicio">
-          <img src={logo.url} alt="Logotipo APFAA" className="h-10 w-10 md:h-12 md:w-12" />
+        <Link to="/" className="flex items-center gap-3" aria-label="Gennaro Montecino — inicio">
+          <img src="/imagens/logo%20gennaro.png.png" alt="Logo de Gennaro Montecino" className="h-10 w-14 object-contain md:h-12 md:w-16" />
           <span className="hidden flex-col leading-tight sm:flex">
-            <span className="font-serif text-lg tracking-wide">APFAA</span>
-            <span className="label-mono !text-[0.6rem]">Archivo Patagónico</span>
+            <span className="font-serif text-base tracking-wide md:text-lg">Gennaro Montecino</span>
+            <span className="label-mono !text-[0.6rem]">Videojuegos · Ufología</span>
           </span>
         </Link>
 
@@ -47,9 +47,10 @@ export function SiteHeader() {
             <Link
               key={n.to}
               to={n.to}
-              className="text-[0.8rem] tracking-wide text-foreground/75 transition-colors hover:text-foreground"
+              className={`inline-flex items-center gap-1.5 text-[0.8rem] tracking-wide transition-colors hover:text-foreground ${n.to === "/juego" ? "font-semibold text-amber-200 hover:text-amber-100" : "text-foreground/75"}`}
               activeProps={{ className: "!text-celeste" }}
             >
+              {n.to === "/juego" && <Star size={12} fill="currentColor" />}
               {n.label}
             </Link>
           ))}
@@ -70,7 +71,7 @@ export function SiteHeader() {
           {NAV.map((n, i) => (
             <Link key={n.to} to={n.to} className="flex items-baseline gap-4 border-b border-border py-4">
               <span className="label-mono">0{i + 1}</span>
-              <span className="font-serif text-2xl">{n.label}</span>
+              <span className="flex items-center gap-2 font-serif text-2xl">{n.to === "/juego" && <Star size={14} fill="currentColor" className="text-amber-200" />}{n.label}</span>
             </Link>
           ))}
         </nav>
