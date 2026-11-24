@@ -6,7 +6,7 @@ export const Route = createFileRoute("/juego")({
     meta: [
       { title: "OVNIS EN EL BOLSÓN — Videojuego · Gennaro Montecino" },
       { name: "description", content: "Un OVNI aparece sobre El Bolsón y se lleva a tu gato. Juego 2D gratuito en la página de Gennaro Montecino." },
-      { property: "og:title", content: "OVNIS EN EL BOLSÓN — Juego test · APFAA" },
+      { property: "og:title", content: "OVNIS EN EL BOLSÓN — Videojuego · Gennaro Montecino" },
       { property: "og:description", content: "Perseguí al platillo volador y recuperá a tu gato en la Comarca Andina." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
