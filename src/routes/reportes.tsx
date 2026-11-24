@@ -5,10 +5,10 @@ import { reportes } from "@/lib/archive";
 export const Route = createFileRoute("/reportes")({
   head: () => ({
     meta: [
-      { title: "Reportes — APFAA" },
-      { name: "description", content: "Publicaciones, análisis de casos y documentos de investigación del Archivo Patagónico de Fenómenos Aéreos Anómalos." },
+      { title: "Publicaciones — Gennaro Montecino" },
+      { name: "description", content: "Publicaciones, análisis de casos y notas de investigación de Gennaro Montecino." },
       { property: "og:title", content: "Reportes — APFAA" },
-      { property: "og:description", content: "Hemeroteca digital de informes y análisis de APFAA." },
+      { property: "og:description", content: "Publicaciones y análisis sobre videojuegos, ufología e investigaciones de la zona." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -20,7 +20,7 @@ function Reportes() {
   const sorted = [...reportes].sort((a, b) => b.fecha.localeCompare(a.fecha));
   return (
     <>
-      <PageHeader code="Sección 04" title="Reportes" lead="Publicaciones, análisis de casos y documentos de investigación, organizados por fecha, tema, región y expediente relacionado." />
+      <PageHeader code="Sección 04" title="Publicaciones" lead="Artículos, análisis, avances de videojuegos y documentos de investigación, organizados por fecha y tema." />
       <section className="mx-auto max-w-7xl px-6 pb-28 md:px-10">
         <div className="hidden grid-cols-12 border-b border-border pb-3 md:grid">
           {["Fecha", "Título", "Tema", "Región", "Exp."].map((h, i) => (
