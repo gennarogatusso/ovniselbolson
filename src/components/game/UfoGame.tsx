@@ -271,6 +271,9 @@ export function UfoGame() {
  const controlClass='game-control rounded-full border border-silver/50 bg-background/70 text-foreground touch-none';
  const specialProgress=Math.max(0,Math.min(1,1-specialCooldown/5));
  const specialLabel=specialCooldown>0?Math.ceil(specialCooldown):'R';
+ const verticalExplore=roomIsFree(st.current)||forestIsFree(st.current)||st.current.ship.stage==='crossFree';
+ const canJump=verticalExplore||st.current.phase==='fight'||st.current.ship.stage==='soldierFight'||st.current.ship.stage==='agentFight';
+ const canCrouch=verticalExplore||st.current.phase==='fight';
  return <div ref={host} className={`ufo-game ${expanded?'game-expanded':''}`} data-screen={screen}>
   <div className="game-stage">
    {screen==='title'&&<img className="game-title-background" src="/imagens/menu%20de%20juego.png" alt=""/>}
@@ -295,11 +298,11 @@ export function UfoGame() {
       {screen==='play'&&!computer&&touch&&(freeRoom||combat||(!intro&&!CINEMATIC.has(st.current.phase)))&&!['trailWalk','trailEnd','agentUltimate','agentUltimateBlast'].includes(st.current.ship.stage)&&<div className={`game-touch game-mobile-layout ${shipIsCombat(st.current)?'game-ship-touch':''} ${combat?'game-combat-layout':''} pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-between px-3`}>
         <div className="game-touch-left pointer-events-auto flex items-end gap-2">
          <div className="game-joystick" role="group" aria-label="Joystick de movimiento" onPointerDown={joystickStart} onPointerMove={joystickMove} onPointerUp={joystickStop} onPointerCancel={joystickStop} onLostPointerCapture={joystickStop}><span className="game-joystick-thumb"/><ArrowLeft className="game-joystick-left"/><ArrowRight className="game-joystick-right"/></div>
-         {!shipIsCombat(st.current)&&!['crossWalk','soldierExit'].includes(st.current.ship.stage)&&<Button className={`${controlClass} game-move-control`} aria-label={freeRoom?"Caminar hacia abajo":"Agacharse"} {...hold('c')}><ArrowDown/></Button>}
+         {canCrouch&&<Button className={`${controlClass} game-move-control`} aria-label={freeRoom?"Caminar hacia abajo":"Agacharse"} {...hold('c')}><ArrowDown/></Button>}
         </div>
         <div className="game-touch-right game-action-cluster pointer-events-auto">
          {context&&<Button className={`${controlClass} game-context-control`} aria-label="Pedir ayuda a los pibes" {...hold('e')}><Hand/></Button>}
-         {(!shipIsCombat(st.current)||st.current.ship.stage==='soldierFight'||st.current.ship.stage==='agentFight')&&!['crossWalk','soldierExit'].includes(st.current.ship.stage)&&<Button className={`${controlClass} game-jump-control pointer-events-auto`} aria-label={freeRoom?"Caminar hacia arriba":"Saltar"} {...hold('j')}><ArrowUp/></Button>}
+         {canJump&&<Button className={`${controlClass} game-jump-control pointer-events-auto`} aria-label={freeRoom?"Caminar hacia arriba":"Saltar"} {...hold('j')}><ArrowUp/></Button>}
          {combat&&<Button className={`${controlClass} game-roll-control pointer-events-auto`} aria-label="Rodar" {...hold('roll')}><RotateCcw/></Button>}
          {st.current.ship.stage==='agentFight'&&agentUltimateReady&&<Button className={`${controlClass} game-agent-ultimate-control`} aria-label="Ultimate de la espada · X" title="Ultimate de la espada · X" onClick={()=>{if(triggerAgentUltimate(st.current)){setAgentMana(0);setAgentUltimateReady(false);}}}><span>X</span><small>ESPADA</small></Button>}
          {st.current.ship.stage==='soldierFight'&&<Button className={`${controlClass} game-cat-ultimate-control`} aria-label="Ataque definitivo del gato · X" title="Ataque definitivo del gato · X" disabled={!catUltimateReady||catUltimateUsed} onClick={()=>{if(triggerCatUltimate(st.current)){setCatUltimateUsed(true);setCatUltimateReady(false);}}}><span>X</span></Button>}
