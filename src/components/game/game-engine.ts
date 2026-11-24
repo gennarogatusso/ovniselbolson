@@ -506,7 +506,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
       if(a.push!=='none'){
         a.pushTime+=dt;
         if(a.push==='lean'&&a.pushTime>=.45){a.push='flight';a.pushTime=0;a.pushVx=Math.sign(a.x-a.pushFrom||-1)*190;a.pushVy=-220;}
-        else if(a.push==='flight'){a.pushVx+=Math.sign(a.pushVx)*1200*dt;a.x+=a.pushVx*dt;a.y+=a.pushVy*dt;a.pushVy+=210*dt;if(a.x<=SHIP.left||a.x>=SHIP.right){a.x=Math.max(SHIP.left,Math.min(SHIP.right,a.x));a.push='wall';a.pushTime=0;a.shake=.55;shipHit(s,12);}}
+        else if(a.push==='flight'){a.pushVx+=Math.sign(a.pushVx)*1200*dt;a.x+=a.pushVx*dt;a.y+=a.pushVy*dt;a.pushVy+=210*dt;if(a.x<=SHIP.left||a.x>=SHIP.right){a.x=Math.max(SHIP.left,Math.min(SHIP.right,a.x));a.push='wall';a.pushTime=0;a.shake=.55;shipHit(s,9);}}
         else if(a.push==='wall'&&a.pushTime>=.18){a.push='fall';a.pushTime=0;a.pushVy=60;}
         else if(a.push==='fall'){a.pushVy+=900*dt;a.y=Math.min(SHIP.floor,a.y+a.pushVy*dt);if(a.y===SHIP.floor){a.push='none';a.hurt=1;}}
       }else if(a.roll>0){a.roll=Math.max(0,a.roll-dt);a.x=Math.max(SHIP.left,Math.min(SHIP.right,a.x+a.rollFace*420*dt));a.y=SHIP.floor;a.face=a.rollFace;}
@@ -537,7 +537,7 @@ function updateShip(s:S,dt:number):'continue'|'lose'|null{
         if(!a.boxBroken&&Math.abs(b.x-SHIP.boxX)<32&&Math.abs(b.y-SHIP.boxY)<30){b.life=0;a.boxHp--;shipSound(s,'impact');if(a.boxHp<=0){a.boxBroken=true;a.aimActive=false;shipSound(s,'break');a.shake=.25;}}
         for(const e of a.enemies)if(b.life>0&&e.hp>0&&Math.abs(b.x-e.x)<25&&Math.abs(b.y-(e.y-48))<50){b.life=0;e.hp-=4;e.hurt=.2;if(e.hp<=0)defeat(s,e);}
       }
-      for(const b of a.bolts){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(Math.abs(b.x-a.x)<23&&Math.abs(b.y-(a.y-50))<48){b.life=0;shipHit(s,7);}}
+      for(const b of a.bolts){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(Math.abs(b.x-a.x)<23&&Math.abs(b.y-(a.y-50))<48){b.life=0;shipHit(s,5);}}
       a.shots=a.shots.filter(b=>b.life>0);a.bolts=a.bolts.filter(b=>b.life>0);
       if(a.hp===0)return 'lose';break;
     }
