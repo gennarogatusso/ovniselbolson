@@ -378,7 +378,7 @@ function drawCrossWreckSmoke(c:CanvasRenderingContext2D,s:S){
  }
  c.restore();
 }
-const OPENING_DUSK_PHASES = new Set<S['phase']>(['walk','descend','beam','rise','draw','fight','help','boom','crash']);
+const OPENING_DUSK_PHASES = new Set<S['phase']>(['walk','descend','beam','rise','draw','fight','help','boom','crash','arrive','reunion','alien','speech','attack','fade','jets','aftermath']);
 function openingDuskActive(s:S){return OPENING_DUSK_PHASES.has(s.phase);}
 function drawOpeningDuskSky(c:CanvasRenderingContext2D,s:S){
  if(!openingDuskActive(s))return;
@@ -401,7 +401,7 @@ function drawOpeningDuskSky(c:CanvasRenderingContext2D,s:S){
 function drawOpeningDuskGrade(c:CanvasRenderingContext2D,s:S){
  if(!openingDuskActive(s))return;
  c.save();
- // Color grading cálido-violeta, aplicado solo al escenario de la primera pelea.
+ // Color grading cálido-violeta para la pelea inicial y la secuencia posterior al choque.
  c.globalCompositeOperation='soft-light';c.globalAlpha=.62;
  const grade=c.createLinearGradient(s.cam,0,s.cam,H);
  grade.addColorStop(0,'rgba(42,37,83,.48)');grade.addColorStop(.36,'rgba(119,67,105,.22)');grade.addColorStop(.7,'rgba(238,125,92,.20)');grade.addColorStop(1,'rgba(23,25,43,.35)');
