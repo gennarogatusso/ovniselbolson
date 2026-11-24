@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import logo from "@/assets/logo.png.asset.json";
 import { NAV } from "./SiteHeader";
 import { CONTACTO_EMAIL } from "@/lib/archive";
 
@@ -9,12 +8,12 @@ export function SiteFooter() {
     <footer className="border-t border-border bg-background">
       <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 md:grid-cols-12 md:px-10">
         <div className="flex gap-5 md:col-span-5">
-          <img src={logo.url} alt="Logotipo APFAA" className="h-16 w-16 shrink-0" />
+          <img src="/imagens/logo%20gennaro.png.png" alt="Logo de Gennaro Montecino" className="h-16 w-24 shrink-0 bg-black object-contain" />
           <div>
-            <p className="font-serif text-xl">APFAA</p>
-            <p className="label-mono mt-1">Archivo Patagónico de Fenómenos Aéreos Anómalos</p>
+            <p className="font-serif text-xl">Gennaro Montecino</p>
+            <p className="label-mono mt-1">Videojuegos · Ufología · Investigaciones</p>
             <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-              Archivo independiente de fenómenos aéreos anómalos de la Patagonia argentina.
+              Página dedicada a la publicación de mis videojuegos y casos ufológicos de la zona.
             </p>
           </div>
         </div>
@@ -47,8 +46,8 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-border">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-2 px-6 py-6 md:flex-row md:px-10">
-          <span className="label-mono">© {year} APFAA</span>
-          <span className="label-mono">41.9°S · 71.5°O — Comarca Andina</span>
+          <span className="label-mono">© {year} Gennaro Montecino</span>
+          <span className="label-mono">El Bolsón · Patagonia argentina</span>
         </div>
       </div>
     </footer>
