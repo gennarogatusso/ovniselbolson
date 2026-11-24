@@ -1,8 +1,8 @@
 {
-  "name": "OVNIS: El Bolsón",
-  "short_name": "OVNIS",
-  "description": "Una aventura 2D de OVNIS en El Bolsón, Patagonia.",
-  "start_url": "/juego?origen=pantalla-inicio",
+  "name": "Gennaro Montecino",
+  "short_name": "Gennaro",
+  "description": "Videojuegos y casos ufológicos de la zona.",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#080d18",
@@ -10,7 +10,7 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/gato%20volando%20en%20el%20aire.png",
+      "src": "/imagens/logo%20gennaro.png.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any"
