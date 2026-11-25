@@ -308,7 +308,7 @@ export function enterShip(s:S){s.phase='spaceship';s.ship=newShip();s.ship.stage
 export function respawnAtShipCheckpoint(s:S){enterShip(s);}
 export function shipIsCombat(s:S){return s.phase==='spaceship'&&(['combat','soldierFight','agentFight','agentUltimate','agentUltimateBlast','agentEnd'].includes(s.ship.stage)||(s.ship.agentCombatActive&&s.ship.stage==='swordAttack'));}
 export const SOLDIER_DAMAGE_FACTOR=0.65;
-export const AGENT_DAMAGE_FACTOR=0.8;
+export const AGENT_DAMAGE_FACTOR=0.48;
 export const UFO_PLAYER_DAMAGE=12*1.4;
 export const CAT_ULTIMATE_READY_DELAY=10;
 export const CAT_ULTIMATE_THROW_DURATION=1.8;

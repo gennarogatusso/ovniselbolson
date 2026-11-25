@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newIntroState, enterShip, update, interactChapter, crossCanStand, SHIP, SWORD_PRIMARY_IMPACT_TIME, SWORD_PRIMARY_SOUND_TIME, triggerSpecial, type S } from '../components/game/game-engine';
+import { newIntroState, enterShip, update, interactChapter, crossCanStand, SHIP, AGENT_DAMAGE_FACTOR, SWORD_PRIMARY_IMPACT_TIME, SWORD_PRIMARY_SOUND_TIME, triggerSpecial, type S } from '../components/game/game-engine';
 function tick(s:S,seconds:number){for(let t=0;t<seconds;t+=.02)update(s,.02);}
 function makeAgent(id:number,x:number,kind:S['ship']['agents'][number]['kind']):S['ship']['agents'][number]{
  return {id,x,y:SHIP.floor,hp:160,maxHp:160,kind,cd:100,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,knockbackX:0,stagger:0};
@@ -81,5 +81,14 @@ describe('Ship stabilization through Cerro de la Cruz',()=>{
   psychic.ship.x=SHIP.right-1;psychic.ship.push='flight';psychic.ship.pushVx=400;psychic.ship.pushVy=0;
   tick(psychic,.02);expect(psychic.ship.hp).toBe(91);
  });
+ it('reduces super-agent projectile damage by exactly 40 percent',()=>{
+  expect(AGENT_DAMAGE_FACTOR).toBeCloseTo(.48);
+  const s=newIntroState();enterShip(s);s.ship.stage='agentFight';s.ship.agentCombatActive=true;s.ship.agentWarning=0;s.ship.x=200;s.ship.y=SHIP.floor;
+  s.ship.agents=[makeAgent(0,500,'regular')];
+  s.ship.bolts=[{x:200,y:SHIP.floor-46,vx:0,vy:0,life:1,kind:'rifle'}];
+  update(s,.02);
+  expect(s.ship.hp).toBeCloseTo(95.008);
+ });
+
 
 });
