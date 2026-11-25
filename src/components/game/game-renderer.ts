@@ -1876,7 +1876,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
      c.restore();
     }else if(!entering&&agent.hp>0&&agent.kind==='shield'&&((agent.shieldBreak??0)>0||agent.shieldDisabled)){
      const q=agent.shieldDisabled?1:Math.min(1,(agent.shieldBreak??0)/.45),shieldX=agentW*.22;
-     c.save();c.globalCompositeOperation='screen';c.globalAlpha=agent.shieldDisabled?.9:.7*q;c.strokeStyle='rgba(190,207,255,.84)';c.lineWidth=1.6;
+     c.save();c.globalCompositeOperation='screen';c.globalAlpha=agent.shieldDisabled ? .9 : .7*q;c.strokeStyle='rgba(190,207,255,.84)';c.lineWidth=1.6;
      c.beginPath();c.moveTo(shieldX+2,-agentH*.82);c.lineTo(shieldX+18,-agentH*.62);c.lineTo(shieldX+6,-agentH*.48);c.lineTo(shieldX+28,-agentH*.28);c.stroke();
      c.beginPath();c.moveTo(shieldX+26,-agentH*.76);c.lineTo(shieldX+10,-agentH*.59);c.lineTo(shieldX+31,-agentH*.43);c.stroke();
      if(agent.shieldDisabled){
