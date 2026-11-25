@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { newIntroState, enterShip, update, interactChapter, crossCanStand, SHIP, AGENT_DAMAGE_FACTOR, SWORD_PRIMARY_IMPACT_TIME, SWORD_PRIMARY_SOUND_TIME, triggerSpecial, type S } from '../components/game/game-engine';
 function tick(s:S,seconds:number){for(let t=0;t<seconds;t+=.02)update(s,.02);}
 function makeAgent(id:number,x:number,kind:S['ship']['agents'][number]['kind']):S['ship']['agents'][number]{
- return {id,x,y:SHIP.floor,hp:160,maxHp:160,kind,cd:100,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,knockbackX:0,stagger:0};
+ return {id,x,y:SHIP.floor,hp:160,maxHp:160,kind,cd:100,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,shieldDisabled:false,knockbackX:0,stagger:0};
 }
 describe('Ship stabilization through Cerro de la Cruz',()=>{
  it('finishes the laboratory rescue and requires walking to its exit',()=>{const s=newIntroState();enterShip(s);tick(s,21);expect(s.ship.stage).toBe('labFree');expect(s.ship.labDead).toBe(1);s.keys.l=true;tick(s,2);interactChapter(s);tick(s,1.3);expect(s.ship.stage).toBe('combat');expect(s.ship.enemies).toHaveLength(4);});
@@ -72,6 +72,13 @@ describe('Ship stabilization through Cerro de la Cruz',()=>{
   expect(specialShield.hp).toBe(160);
   expect(specialShield.shieldBlocks).toBe(0);
   expect(specialShield.shieldBreak).toBeGreaterThan(0);
+  expect(specialShield.shieldDisabled).toBe(true);
+  tick(special,2.4);
+  expect(specialShield.shieldBreak).toBe(0);
+  expect(specialShield.shieldDisabled).toBe(true);
+  special.fire=true;update(special,.02);special.fire=false;
+  tick(special,SWORD_PRIMARY_IMPACT_TIME+.12);
+  expect(specialShield.hp).toBeLessThan(160);
  });
  it('reduces damage from laboratory alien attacks without changing their triggers',()=>{
   const projectile=newIntroState();enterShip(projectile);projectile.ship.stage='combat';projectile.ship.x=400;

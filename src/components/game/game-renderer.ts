@@ -637,6 +637,32 @@ function drawAgentBurnedGround(c:CanvasRenderingContext2D,_s:S){
  const y=SHIP.floor;c.save();c.globalCompositeOperation='multiply';const burn=c.createLinearGradient(0,y-64,0,y+30);burn.addColorStop(0,'rgba(25,12,39,0)');burn.addColorStop(.35,'rgba(17,9,27,.7)');burn.addColorStop(.8,'rgba(7,6,13,.95)');burn.addColorStop(1,'rgba(20,10,30,.8)');c.fillStyle=burn;c.fillRect(0,y-68,W,80);c.restore();
  c.save();c.globalCompositeOperation='screen';for(let i=0;i<14;i++){const x=(i*83+24)%W;c.beginPath();c.moveTo(x,y-3);c.lineTo(x+15,y-12-(i%4)*4);c.lineTo(x+31,y-4);c.strokeStyle='rgba(157,94,226,'+(i%3===0?.55:.3)+')';c.lineWidth=i%4===0?2:1;c.stroke();}const glow=c.createRadialGradient(W/2,y,5,W/2,y,440);glow.addColorStop(0,'rgba(124,62,190,.25)');glow.addColorStop(1,'rgba(40,15,75,0)');c.fillStyle=glow;c.fillRect(0,y-100,W,100);c.restore();
 }
+function drawMinecraftShieldTip(c:CanvasRenderingContext2D,time:number){
+ if(time<0||time>=3.2)return;
+ const fade=Math.min(1,time/.14,(3.2-time)/.2),left='utiliza',right='para romper los escudos';
+ c.save();c.globalAlpha=Math.max(0,fade);
+ c.font='bold 14px "Courier New", monospace';
+ const leftW=c.measureText(left).width,rightW=c.measureText(right).width,keyW=28,gap=11,pad=22;
+ const w=Math.ceil(pad*2+leftW+gap+keyW+gap+rightW),h=46,x=Math.round((W-w)/2),y=14;
+ c.fillStyle='rgba(0,0,0,.72)';c.fillRect(x+5,y+5,w,h);
+ c.fillStyle='#191d19';c.fillRect(x,y,w,h);
+ c.fillStyle='#7b795b';c.fillRect(x,y,w,4);c.fillRect(x,y+h-4,w,4);c.fillRect(x,y,4,h);c.fillRect(x+w-4,y,4,h);
+ c.fillStyle='#c5b98a';c.fillRect(x+4,y+4,w-8,2);c.fillRect(x+4,y+h-6,w-8,2);
+ c.fillStyle='#303d2d';c.fillRect(x+6,y+6,w-12,h-12);
+ c.fillStyle='rgba(106,137,76,.22)';c.fillRect(x+7,y+7,w-14,5);
+ const contentW=leftW+gap+keyW+gap+rightW,start=x+(w-contentW)/2,baseY=y+28;
+ c.textAlign='left';c.textBaseline='middle';c.fillStyle='#f0edda';c.shadowColor='#000';c.shadowBlur=2;
+ c.fillText(left,start,baseY);
+ const keyX=start+leftW+gap,keyY=y+9;
+ c.shadowBlur=0;c.fillStyle='#28231a';c.fillRect(keyX+2,keyY+3,keyW,27);
+ c.fillStyle='#a68b42';c.fillRect(keyX,keyY,keyW,27);
+ c.fillStyle='#e5d39a';c.fillRect(keyX+2,keyY+2,keyW-4,3);
+ c.fillStyle='#6d582a';c.fillRect(keyX+2,keyY+23,keyW-4,2);
+ c.fillStyle='#fff2c5';c.font='bold 17px "Courier New", monospace';c.textAlign='center';c.fillText('R',keyX+keyW/2,keyY+14);
+ c.font='bold 14px "Courier New", monospace';c.textAlign='left';c.fillStyle='#f0edda';c.fillText(right,keyX+keyW+gap,baseY);
+ c.restore();
+}
+
 function drawAgentUltimateVfx(c:CanvasRenderingContext2D,s:S){
  const a=s.ship;if(a.stage!=='agentUltimateBlast')return;const t=a.time,duration=AGENT_ULTIMATE_BLAST_DURATION,life=Math.min(1,Math.max(0,(duration-t)/.85)),q=Math.max(0,Math.min(1,t/duration)),cx=Math.max(40,Math.min(W-40,a.x+a.face*65)),cy=SHIP.floor-118;c.save();
  // Flash blanco en toda la pantalla con un borde violeta intenso.
@@ -1848,11 +1874,16 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
      }
      c.fillStyle='#f4ffff';c.beginPath();c.arc(sparkX,sparkY,3.2,0,Math.PI*2);c.fill();c.restore();
      c.restore();
-    }else if(!entering&&agent.hp>0&&agent.kind==='shield'&&(agent.shieldBreak??0)>0){
-     const q=Math.min(1,(agent.shieldBreak??0)/.45),shieldX=agentW*.22;
-     c.save();c.globalCompositeOperation='screen';c.globalAlpha=.7*q;c.strokeStyle='rgba(190,207,255,.84)';c.lineWidth=1.6;
+    }else if(!entering&&agent.hp>0&&agent.kind==='shield'&&((agent.shieldBreak??0)>0||agent.shieldDisabled)){
+     const q=agent.shieldDisabled?1:Math.min(1,(agent.shieldBreak??0)/.45),shieldX=agentW*.22;
+     c.save();c.globalCompositeOperation='screen';c.globalAlpha=agent.shieldDisabled?.9:.7*q;c.strokeStyle='rgba(190,207,255,.84)';c.lineWidth=1.6;
      c.beginPath();c.moveTo(shieldX+2,-agentH*.82);c.lineTo(shieldX+18,-agentH*.62);c.lineTo(shieldX+6,-agentH*.48);c.lineTo(shieldX+28,-agentH*.28);c.stroke();
-     c.beginPath();c.moveTo(shieldX+26,-agentH*.76);c.lineTo(shieldX+10,-agentH*.59);c.lineTo(shieldX+31,-agentH*.43);c.stroke();c.restore();
+     c.beginPath();c.moveTo(shieldX+26,-agentH*.76);c.lineTo(shieldX+10,-agentH*.59);c.lineTo(shieldX+31,-agentH*.43);c.stroke();
+     if(agent.shieldDisabled){
+      c.lineWidth=2;c.beginPath();c.moveTo(shieldX-5,-agentH*.68);c.lineTo(shieldX+7,-agentH*.56);c.lineTo(shieldX-2,-agentH*.43);c.lineTo(shieldX+13,-agentH*.23);c.stroke();
+      for(let i=0;i<3;i++){const sx=shieldX+10+i*11,sy=-agentH*(.86-i*.2);c.fillStyle=i%2?'rgba(158,213,255,.72)':'rgba(224,239,255,.82)';c.fillRect(sx,sy,3,3);}
+     }
+     c.restore();
     }
     if(!entering&&agent.hp>0&&agent.firePose>0){c.fillStyle='#ffe7a0';c.shadowColor='#ffb85c';c.shadowBlur=16;c.beginPath();c.arc(-agentW*.42,-agentH*.52,5+Math.sin(s.t*65)*1.5,0,Math.PI*2);c.fill();}
     c.restore();
@@ -1864,6 +1895,7 @@ function shipScene(c:CanvasRenderingContext2D,s:S,im:GameImages,p:Palette){
     const manaVisible=a.agentCombatActive&&a.agents.some(agent=>agent.hp>0);
     drawAgentCombatHud(c,a.hp,manaVisible?a.agentMana:null);
    }
+   if(a.stage==='agentEntrance'&&a.time<3.2)drawMinecraftShieldTip(c,a.time);
    if(a.agentWarning>0&&!['agentUltimate','agentUltimateBlast'].includes(a.stage)){
     const q=Math.min(1,a.agentWarning/AGENT_WARNING_DURATION),panelW=590,panelH=58,panelX=(W-panelW)/2,panelY=112;
     c.save();c.globalAlpha=Math.min(1,q*2.2);c.shadowColor='#ffbd55';c.shadowBlur=18;

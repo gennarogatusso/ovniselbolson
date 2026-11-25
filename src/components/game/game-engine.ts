@@ -55,7 +55,7 @@ export function closeComputer(s:S){s.chapter.computer=false;s.keys={};s.fire=fal
 export type ShipStage = 'dormant'|'awakening'|'verdict'|'catEntry'|'eyeCharge'|'rescue'|'rise'|'labFree'|'door'|'combat'|'pickup'|'overload'|'emergency'|'impact'|'crossRise'|'crossFree'|'contemplate'|'crossSunset'|'crossWalkIntro'|'crossWalk'|'militaryIntro'|'soldierFight'|'soldierUltimateThrow'|'soldierUltimateAscend'|'soldierUltimateBeam'|'soldierEnd'|'soldierExit'|'agentEntrance'|'agentFight'|'agentUltimate'|'agentUltimateBlast'|'agentEnd'|'trailWalk'|'trailEnd'|'swordIntro'|'swordReady'|'swordPickup'|'swordEquipped'|'swordAttack'|'baseFade'|'baseApproach'|'baseEnd'|'end';
 type ShipEnemy = {x:number;y:number;hp:number;kind:'direct'|'psychic';cd:number;windup:number;hurt:number;deadTime:number;face:number;knockbackX?:number;stagger?:number};
 type GroundSoldier = {id:number;x:number;y:number;hp:number;maxHp:number;role:'bazooka'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose?:number;state:'cover'|'advance'|'fire'|'hit'};
-export type GroundAgent = {id:number;x:number;y:number;hp:number;maxHp:number;kind:'regular'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose:number;face?:-1|1;state:'guard'|'advance'|'aim'|'hit';blockFlash?:number;shieldBlocks?:number;shieldBreak?:number;knockbackX?:number;stagger?:number};
+export type GroundAgent = {id:number;x:number;y:number;hp:number;maxHp:number;kind:'regular'|'shield';cd:number;walk:number;hurt:number;deadTime:number;firePose:number;face?:-1|1;state:'guard'|'advance'|'aim'|'hit';blockFlash?:number;shieldBlocks?:number;shieldBreak?:number;shieldDisabled?:boolean;knockbackX?:number;stagger?:number};
 function newShip(){return {stage:'dormant' as ShipStage,time:0,x:480,y:SHIP.floor as number,vy:0,jumpHeld:false,catUltimateUsed:false,trailProgress:0,baseProgress:0,walk:0,face:1,hp:100,hurt:0,catX:70,catY:SHIP.floor as number,roll:0,rollCd:0,rollHeld:false,rollFace:1,push:'none' as 'none'|'lean'|'flight'|'wall'|'fall',pushTime:0,pushVx:0,pushVy:0,pushFrom:0,specialCd:0,specialAnim:0,aimX:SHIP.boxX as number,aimY:SHIP.boxY as number,aimActive:false,boxHp:SHIP.boxHits as number,boxBroken:false,weaponY:SHIP.boxY as number,weaponVy:0,armed:false,charge:0,beam:0,beamX:0,beamY:0,beamTx:0,beamTy:0,beamCd:0,fireCd:0,flash:0,shake:0,reactorHp:100,reactorHit:0,eHeld:false,shots:[] as Shot[],bolts:[] as Shot[],enemies:[] as ShipEnemy[],soldiers:[] as GroundSoldier[],agents:[] as GroundAgent[],agentCombatActive:false,agentMana:0,agentKills:0,agentBurned:false,agentBurnedTime:0,agentWarning:0,sounds:[] as string[],labDead:0,swordAttackHeld:false,swordSwingRemaining:0,swordSwingHitApplied:false,swordSwingSoundPlayed:false,swordSwingFace:1};}
 export function newState() {
   return {
@@ -378,9 +378,9 @@ export function respawnAtSoldierCheckpoint(s:S){
  shipAdvance(s,'soldierFight');
 }
 function createSecretAgents():GroundAgent[]{return [
- {id:0,x:180,y:SHIP.floor,hp:160,maxHp:160,kind:'shield',cd:.8,walk:0,hurt:0,deadTime:0,firePose:0,face:1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,knockbackX:0,stagger:0},
+ {id:0,x:180,y:SHIP.floor,hp:160,maxHp:160,kind:'shield',cd:.8,walk:0,hurt:0,deadTime:0,firePose:0,face:1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,shieldDisabled:false,knockbackX:0,stagger:0},
  {id:1,x:400,y:SHIP.floor,hp:145,maxHp:145,kind:'regular',cd:1.1,walk:0,hurt:0,deadTime:0,firePose:0,face:1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,knockbackX:0,stagger:0},
- {id:2,x:740,y:SHIP.floor,hp:180,maxHp:180,kind:'shield',cd:1.4,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,knockbackX:0,stagger:0},
+ {id:2,x:740,y:SHIP.floor,hp:180,maxHp:180,kind:'shield',cd:1.4,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,shieldDisabled:false,knockbackX:0,stagger:0},
  {id:3,x:920,y:SHIP.floor,hp:155,maxHp:155,kind:'regular',cd:1.7,walk:0,hurt:0,deadTime:0,firePose:0,face:-1,state:'guard',blockFlash:0,shieldBlocks:0,shieldBreak:0,knockbackX:0,stagger:0}
 ];}
 function beginAgentEncounter(s:S){
@@ -411,9 +411,17 @@ function damageAgent(s:S,e:GroundAgent,damage:number,hurt=.4,attackDirection=-1,
  if(e.hp<=0)return 'hit';
  const incoming=Math.sign(attackDirection)||1;
  const facingAttacker=(e.face??-1)===-incoming;
- if(e.kind==='shield'&&(e.shieldBreak??0)<=0&&facingAttacker){
+ const shieldFacing=e.kind==='shield'&&!e.shieldDisabled&&(e.shieldBreak??0)<=0&&facingAttacker;
+ // La R desactiva definitivamente la protección del agente alcanzado.
+ if(e.kind==='shield'&&blockPressure>=2){
+  e.shieldDisabled=true;e.shieldBlocks=0;e.shieldBreak=AGENT_SHIELD_BREAK_DURATION;
+  e.blockFlash=Math.max(e.blockFlash??0,.52);e.stagger=Math.max(e.stagger??0,.18);e.state='hit';
+  shipSound(s,'shieldBreak');spawnAgentShieldBlockFx(s,e,1.25);spawnAgentShieldBreakFx(s,e);
+  if(shieldFacing){shipSound(s,'shieldBlock');return 'blocked';}
+ }
+ if(e.kind==='shield'&&!e.shieldDisabled&&(e.shieldBreak??0)<=0&&facingAttacker){
   e.shieldBlocks=(e.shieldBlocks??0)+blockPressure;e.blockFlash=Math.max(e.blockFlash??0,.52);e.stagger=Math.max(e.stagger??0,.18);e.state='hit';
-  shipSound(s,'shieldBlock');spawnAgentShieldBlockFx(s,e,blockPressure>=2?1.25:1);
+  shipSound(s,'shieldBlock');spawnAgentShieldBlockFx(s,e,1);
   if(e.shieldBlocks>=AGENT_SHIELD_BLOCKS_TO_BREAK){
    e.shieldBlocks=0;e.shieldBreak=AGENT_SHIELD_BREAK_DURATION;
    shipSound(s,'shieldBreak');spawnAgentShieldBreakFx(s,e);
