@@ -155,11 +155,14 @@ function roadCenter(z: number) {
 }
 
 function mountainProfile(x: number, amplitude = 1) {
+  // Perfil inspirado en la cresta real del Piltriquitrón: hombro largo,
+  // varios picos nevados concentrados y una ladera oriental más abrupta.
   const peaks: [number, number][] = [
-    [-52, 1], [-44, 3], [-37, 7], [-31, 11], [-26, 9],
-    [-20, 7], [-14, 12], [-9, 17], [-4, 21], [1, 18],
-    [7, 12], [13, 15], [18, 11], [24, 13], [31, 8],
-    [39, 5], [47, 2], [52, 1],
+    [-56, 0.5], [-51, 1.5], [-46, 3.8], [-41, 7.2], [-36, 10.8],
+    [-32, 13.4], [-29, 11.7], [-26, 16.1], [-22, 14.2], [-18, 18.4],
+    [-14, 16.8], [-10, 22.6], [-6, 20.4], [-2, 25.5], [2, 22.3],
+    [6, 17.2], [10, 15.2], [13, 19.4], [17, 17.1], [21, 13.6],
+    [26, 11.9], [31, 9.2], [36, 6.8], [42, 4.2], [48, 1.7], [55, 0.4],
   ];
   for (let i = 0; i < peaks.length - 1; i++) {
     const left = peaks[i]!, right = peaks[i + 1]!;
@@ -168,7 +171,59 @@ function mountainProfile(x: number, amplitude = 1) {
       return mix(left[1], right[1], t) * amplitude;
     }
   }
-  return 1 * amplitude;
+  return 0.5 * amplitude;
+}
+
+
+const PIXEL_GLYPHS: Record<string, string[]> = {
+  "E": ["11111","10000","10000","11110","10000","10000","11111"],
+  "L": ["10000","10000","10000","10000","10000","10000","11111"],
+  "B": ["11110","10001","10001","11110","10001","10001","11110"],
+  "O": ["01110","10001","10001","10001","10001","10001","01110"],
+  "Ó": ["01110","10001","10001","10001","10001","10001","01110"],
+  "S": ["01111","10000","10000","01110","00001","00001","11110"],
+  "N": ["10001","11001","11001","10101","10011","10011","10001"],
+  "I": ["11111","00100","00100","00100","00100","00100","11111"],
+  "T": ["11111","00100","00100","00100","00100","00100","00100"],
+  "R": ["11110","10001","10001","11110","10100","10010","10001"],
+  "2": ["01110","10001","00001","00010","00100","01000","11111"],
+  "K": ["10001","10010","10100","11000","10100","10010","10001"],
+  "M": ["10001","11011","10101","10101","10001","10001","10001"],
+  "/": ["00001","00010","00010","00100","01000","01000","10000"],
+  "H": ["10001","10001","10001","11111","10001","10001","10001"],
+  "0": ["01110","10001","10011","10101","11001","10001","01110"],
+  "4": ["00010","00110","01010","10010","11111","00010","00010"],
+  "6": ["00110","01000","10000","11110","10001","10001","01110"],
+  " ": ["00000","00000","00000","00000","00000","00000","00000"],
+};
+
+function addPixelText(mesh: MeshBuilder, text: string, centerX: number, centerY: number, z: number, cell: number, color: V3) {
+  const chars = Array.from(text);
+  const width = chars.length * 5 * cell + Math.max(0, chars.length - 1) * cell;
+  let cursor = centerX - width / 2;
+  for (const character of chars) {
+    const glyph = PIXEL_GLYPHS[character] ?? PIXEL_GLYPHS[" "]!;
+    for (let row = 0; row < 7; row++) {
+      const pixels = glyph[row] ?? "00000";
+      for (let column = 0; column < 5; column++) {
+        if (pixels[column] !== "1") continue;
+        mesh.box(
+          [cursor + column * cell + cell / 2, centerY + (3 - row) * cell, z],
+          [cell * 0.82, cell * 0.82, Math.max(0.018, cell * 0.24)],
+          color,
+        );
+      }
+    }
+    if (character === "Ó") {
+      mesh.beam(
+        [cursor + cell * 2.6, centerY + cell * 4.1, z],
+        [cursor + cell * 3.6, centerY + cell * 5.0, z],
+        cell * 0.3,
+        color,
+      );
+    }
+    cursor += 6 * cell;
+  }
 }
 
 function addPine(mesh: MeshBuilder, x: number, z: number, base: number, height: number, seed: number) {
@@ -219,6 +274,7 @@ function addMountain(mesh: MeshBuilder, zCenter: number, amplitude: number, seed
 function buildWorld() {
   const world = new MeshBuilder();
   const random = randomSource(4081);
+  const destinationSignZ = -53;
 
   // Terreno patagónico irregular: una malla triangulada, no una imagen de fondo.
   const xSteps = 34, zSteps = 54;
@@ -288,12 +344,14 @@ function buildWorld() {
   for (const side of [-1, 1]) {
     for (let i = 0; i < 30; i++) {
       const z = 10 - i * 5.25 - random() * 2.7;
+      if (side === 1 && Math.abs(z - destinationSignZ) < 10) continue;
       const x = roadCenter(z) + side * (6.1 + random() * 8.5);
       const height = 4.2 + random() * 6.4;
       addPine(world, x, z, terrainY(x, z), height, Math.floor(random() * 1000));
     }
     for (let i = 0; i < 21; i++) {
       const z = 7 - i * 6.9 - random() * 3;
+      if (side === 1 && Math.abs(z - destinationSignZ) < 10) continue;
       const x = roadCenter(z) + side * (16 + random() * 23);
       const height = 5.5 + random() * 8;
       addPine(world, x, z, terrainY(x, z), height, Math.floor(random() * 1000));
@@ -314,27 +372,42 @@ function buildWorld() {
     }
   }
 
-  // Postes de madera, tendido eléctrico y cartelería vial retro.
-  for (let i = 0; i < 9; i++) {
-    const z = 7 - i * 15;
-    const x = roadCenter(z) - 11.5;
-    const y = terrainY(x, z);
-    world.box([x, y + 4.3, z], [0.24, 8.6, 0.24], hex("#40372d"));
-    world.box([x, y + 7.7, z], [2.7, 0.16, 0.16], hex("#4a4035"));
-    world.box([x - 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
-    world.box([x + 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
-    if (i < 8) {
-      const nextZ = z - 15, nextX = roadCenter(nextZ) - 11.5;
-      world.beam([x, y + 7.75, z], [nextX, terrainY(nextX, nextZ) + 7.75, nextZ], 0.045, hex("#232c31"));
-      world.beam([x + 0.8, y + 7.5, z], [nextX + 0.8, terrainY(nextX, nextZ) + 7.5, nextZ], 0.035, hex("#30373a"));
+  // Postes de madera y cables a ambos lados de la Ruta 40.
+  for (const side of [-1, 1]) {
+    const poleOffset = side < 0 ? -11.5 : 13.5;
+    for (let i = 0; i < 9; i++) {
+      const z = 7 - i * 15;
+      const x = roadCenter(z) + poleOffset;
+      const y = terrainY(x, z);
+      world.box([x, y + 4.3, z], [0.24, 8.6, 0.24], hex("#40372d"));
+      world.box([x, y + 7.7, z], [2.7, 0.16, 0.16], hex("#4a4035"));
+      world.box([x - 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
+      world.box([x + 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
+      if (i < 8) {
+        const nextZ = z - 15, nextX = roadCenter(nextZ) + poleOffset;
+        world.beam([x - 0.8, y + 7.75, z], [nextX - 0.8, terrainY(nextX, nextZ) + 7.75, nextZ], 0.045, hex("#232c31"));
+        world.beam([x + 0.8, y + 7.75, z], [nextX + 0.8, terrainY(nextX, nextZ) + 7.75, nextZ], 0.045, hex("#30373a"));
+      }
     }
   }
 
-  // Cartel triangular de advertencia y poste, sin tipografía moderna.
+  // Cartel de advertencia existente y un cartel verde de distancia a El Bolsón.
   const signX = roadCenter(-29) + 7.8, signZ = -29, signY = terrainY(signX, signZ);
   world.box([signX, signY + 1.18, signZ], [0.13, 2.36, 0.13], hex("#514435"));
   world.box([signX, signY + 2.38, signZ], [1.25, 0.98, 0.16], hex("#9b8a6e"), hex("#5d5448"));
   world.cone(signX, signY + 2.1, signZ - 0.11, 0.31, 0.55, 3, hex("#a94f3f"));
+
+  const destinationX = roadCenter(destinationSignZ) + 11.2;
+  const destinationGround = terrainY(destinationX, destinationSignZ);
+  const destinationY = destinationGround + 3.55;
+  for (const dx of [-2.72, 2.72]) {
+    world.box([destinationX + dx, destinationGround + 1.45, destinationSignZ], [0.18, 2.9, 0.18], hex("#4a4034"));
+  }
+  world.box([destinationX, destinationY, destinationSignZ], [7.15, 2.05, 0.2], hex("#104637"), hex("#1b5945"));
+  world.box([destinationX, destinationY + 0.91, destinationSignZ + 0.115], [6.95, 0.045, 0.035], hex("#83a99a"));
+  world.box([destinationX, destinationY - 0.91, destinationSignZ + 0.115], [6.95, 0.045, 0.035], hex("#83a99a"));
+  addPixelText(world, "EL BOLSÓN", destinationX, destinationY + 0.43, destinationSignZ + 0.14, 0.1, hex("#f0eee0"));
+  addPixelText(world, "2 KILÓMETROS", destinationX, destinationY - 0.48, destinationSignZ + 0.14, 0.08, hex("#f0eee0"));
 
   return world;
 }
@@ -344,6 +417,10 @@ function buildCar() {
   car.box([0, 0.48, 0], [1.9, 0.62, 4.45], hex("#252c32"), hex("#465158"));
   car.box([0, 0.9, -0.18], [1.52, 0.85, 2.2], hex("#192630"), hex("#485b62"));
   car.box([0, 1.26, -0.2], [1.43, 0.09, 2.05], hex("#293940"));
+  car.box([0, 1.315, -0.18], [1.18, 0.025, 1.52], hex("#3b4850"));
+  car.box([0, 1.33, -0.18], [0.055, 0.018, 1.45], hex("#1b242b"));
+  car.beam([-0.62, 1.34, -0.78], [-0.62, 1.34, 0.48], 0.045, hex("#758087"));
+  car.beam([0.62, 1.34, -0.78], [0.62, 1.34, 0.48], 0.045, hex("#758087"));
   car.box([0, 1.03, -0.93], [1.44, 0.56, 0.08], hex("#54656a"));
   car.box([0, 1.03, 0.7], [1.4, 0.56, 0.08], hex("#192a32"));
   for (const x of [-0.98, 0.98]) {
@@ -371,31 +448,92 @@ function buildCockpit() {
   const cockpit = new MeshBuilder();
   const dark = hex("#171d22");
   const lighter = hex("#30373b");
+  const skin = hex("#9c725b");
+  const sleeve = hex("#2c353d");
   cockpit.box([0, 0.78, -1.78], [3.45, 0.52, 1.15], dark, lighter);
   cockpit.box([0, 0.99, -1.48], [3.35, 0.12, 0.72], hex("#252c31"));
   cockpit.box([0, 0.63, -3.6], [3.3, 0.32, 2.6], hex("#20282d"), hex("#141a20"));
-  // Parabrisas y marco del techo.
+
+  // Techo interior, parasol y espejo retrovisor.
+  cockpit.box([0, 2.34, -3.35], [3.48, 0.17, 2.62], hex("#20272b"), hex("#11171c"));
+  cockpit.box([0, 2.23, -2.22], [1.2, 0.09, 0.34], hex("#343a3d"));
+  cockpit.box([0, 2.03, -4.42], [0.48, 0.12, 0.16], hex("#080d12"));
+  cockpit.box([0, 1.93, -4.42], [0.62, 0.18, 0.08], hex("#30383c"));
+
+  // Marco de parabrisas y pilares de las ventanillas.
   cockpit.beam([-1.62, 0.92, -2.15], [-1.78, 2.25, -4.65], 0.16, hex("#11181d"));
   cockpit.beam([1.62, 0.92, -2.15], [1.78, 2.25, -4.65], 0.16, hex("#11181d"));
   cockpit.beam([-1.78, 2.25, -4.65], [1.78, 2.25, -4.65], 0.16, hex("#11181d"));
   cockpit.beam([-1.62, 0.94, -2.15], [1.62, 0.94, -2.15], 0.11, hex("#1a2126"));
-  // Volante poligonal, columna, centro y manos.
+  cockpit.beam([-1.7, 1.05, -2.0], [-1.78, 1.68, -3.25], 0.055, hex("#47545a"));
+  cockpit.beam([1.7, 1.05, -2.0], [1.78, 1.68, -3.25], 0.055, hex("#47545a"));
+
+  // Volante y columna poligonales.
   cockpit.torusXY(0, 1.03, -0.88, 0.46, 0.055, hex("#080c10"));
   cockpit.beam([0, 1.03, -0.86], [0, 0.68, -0.88], 0.075, hex("#090d11"));
   cockpit.beam([0, 1.03, -0.86], [-0.3, 1.22, -0.88], 0.07, hex("#090d11"));
   cockpit.beam([0, 1.03, -0.86], [0.3, 1.22, -0.88], 0.07, hex("#090d11"));
   cockpit.box([0, 1.03, -0.88], [0.22, 0.2, 0.09], hex("#282f34"));
-  cockpit.box([-0.34, 1.21, -0.87], [0.2, 0.15, 0.15], hex("#926e59"), hex("#5e4a40"));
-  cockpit.box([0.34, 1.21, -0.87], [0.2, 0.15, 0.15], hex("#926e59"), hex("#5e4a40"));
-  // Tablero de instrumentos sencillo, con agujas cálidas.
+
+  // Brazos con mangas, puños y ambas manos agarrando el aro del volante.
+  cockpit.beam([-1.3, 0.86, -1.45], [-0.38, 1.18, -0.86], 0.29, sleeve);
+  cockpit.beam([1.3, 0.86, -1.45], [0.38, 1.18, -0.86], 0.29, sleeve);
+  cockpit.beam([-0.48, 1.17, -0.83], [-0.34, 1.23, -0.87], 0.2, hex("#4c4b47"));
+  cockpit.beam([0.48, 1.17, -0.83], [0.34, 1.23, -0.87], 0.2, hex("#4c4b47"));
+  cockpit.box([-0.34, 1.21, -0.79], [0.22, 0.18, 0.18], skin, hex("#725342"));
+  cockpit.box([0.34, 1.21, -0.79], [0.22, 0.18, 0.18], skin, hex("#725342"));
+  cockpit.box([-0.29, 1.24, -0.72], [0.12, 0.10, 0.12], hex("#b88b70"));
+  cockpit.box([0.29, 1.24, -0.72], [0.12, 0.10, 0.12], hex("#b88b70"));
+
+  // Tablero: dos relojes, velocímetro analógico y lectura digital en píxeles.
   cockpit.disc(-0.75, 0.92, -1.17, 0.22, hex("#090e12"));
   cockpit.disc(-0.75, 0.92, -1.155, 0.17, hex("#7b684d"));
   cockpit.disc(0.75, 0.92, -1.17, 0.22, hex("#090e12"));
   cockpit.disc(0.75, 0.92, -1.155, 0.17, hex("#7b684d"));
-  cockpit.box([0, 0.94, -1.16], [0.56, 0.2, 0.045], hex("#111b1f"));
-  cockpit.box([0, 0.94, -1.13], [0.34, 0.025, 0.02], hex("#b4875b"));
+  for (let tick = 0; tick <= 10; tick++) {
+    const angle = 0.12 + (tick / 10) * (Math.PI - 0.24);
+    const outerX = 0.75 + Math.cos(angle) * 0.145;
+    const outerY = 0.92 + Math.sin(angle) * 0.145;
+    const innerX = 0.75 + Math.cos(angle) * 0.116;
+    const innerY = 0.92 + Math.sin(angle) * 0.116;
+    cockpit.beam([innerX, innerY, -1.125], [outerX, outerY, -1.125], 0.012, hex("#e0c89c"));
+  }
+  cockpit.beam([0.75, 0.92, -1.115], [0.64, 1.005, -1.105], 0.022, hex("#cf7756"));
+  cockpit.disc(0.75, 0.92, -1.095, 0.025, hex("#d7c5a0"), 12);
+
+  cockpit.box([0, 0.94, -1.16], [0.82, 0.36, 0.045], hex("#111b1f"));
   cockpit.box([0, 0.64, -1.13], [0.8, 0.08, 0.08], hex("#11171c"));
+  // Número iluminado de velocidad: 064 km/h.
+  addPixelText(cockpit, "064", 0, 1.0, -1.125, 0.027, hex("#dfc99b"));
+  addPixelText(cockpit, "KM/H", 0, 0.81, -1.124, 0.014, hex("#a9b2a8"));
   return cockpit;
+}
+
+function buildWindshield() {
+  const glass = new MeshBuilder();
+  glass.quad(
+    [-1.62, 0.98, -2.18],
+    [1.62, 0.98, -2.18],
+    [1.75, 2.2, -4.58],
+    [-1.75, 2.2, -4.58],
+    hex("#8ca6aa"),
+  );
+  // Reflejos fríos muy tenues sobre el cristal.
+  glass.quad(
+    [-1.48, 1.72, -3.58],
+    [-1.37, 1.76, -3.66],
+    [-0.84, 2.04, -4.28],
+    [-0.97, 2.02, -4.22],
+    hex("#c0b9a0"),
+  );
+  glass.quad(
+    [1.42, 1.78, -3.7],
+    [1.49, 1.82, -3.8],
+    [1.12, 2.04, -4.27],
+    [1.04, 2.01, -4.19],
+    hex("#879b9d"),
+  );
+  return glass;
 }
 
 function makeShader(gl: WebGLRenderingContext, type: number, source: string) {
@@ -436,6 +574,7 @@ precision mediump float;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform vec3 uFogColor;
+uniform float uOpacity;
 varying vec3 vColor;
 varying vec3 vNormal;
 varying float vDepth;
@@ -459,7 +598,7 @@ void main() {
   float vignette = 1.0 - smoothstep(0.2, 0.94, length((uv - 0.5) * vec2(1.0, 0.82)));
   color *= mix(0.66, 1.0, vignette);
   color += vec3(0.003, 0.0, 0.004);
-  gl_FragColor = vec4(color, 1.0);
+  gl_FragColor = vec4(color, uOpacity);
 }
 `;
 
@@ -523,6 +662,7 @@ function bindMesh(
   viewProjection: Float32Array,
   view: Float32Array,
   model: Float32Array,
+  opacity = 1,
 ) {
   gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
   const stride = 9 * Float32Array.BYTES_PER_ELEMENT;
@@ -538,6 +678,7 @@ function bindMesh(
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "uViewProjection"), false, viewProjection);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "uView"), false, view);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "uModel"), false, model);
+  gl.uniform1f(gl.getUniformLocation(program, "uOpacity"), opacity);
   gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
 }
 
@@ -573,6 +714,7 @@ export function Route40LowPolyOpening() {
     let carMesh: Mesh | null = null;
     let lightMesh: Mesh | null = null;
     let cockpitMesh: Mesh | null = null;
+    let windshieldMesh: Mesh | null = null;
     let program: WebGLProgram | null = null;
 
     try {
@@ -593,6 +735,7 @@ export function Route40LowPolyOpening() {
       carMesh = createMesh(gl, buildCar());
       lightMesh = createMesh(gl, buildHeadlights());
       cockpitMesh = createMesh(gl, buildCockpit());
+      windshieldMesh = createMesh(gl, buildWindshield());
     } catch (error) {
       console.error("No se pudo iniciar la escena low poly de Ruta 40", error);
       if (program) gl.deleteProgram(program);
@@ -615,7 +758,7 @@ export function Route40LowPolyOpening() {
     setFallback(false);
 
     const animate = (now: number) => {
-      if (!active || !program || !worldMesh || !carMesh || !lightMesh || !cockpitMesh) return;
+      if (!active || !program || !worldMesh || !carMesh || !lightMesh || !cockpitMesh || !windshieldMesh) return;
       if (!started) {
         startedAt = now;
         started = true;
@@ -669,6 +812,12 @@ export function Route40LowPolyOpening() {
       if (lightVisibility > 0.01) {
         bindMesh(gl, program, lightMesh, viewProjection, view, carModel);
         bindMesh(gl, program, cockpitMesh, viewProjection, view, carModel);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.depthMask(false);
+        bindMesh(gl, program, windshieldMesh, viewProjection, view, carModel, 0.13);
+        gl.depthMask(true);
+        gl.disable(gl.BLEND);
       }
 
       if (titleRef.current) {
@@ -697,6 +846,7 @@ export function Route40LowPolyOpening() {
       if (carMesh) gl.deleteBuffer(carMesh.buffer);
       if (lightMesh) gl.deleteBuffer(lightMesh.buffer);
       if (cockpitMesh) gl.deleteBuffer(cockpitMesh.buffer);
+      if (windshieldMesh) gl.deleteBuffer(windshieldMesh.buffer);
       if (program) gl.deleteProgram(program);
     };
   }, [replay]);
