@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, RotateCcw } from "lucide-react";
+import { unlockAwkaSirenAudio } from "./route40-awka-audio";
 import { Route40Opening as CanvasFallback } from "./Route40Opening";
 
 type V3 = [number, number, number];
@@ -906,6 +907,13 @@ export function Route40LowPolyOpening() {
           >
             <RotateCcw size={14} /> REPETIR CINEMÁTICA
           </button>
+          <Link
+            to="/la-senal-ruta-40-awka"
+            onClick={unlockAwkaSirenAudio}
+            className="inline-flex min-h-11 items-center gap-2 border border-amber-100/35 bg-amber-100/10 px-5 py-3 font-mono text-[11px] tracking-[.18em] text-amber-100 backdrop-blur-md transition hover:border-amber-100/80 hover:bg-amber-100/15"
+          >
+            CONTINUAR · AWKA <ArrowLeft size={14} className="rotate-180" />
+          </Link>
           <Link
             to="/"
             className="inline-flex min-h-11 items-center gap-2 border border-white/20 bg-black/40 px-5 py-3 font-mono text-[11px] tracking-[.18em] text-white/75 backdrop-blur-md transition hover:border-white/60 hover:text-white"

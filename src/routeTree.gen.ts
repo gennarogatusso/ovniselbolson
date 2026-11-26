@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as ImagenesRouteImport } from './routes/imagenes'
 import { Route as JuegoRouteImport } from './routes/juego'
 import { Route as LaSenalRuta40RouteImport } from './routes/la-senal-ruta-40'
+import { Route as LaSenalRuta40AwkaRouteImport } from './routes/la-senal-ruta-40-awka'
 import { Route as MapaRouteImport } from './routes/mapa'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as CasosIndexRouteImport } from './routes/casos.index'
@@ -44,6 +45,11 @@ const LaSenalRuta40Route = LaSenalRuta40RouteImport.update({
   path: '/la-senal-ruta-40',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LaSenalRuta40AwkaRoute = LaSenalRuta40AwkaRouteImport.update({
+  id: '/la-senal-ruta-40-awka',
+  path: '/la-senal-ruta-40-awka',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MapaRoute = MapaRouteImport.update({
   id: '/mapa',
   path: '/mapa',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/imagenes': typeof ImagenesRoute
   '/juego': typeof JuegoRoute
   '/la-senal-ruta-40': typeof LaSenalRuta40Route
+  '/la-senal-ruta-40-awka': typeof LaSenalRuta40AwkaRoute
   '/mapa': typeof MapaRoute
   '/reportes': typeof ReportesRoute
   '/casos/$codigo': typeof CasosCodigoRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/imagenes': typeof ImagenesRoute
   '/juego': typeof JuegoRoute
   '/la-senal-ruta-40': typeof LaSenalRuta40Route
+  '/la-senal-ruta-40-awka': typeof LaSenalRuta40AwkaRoute
   '/mapa': typeof MapaRoute
   '/reportes': typeof ReportesRoute
   '/casos/$codigo': typeof CasosCodigoRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/imagenes': typeof ImagenesRoute
   '/juego': typeof JuegoRoute
   '/la-senal-ruta-40': typeof LaSenalRuta40Route
+  '/la-senal-ruta-40-awka': typeof LaSenalRuta40AwkaRoute
   '/mapa': typeof MapaRoute
   '/reportes': typeof ReportesRoute
   '/casos/$codigo': typeof CasosCodigoRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/imagenes'
     | '/juego'
     | '/la-senal-ruta-40'
+    | '/la-senal-ruta-40-awka'
     | '/mapa'
     | '/reportes'
     | '/casos/$codigo'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/imagenes'
     | '/juego'
     | '/la-senal-ruta-40'
+    | '/la-senal-ruta-40-awka'
     | '/mapa'
     | '/reportes'
     | '/casos/$codigo'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/imagenes'
     | '/juego'
     | '/la-senal-ruta-40'
+    | '/la-senal-ruta-40-awka'
     | '/mapa'
     | '/reportes'
     | '/casos/$codigo'
@@ -141,6 +153,7 @@ export interface RootRouteChildren {
   ImagenesRoute: typeof ImagenesRoute
   JuegoRoute: typeof JuegoRoute
   LaSenalRuta40Route: typeof LaSenalRuta40Route
+  LaSenalRuta40AwkaRoute: typeof LaSenalRuta40AwkaRoute
   MapaRoute: typeof MapaRoute
   ReportesRoute: typeof ReportesRoute
   CasosCodigoRoute: typeof CasosCodigoRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LaSenalRuta40RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/la-senal-ruta-40-awka': {
+      id: '/la-senal-ruta-40-awka'
+      path: '/la-senal-ruta-40-awka'
+      fullPath: '/la-senal-ruta-40-awka'
+      preLoaderRoute: typeof LaSenalRuta40AwkaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mapa': {
       id: '/mapa'
       path: '/mapa'
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImagenesRoute: ImagenesRoute,
   JuegoRoute: JuegoRoute,
   LaSenalRuta40Route: LaSenalRuta40Route,
+  LaSenalRuta40AwkaRoute: LaSenalRuta40AwkaRoute,
   MapaRoute: MapaRoute,
   ReportesRoute: ReportesRoute,
   CasosCodigoRoute: CasosCodigoRoute,
