@@ -3,7 +3,6 @@ import { playAwkaSirenAudio } from "./route40-awka-audio";
 
 type V3 = [number, number, number];
 type Mesh = { buffer: WebGLBuffer; count: number };
-type Pose = "stand" | "climb" | "walk" | "sit" | "bag";
 
 const DURATION = 15;
 const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
@@ -149,12 +148,16 @@ function buildAwkaWorld() {
   const woodDark = hex("#35281f");
 
   // Noche patagónica: patio de hormigón con pequeños paños de grava.
-  world.box([0, -0.22, -1.5], [25, 0.35, 27], hex("#15191b"), hex("#202326"));
+  world.box([0, -0.22, -1.5], [25, 0.35, 27], hex("#262a31"), hex("#38343a"));
   for (let i = 0; i < 26; i++) {
     const x = -11.5 + (i % 13) * 1.9;
     const z = -11 + Math.floor(i / 13) * 16;
     world.box([x, -0.025, z], [0.18, 0.025, 0.22], i % 2 ? hex("#292b29") : hex("#34312b"));
   }
+  // Charcos geométricos que reflejan el cielo naranja y las luces del local.
+  world.quad([-6.8, -0.025, -4.2], [-4.5, -0.025, -4.0], [-4.0, -0.025, -2.8], [-6.4, -0.025, -2.7], hex("#46505a"));
+  world.quad([5.6, -0.024, 1.5], [7.4, -0.024, 1.65], [7.8, -0.024, 2.45], [5.8, -0.024, 2.3], hex("#414c56"));
+  world.quad([-1.2, -0.023, 3.6], [0.9, -0.023, 3.5], [1.25, -0.023, 4.0], [-1.0, -0.023, 4.15], hex("#414952"));
 
   // Cervecería construida como un contenedor marítimo negro.
   world.box([0, 2.25, -10], [16, 4.5, 5.6], black, hex("#14181d"));
@@ -175,6 +178,12 @@ function buildAwkaWorld() {
   world.box([0, 3.72, -7.015], [3.85, 0.9, 0.16], hex("#030507"), hex("#202328"));
   addPixelText(world, "AWKA", 0, 3.72, -6.91, 0.105, hex("#e0d6c2"));
   world.box([-5.6, 4.18, -6.96], [0.18, 0.12, 0.08], hex("#a27a4c"));
+  // Apliques cálidos industriales y pequeñas sombras de luz sobre el patio.
+  for (const x of [-6.9, 6.9]) {
+    world.box([x, 3.78, -6.91], [0.34, 0.38, 0.2], hex("#34312d"));
+    world.box([x, 3.77, -6.77], [0.22, 0.21, 0.08], hex("#d4a36b"));
+    world.triangle([x - 0.12, 3.64, -6.72], [x - 1.3, 0.02, -3.4], [x + 1.25, 0.02, -3.4], hex("#4b3c35"));
+  }
 
   // Dos banquetas/bancos rústicos junto al frente del contenedor.
   for (const x of [-4.2, 4.55]) {
@@ -198,7 +207,7 @@ function buildAwkaWorld() {
   world.box([tableX, 0.77, tableZ - 0.35], [1.6, 0.1, 0.1], wood);
 
   // Banquito individual: asiento grueso, cuatro patas y travesaños.
-  const stoolX = 2.3, stoolZ = -1.85;
+  const stoolX = 2.3, stoolZ = -0.72;
   world.box([stoolX, 0.78, stoolZ], [1.05, 0.16, 0.72], wood, woodLight);
   for (const dx of [-0.38, 0.38]) {
     for (const dz of [-0.25, 0.25]) {
@@ -233,81 +242,115 @@ function buildAwkaWorld() {
       const x = side * (10.2 + i * 1.5);
       const z = 8 - i * 4.2;
       world.box([x, 1.4, z], [0.22, 2.8, 0.22], hex("#241f1c"));
-      world.cone(x, 2.5, z, 1.2, 3.4, 5, hex("#101b1a"));
-      world.cone(x, 3.4, z, 0.88, 2.4, 5, hex("#14211f"));
+      world.cone(x, 2.5, z, 1.2, 3.4, 5, hex("#1c292e"));
+      world.cone(x, 3.4, z, 0.88, 2.4, 5, hex("#28333a"));
     }
   }
 
   return world;
 }
 
-function buildHero(pose: Pose, stride = 1) {
-  const hero = new MeshBuilder();
-  const jacket = hex("#242a31");
-  const jacketLight = hex("#3b4148");
-  const pants = hex("#202b36");
-  const pantsLight = hex("#35404a");
-  const skin = hex("#a4785f");
-  const hair = hex("#121417");
-  const shoe = hex("#090c10");
-
-  // El mismo protagonista low poly, con chaqueta oscura, pantalón y cabello oscuro.
-  if (pose === "sit" || pose === "bag") {
-    hero.box([0, 0.92, 0], [0.58, 0.32, 0.38], pants, pantsLight);
-    hero.box([0, 1.42, 0], [0.66, 0.78, 0.38], jacket, jacketLight);
-    hero.box([0, 2.0, -0.015], [0.43, 0.48, 0.38], skin, hex("#8b614d"));
-    hero.box([0, 2.2, 0.0], [0.46, 0.17, 0.4], hair);
-    hero.box([0, 2.04, -0.2], [0.37, 0.12, 0.055], hair);
-    for (const side of [-1, 1]) {
-      hero.beam([side * 0.18, 0.9, 0], [side * 0.21, 0.77, -0.5], 0.25, pants);
-      hero.beam([side * 0.21, 0.77, -0.5], [side * 0.21, 0.22, -0.63], 0.2, pantsLight);
-      hero.box([side * 0.21, 0.12, -0.7], [0.25, 0.16, 0.38], shoe);
-    }
-    if (pose === "sit") {
-      hero.beam([-0.36, 1.68, -0.02], [-0.48, 1.16, -0.48], 0.22, jacket);
-      hero.beam([0.36, 1.68, -0.02], [0.48, 1.16, -0.48], 0.22, jacket);
-      hero.box([-0.48, 1.13, -0.5], [0.19, 0.18, 0.2], skin);
-      hero.box([0.48, 1.13, -0.5], [0.19, 0.18, 0.2], skin);
-    } else {
-      // La mano derecha se acerca a la mesa y deja la pequeña bolsa.
-      hero.beam([-0.36, 1.68, -0.02], [-0.45, 1.13, -0.48], 0.22, jacket);
-      hero.beam([0.36, 1.68, -0.02], [0.52, 1.12, -1.02], 0.2, jacketLight);
-      hero.box([-0.45, 1.12, -0.5], [0.19, 0.17, 0.2], skin);
-      hero.box([0.52, 1.09, -1.05], [0.16, 0.12, 0.15], skin);
-    }
-  } else {
-    hero.box([0, 0.88, 0], [0.57, 0.3, 0.36], pants, pantsLight);
-    hero.box([0, 1.42, 0], [0.66, 0.82, 0.39], jacket, jacketLight);
-    hero.box([0, 2.03, -0.015], [0.43, 0.48, 0.38], skin, hex("#8b614d"));
-    hero.box([0, 2.23, 0.0], [0.46, 0.17, 0.4], hair);
-    hero.box([0, 2.07, -0.2], [0.37, 0.12, 0.055], hair);
-    if (pose === "climb") {
-      hero.beam([-0.36, 1.76, 0], [-0.52, 2.32, -0.24], 0.22, jacket);
-      hero.beam([0.36, 1.76, 0], [0.51, 2.25, -0.24], 0.22, jacketLight);
-      hero.box([-0.52, 2.35, -0.26], [0.18, 0.16, 0.17], skin);
-      hero.box([0.51, 2.28, -0.26], [0.18, 0.16, 0.17], skin);
-      hero.beam([-0.17, 0.86, 0], [-0.34, 0.62, -0.25], 0.23, pants);
-      hero.beam([-0.34, 0.62, -0.25], [-0.38, 1.0, -0.45], 0.2, pantsLight);
-      hero.beam([0.17, 0.86, 0], [0.37, 0.55, 0.18], 0.23, pants);
-      hero.beam([0.37, 0.55, 0.18], [0.4, 0.23, 0.18], 0.2, pantsLight);
-    } else {
-      hero.beam([-0.36, 1.72, 0], [-0.48, 1.12, -0.02 * stride], 0.22, jacket);
-      hero.beam([0.36, 1.72, 0], [0.48, 1.12, 0.02 * stride], 0.22, jacketLight);
-      hero.box([-0.48, 1.1, -0.03], [0.18, 0.17, 0.16], skin);
-      hero.box([0.48, 1.1, 0.04], [0.18, 0.17, 0.16], skin);
-      const legSwing = pose === "walk" ? 0.18 * stride : 0;
-      hero.beam([-0.17, 0.86, 0], [-0.2, 0.45, -legSwing], 0.23, pants);
-      hero.beam([-0.2, 0.45, -legSwing], [-0.2, 0.17, -legSwing - 0.07], 0.2, pantsLight);
-      hero.beam([0.17, 0.86, 0], [0.2, 0.45, legSwing], 0.23, pants);
-      hero.beam([0.2, 0.45, legSwing], [0.2, 0.17, legSwing - 0.07], 0.2, pantsLight);
-      hero.box([-0.2, 0.12, -legSwing - 0.1], [0.25, 0.15, 0.36], shoe);
-      hero.box([0.2, 0.12, legSwing - 0.1], [0.25, 0.15, 0.36], shoe);
-    }
+function buildTwilightSky() {
+  const sky = new MeshBuilder();
+  const z = -38;
+  const bands = [
+    { y0: -4, y1: 1, color: hex("#9d5b48") },
+    { y0: 1, y1: 5, color: hex("#c07859") },
+    { y0: 5, y1: 9, color: hex("#bd8068") },
+    { y0: 9, y1: 14, color: hex("#555b72") },
+    { y0: 14, y1: 23, color: hex("#222d46") },
+    { y0: 23, y1: 34, color: hex("#151f35") },
+  ];
+  for (const band of bands) {
+    sky.quad([-70, band.y0, z], [70, band.y0, z], [70, band.y1, z], [-70, band.y1, z], band.color);
   }
-  // Costuras, cuello y paneles de la chaqueta.
-  hero.box([0, 1.77, -0.2], [0.26, 0.1, 0.045], hex("#48515a"));
-  hero.box([-0.2, 1.42, -0.205], [0.045, 0.49, 0.035], hex("#11171d"));
-  return hero;
+  return sky;
+}
+
+function buildMoonAndUfo() {
+  const sky = new MeshBuilder();
+  const moonX = -10.5, moonY = 15.2, moonZ = -35, moonR = 1.22;
+  const center: V3 = [moonX, moonY, moonZ];
+  for (let i = 0; i < 32; i++) {
+    const a = (i / 32) * Math.PI * 2;
+    const b = ((i + 1) / 32) * Math.PI * 2;
+    sky.triangle(center,
+      [moonX + Math.cos(a) * moonR, moonY + Math.sin(a) * moonR, moonZ],
+      [moonX + Math.cos(b) * moonR, moonY + Math.sin(b) * moonR, moonZ],
+      hex("#d9d4c1"));
+  }
+  sky.box([moonX - 0.34, moonY + 0.22, moonZ + 0.012], [0.21, 0.12, 0.018], hex("#b7b7aa"));
+  sky.box([moonX + 0.28, moonY - 0.28, moonZ + 0.012], [0.28, 0.16, 0.018], hex("#aaa99f"));
+  sky.box([moonX + 0.12, moonY + 0.48, moonZ + 0.012], [0.13, 0.09, 0.018], hex("#c2c1b5"));
+
+  // OVNI facetado, visible por encima del techo del contenedor.
+  const ufoX = -3.9, ufoY = 10.7, ufoZ = -17.5;
+  sky.box([ufoX, ufoY, ufoZ], [2.75, 0.28, 1.05], hex("#303c49"), hex("#78818b"));
+  sky.box([ufoX, ufoY + 0.13, ufoZ], [1.72, 0.18, 0.76], hex("#8c9999"), hex("#4e6069"));
+  sky.cone(ufoX, ufoY + 0.16, ufoZ, 0.58, 0.66, 7, hex("#9da9a5"));
+  sky.beam([ufoX - 1.23, ufoY - 0.08, ufoZ], [ufoX + 1.23, ufoY - 0.08, ufoZ], 0.045, hex("#b3c7bd"));
+  for (let i = 0; i < 7; i++) {
+    const x = ufoX - 1.05 + i * 0.35;
+    sky.box([x, ufoY - 0.18, ufoZ + 0.12], [0.12, 0.07, 0.1], i % 2 ? hex("#b3d2c6") : hex("#d3d2bd"));
+  }
+  sky.box([ufoX - 0.62, ufoY - 0.39, ufoZ], [0.12, 0.12, 0.12], hex("#b7c9bb"));
+  sky.box([ufoX, ufoY - 0.43, ufoZ], [0.14, 0.14, 0.14], hex("#c6d4c8"));
+  sky.box([ufoX + 0.62, ufoY - 0.39, ufoZ], [0.12, 0.12, 0.12], hex("#b7c9bb"));
+  return sky;
+}
+
+type FirstPersonAction = "idle" | "climb" | "walk" | "seated" | "bag" | "reach" | "freeze";
+
+function buildFirstPersonHands(action: FirstPersonAction, stride = 1) {
+  const hands = new MeshBuilder();
+  const sleeve = hex("#242a31");
+  const sleeveLight = hex("#3b4148");
+  const skin = hex("#9c725b");
+  const skinLight = hex("#b88b70");
+  if (action === "climb") {
+    hands.beam([-0.76, -0.72, -0.42], [-0.54, -0.16, -1.08], 0.34, sleeve);
+    hands.beam([0.76, -0.72, -0.42], [0.54, -0.16, -1.08], 0.34, sleeveLight);
+    hands.box([-0.54, -0.08, -1.08], [0.29, 0.24, 0.28], skin);
+    hands.box([0.54, -0.08, -1.08], [0.29, 0.24, 0.28], skin);
+    for (let i = 0; i < 4; i++) {
+      const dx = (i - 1.5) * 0.065;
+      hands.beam([-0.62 + dx, -0.1, -1.17], [-0.62 + dx, 0.05, -1.17], 0.045, skinLight);
+      hands.beam([0.46 + dx, -0.1, -1.17], [0.46 + dx, 0.05, -1.17], 0.045, skinLight);
+    }
+    return hands;
+  }
+  if (action === "seated" || action === "bag" || action === "reach" || action === "freeze") {
+    const leftEnd: V3 = action === "reach" ? [-0.56, -0.83, -1.9] : [-0.43, -0.56, -1.35];
+    const rightEnd: V3 = action === "bag" ? [0.48, -0.43, -1.35]
+      : action === "reach" ? [0.55, -0.88, -2.1]
+      : action === "freeze" ? [0.56, -0.35, -1.15]
+      : [0.43, -0.56, -1.35];
+    hands.beam([-0.9, -1.0, -0.08], leftEnd, 0.34, sleeve);
+    hands.beam([0.9, -1.0, -0.08], rightEnd, 0.34, sleeveLight);
+    hands.box([leftEnd[0], leftEnd[1] - 0.02, leftEnd[2]], [0.22, 0.18, 0.2], skin);
+    hands.box([rightEnd[0], rightEnd[1] - 0.02, rightEnd[2]], [0.22, 0.18, 0.2], skinLight);
+    for (let i = 0; i < 4; i++) {
+      const dx = (i - 1.5) * 0.052;
+      hands.beam([rightEnd[0] + dx, rightEnd[1] - 0.03, rightEnd[2] - 0.08],
+        [rightEnd[0] + dx, rightEnd[1] - 0.1, rightEnd[2] - 0.16], 0.038, skin);
+    }
+    if (action === "freeze") hands.beam([0.56, -0.28, -1.14], [0.68, -0.1, -1.12], 0.11, skin);
+    return hands;
+  }
+  const swing = action === "walk" ? 0.17 * stride : 0;
+  hands.beam([-0.84, -1.02, -0.06], [-0.48, -0.56 + swing, -1.08], 0.34, sleeve);
+  hands.beam([0.84, -1.02, -0.06], [0.48, -0.56 - swing, -1.08], 0.34, sleeveLight);
+  hands.box([-0.48, -0.58 + swing, -1.12], [0.23, 0.18, 0.2], skin);
+  hands.box([0.48, -0.58 - swing, -1.12], [0.23, 0.18, 0.2], skinLight);
+  return hands;
+}
+
+function buildHeldBag() {
+  const bag = new MeshBuilder();
+  bag.box([0.48, -0.28, -1.43], [0.22, 0.035, 0.18], hex("#e9e7e0"), hex("#c9c6bd"));
+  bag.triangle([0.37, -0.26, -1.48], [0.49, -0.18, -1.4], [0.59, -0.26, -1.35], hex("#f5f3eb"));
+  bag.beam([0.39, -0.27, -1.38], [0.57, -0.27, -1.47], 0.022, hex("#ffffff"));
+  return bag;
 }
 
 function buildTableProps() {
@@ -317,13 +360,6 @@ function buildTableProps() {
   props.triangle([2.0, 1.045, -3.22], [2.11, 1.11, -3.12], [2.24, 1.045, -3.08], hex("#f1eee6"));
   props.beam([2.03, 1.052, -3.13], [2.2, 1.052, -3.17], 0.025, hex("#ffffff"));
   return props;
-}
-
-function buildPocketBag() {
-  const pocket = new MeshBuilder();
-  pocket.box([0, 0.93, -0.25], [0.19, 0.035, 0.15], hex("#e6e4dc"), hex("#bcbab4"));
-  pocket.triangle([-0.09, 0.95, -0.3], [0, 1.02, -0.28], [0.1, 0.95, -0.2], hex("#f1eee6"));
-  return pocket;
 }
 
 function buildPowderLine() {
@@ -395,15 +431,18 @@ const FRAGMENT_SHADER = [
   "vec3 n=normalize(vNormal);",
   "vec3 moon=normalize(vec3(-0.35,0.82,0.4));",
   "float diffuse=max(dot(n,moon),0.0);",
-  "float light=0.34+floor(diffuse*3.0)*0.075;",
+  "float light=0.43+floor(diffuse*3.0)*0.095;",
   "vec3 color=vColor*light;",
   "float fog=smoothstep(25.0,75.0,vDepth);",
-  "color=mix(color,vec3(0.055,0.075,0.085),fog);",
+  "color=mix(color,vec3(0.13,0.14,0.19),fog);",
   "float depth=max(0.0,10.2-vWorld.z);",
   "float width=0.85+depth*0.23;",
   "float leftSpot=exp(-pow((vWorld.x+3.45)/width,2.0)*1.9)*exp(-depth*0.022);",
   "float rightSpot=exp(-pow((vWorld.x-3.45)/width,2.0)*1.9)*exp(-depth*0.022);",
   "float headlight=clamp(leftSpot+rightSpot,0.0,1.0)*uPoliceLevel;",
+  "float ufoDistance=distance(vWorld,vec3(-3.9,10.7,-17.5));",
+  "float ufoHalo=exp(-ufoDistance*0.9)*0.21;",
+  "color+=vec3(0.20,0.29,0.34)*ufoHalo;",
   "color=mix(color,vec3(0.91,0.92,0.88),headlight*0.88);",
   "float scan=1.0-0.023*(0.5+0.5*sin(gl_FragCoord.y*3.14159));",
   "float grain=(hash(floor(gl_FragCoord.xy*0.76)+floor(uTime*9.0))-0.5)*0.024;",
@@ -502,12 +541,22 @@ function drawMesh(
 
 type CameraKey = { time: number; eye: V3; target: V3 };
 const CAMERA_KEYS: CameraKey[] = [
-  { time: 0, eye: [0, 6.7, 20], target: [0, 1.2, -4] },
-  { time: 3, eye: [-4.6, 4.9, 14.2], target: [-2.8, 1.3, 4.2] },
-  { time: 6, eye: [8.8, 4.2, 8.2], target: [0.3, 1.1, -1.9] },
-  { time: 9, eye: [6.2, 3.1, 1.6], target: [2.1, 1.0, -3.0] },
-  { time: 12, eye: [8.4, 4.2, 7.6], target: [1.7, 1.2, -1.4] },
-  { time: 15, eye: [8.4, 4.2, 7.6], target: [1.7, 1.2, -1.4] },
+  { time: 0, eye: [-3.2, 1.7, 10.5], target: [-3.2, 1.7, -8] },
+  { time: 0.8, eye: [-3.2, 1.7, 10.45], target: [-7.5, 1.8, -5] },
+  { time: 1.6, eye: [-3.2, 1.7, 10.35], target: [2.8, 1.8, -6] },
+  { time: 2.45, eye: [-3.2, 1.7, 9.65], target: [-3.1, 1.8, -9] },
+  { time: 3.15, eye: [-3.2, 1.7, 8.15], target: [-3.2, 1.85, 5.25] },
+  { time: 3.85, eye: [-3.2, 1.78, 7.0], target: [-3.2, 2.6, 3.0] },
+  { time: 4.55, eye: [-3.2, 2.02, 5.85], target: [-3.7, 6.6, -17.5] },
+  { time: 5.2, eye: [-3.2, 2.18, 4.65], target: [-3.2, 3.0, -7] },
+  { time: 5.85, eye: [-3.2, 1.72, 3.45], target: [-3.2, 1.7, -9] },
+  { time: 6.45, eye: [-2.1, 1.68, 1.25], target: [0.2, 1.45, -6] },
+  { time: 7.35, eye: [0.3, 1.68, -0.25], target: [2.2, 1.2, -4.5] },
+  { time: 8.35, eye: [2.3, 1.82, -0.72], target: [2.3, 0.92, -3.25] },
+  { time: 9.05, eye: [2.3, 1.82, -0.72], target: [2.3, 0.92, -3.25] },
+  { time: 11.85, eye: [2.3, 1.82, -0.72], target: [2.3, 0.92, -3.25] },
+  { time: 12.18, eye: [2.3, 1.82, -0.72], target: [0, 2.05, 12] },
+  { time: 15, eye: [2.3, 1.82, -0.72], target: [0, 2.05, 12] },
 ];
 
 function cameraAt(time: number) {
@@ -522,46 +571,18 @@ function cameraAt(time: number) {
   return { eye: last.eye, target: last.target };
 }
 
-function heroAt(time: number) {
-  if (time < 3.25) {
-    return {
-      x: -3.2, y: 0, z: 8.1, yaw: Math.sin(time * 2.15) * 0.34,
-      pose: "stand" as Pose,
-    };
-  }
-  if (time < 3.9) {
-    const p = smooth(3.25, 3.9, time);
-    return { x: -3.2, y: 0, z: mix(8.1, 5.65, p), yaw: 0, pose: "walk" as Pose };
-  }
-  if (time < 5.55) {
-    const p = smooth(3.9, 5.55, time);
-    const lift = Math.sin(p * Math.PI) * 1.25;
-    return {
-      x: -3.2, y: lift, z: mix(5.65, 3.85, p), yaw: 0.02,
-      pose: "climb" as Pose,
-    };
-  }
-  if (time < 6.1) {
-    const p = smooth(5.55, 6.1, time);
-    return { x: mix(-3.2, -2.8, p), y: 0, z: mix(3.85, 2.9, p), yaw: 0, pose: "walk" as Pose };
-  }
-  if (time < 7.45) {
-    const p = smooth(6.1, 7.45, time);
-    return {
-      x: mix(-2.8, 2.3, p), y: 0, z: mix(2.9, -1.85, p),
-      yaw: 0, pose: "walk" as Pose,
-    };
-  }
-  if (time < 7.9) {
-    return { x: 2.3, y: 0, z: -1.85, yaw: 0, pose: "sit" as Pose };
-  }
-  if (time < 9.05) {
-    return { x: 2.3, y: 0, z: -1.85, yaw: 0, pose: "sit" as Pose };
-  }
-  if (time < 12) {
-    return { x: 2.3, y: 0, z: -1.85, yaw: 0, pose: "bag" as Pose };
-  }
-  return { x: 2.3, y: 0, z: -1.85, yaw: Math.PI, pose: "bag" as Pose };
+function handsActionAt(time: number): FirstPersonAction {
+  if (time < 3.1) return "idle";
+  if (time < 5.9) return "climb";
+  if (time < 8.25) return "walk";
+  if (time < 9.05) return "seated";
+  if (time < 9.65) return "bag";
+  if (time < 12) return "reach";
+  return "freeze";
+}
+
+function cameraYaw(eye: V3, target: V3) {
+  return Math.atan2(-(target[0] - eye[0]), -(target[2] - eye[2]));
 }
 
 export function Route40AwkaCinematic() {
@@ -607,15 +628,19 @@ export function Route40AwkaCinematic() {
         resources.push(mesh);
         return mesh;
       };
+      const sky = make(buildTwilightSky());
+      const celestial = make(buildMoonAndUfo());
       const world = make(buildAwkaWorld());
-      const standing = make(buildHero("stand"));
-      const climbing = make(buildHero("climb"));
-      const walking = make(buildHero("walk", 1));
-      const walkingAlt = make(buildHero("walk", -1));
-      const sitting = make(buildHero("sit"));
-      const bagPose = make(buildHero("bag"));
+      const idleHands = make(buildFirstPersonHands("idle"));
+      const climbHands = make(buildFirstPersonHands("climb"));
+      const walkingHands = make(buildFirstPersonHands("walk", 1));
+      const walkingHandsAlt = make(buildFirstPersonHands("walk", -1));
+      const seatedHands = make(buildFirstPersonHands("seated"));
+      const bagHands = make(buildFirstPersonHands("bag"));
+      const reachHands = make(buildFirstPersonHands("reach"));
+      const freezeHands = make(buildFirstPersonHands("freeze"));
       const bag = make(buildTableProps());
-      const pocketBag = make(buildPocketBag());
+      const heldBag = make(buildHeldBag());
       const powder = make(buildPowderLine());
       const police = make(buildPoliceHeadlights());
 
@@ -623,7 +648,7 @@ export function Route40AwkaCinematic() {
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LEQUAL);
       gl.disable(gl.CULL_FACE);
-      gl.clearColor(0.018, 0.026, 0.033, 1);
+      gl.clearColor(0.12, 0.075, 0.09, 1);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       const resolutionLocation = gl.getUniformLocation(program, "uResolution");
       const timeLocation = gl.getUniformLocation(program, "uTime");
@@ -647,45 +672,50 @@ export function Route40AwkaCinematic() {
           canvas.height = ph;
         }
         gl.viewport(0, 0, pw, ph);
-        gl.clearColor(0.018, 0.026, 0.033, 1);
+        gl.clearColor(0.12, 0.075, 0.09, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.useProgram(program);
         gl.uniform2f(resolutionLocation, pw, ph);
         gl.uniform1f(timeLocation, elapsed);
 
         const camera = cameraAt(elapsed);
-        const view = lookAt(camera.eye, camera.target, [0, 1, 0]);
-        const projection = perspective(54 * Math.PI / 180, width / height, 0.1, 180);
+        // Movimiento subjetivo: oscilación de cabeza mínima al caminar.
+        const walkSway = elapsed > 5.8 && elapsed < 8.25 ? Math.sin(elapsed * 8.5) * 0.025 : 0;
+        const eye: V3 = [camera.eye[0] + walkSway, camera.eye[1], camera.eye[2]];
+        const view = lookAt(eye, camera.target, [0, 1, 0]);
+        const projection = perspective(59 * Math.PI / 180, width / height, 0.1, 180);
         const viewProjection = multiply(projection, view);
         const identity = modelMatrix(0, 0, 0);
-        const policeLevel = elapsed < 12 ? 0 : smooth(12.02, 12.18, elapsed) * (0.92 + 0.08 * Math.sin(elapsed * 13));
+        const policeLevel = elapsed < 12 ? 0 : smooth(12.0, 12.16, elapsed) * (0.94 + 0.06 * Math.sin(elapsed * 13));
         gl.uniform1f(policeMeshLocation, policeLevel);
 
+        // Fondo de atardecer, luna y OVNI geométrico, integrados al escenario.
+        drawMesh(gl, program, sky, viewProjection, view, identity, 1, policeLevel);
+        drawMesh(gl, program, celestial, viewProjection, view, identity, 1, policeLevel);
         drawMesh(gl, program, world, viewProjection, view, identity, 1, policeLevel);
 
-        const hero = heroAt(elapsed);
-        const poseMesh = hero.pose === "stand" ? standing
-          : hero.pose === "climb" ? climbing
-          : hero.pose === "walk" ? (Math.sin(elapsed * 9) > 0 ? walking : walkingAlt)
-          : hero.pose === "sit" ? sitting : bagPose;
-        drawMesh(
-          gl, program, poseMesh, viewProjection, view,
-          modelMatrix(hero.x, hero.y, hero.z, hero.yaw), 1, policeLevel,
-        );
+        const yaw = cameraYaw(eye, camera.target);
+        const handsAction = handsActionAt(elapsed);
+        const handsMesh = handsAction === "idle" ? idleHands
+          : handsAction === "climb" ? climbHands
+          : handsAction === "walk" ? (Math.sin(elapsed * 9) > 0 ? walkingHands : walkingHandsAlt)
+          : handsAction === "seated" ? seatedHands
+          : handsAction === "bag" ? bagHands
+          : handsAction === "reach" ? reachHands : freezeHands;
+        const firstPersonModel = modelMatrix(eye[0], eye[1], eye[2], yaw);
+        drawMesh(gl, program, handsMesh, viewProjection, view, firstPersonModel, 1, policeLevel);
 
-        const bagOpacity = smooth(9.35, 9.82, elapsed);
-        const pocketOpacity = smooth(8.98, 9.12, elapsed) * (1 - smooth(9.28, 9.52, elapsed));
-        if (pocketOpacity > 0.01) {
+        const heldBagOpacity = smooth(9.0, 9.12, elapsed) * (1 - smooth(9.38, 9.58, elapsed));
+        if (heldBagOpacity > 0.01) {
           gl.enable(gl.BLEND);
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
           gl.depthMask(false);
-          drawMesh(
-            gl, program, pocketBag, viewProjection, view,
-            modelMatrix(hero.x, hero.y, hero.z, hero.yaw), pocketOpacity, policeLevel,
-          );
+          drawMesh(gl, program, heldBag, viewProjection, view, firstPersonModel, heldBagOpacity, policeLevel);
           gl.depthMask(true);
           gl.disable(gl.BLEND);
         }
+
+        const bagOpacity = smooth(9.35, 9.78, elapsed);
         if (bagOpacity > 0.01) {
           gl.enable(gl.BLEND);
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
