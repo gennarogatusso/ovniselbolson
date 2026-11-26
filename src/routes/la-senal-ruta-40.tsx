@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Route40Opening } from "@/components/game/Route40Opening";
+import { Route40LowPolyOpening } from "@/components/game/Route40LowPolyOpening";
 
 export const Route = createFileRoute("/la-senal-ruta-40")({
   head: () => ({
@@ -11,5 +11,5 @@ export const Route = createFileRoute("/la-senal-ruta-40")({
       { property: "og:type", content: "website" },
     ],
   }),
-  component: Route40Opening,
+  component: Route40LowPolyOpening,
 });
