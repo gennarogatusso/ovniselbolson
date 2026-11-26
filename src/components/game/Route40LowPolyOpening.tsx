@@ -374,7 +374,7 @@ function buildWorld() {
 
   // Postes de madera y cables a ambos lados de la Ruta 40.
   for (const side of [-1, 1]) {
-    const poleOffset = side < 0 ? -11.5 : 13.5;
+    const poleOffset = side < 0 ? -11.5 : 15.8;
     for (let i = 0; i < 9; i++) {
       const z = 7 - i * 15;
       const x = roadCenter(z) + poleOffset;
@@ -476,8 +476,8 @@ function buildCockpit() {
   cockpit.box([0, 1.03, -0.88], [0.22, 0.2, 0.09], hex("#282f34"));
 
   // Brazos con mangas, puños y ambas manos agarrando el aro del volante.
-  cockpit.beam([-1.3, 0.86, -1.45], [-0.38, 1.18, -0.86], 0.29, sleeve);
-  cockpit.beam([1.3, 0.86, -1.45], [0.38, 1.18, -0.86], 0.29, sleeve);
+  cockpit.beam([-1.3, 0.78, -1.05], [-0.38, 1.18, -0.86], 0.29, sleeve);
+  cockpit.beam([1.3, 0.78, -1.05], [0.38, 1.18, -0.86], 0.29, sleeve);
   cockpit.beam([-0.48, 1.17, -0.83], [-0.34, 1.23, -0.87], 0.2, hex("#4c4b47"));
   cockpit.beam([0.48, 1.17, -0.83], [0.34, 1.23, -0.87], 0.2, hex("#4c4b47"));
   cockpit.box([-0.34, 1.21, -0.79], [0.22, 0.18, 0.18], skin, hex("#725342"));
