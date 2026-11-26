@@ -71,8 +71,6 @@ export interface FileRoutesByFullPath {
   '/imagenes': typeof ImagenesRoute
   '/juego': typeof JuegoRoute
   '/la-senal-ruta-40': typeof LaSenalRuta40Route
-  '/la-senal-ruta-40': typeof LaSenalRuta40Route
-  '/la-senal-ruta-40': typeof LaSenalRuta40Route
   '/mapa': typeof MapaRoute
   '/reportes': typeof ReportesRoute
   '/casos/$codigo': typeof CasosCodigoRoute
@@ -83,6 +81,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/imagenes': typeof ImagenesRoute
   '/juego': typeof JuegoRoute
+  '/la-senal-ruta-40': typeof LaSenalRuta40Route
   '/mapa': typeof MapaRoute
   '/reportes': typeof ReportesRoute
   '/casos/$codigo': typeof CasosCodigoRoute
@@ -94,6 +93,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/imagenes': typeof ImagenesRoute
   '/juego': typeof JuegoRoute
+  '/la-senal-ruta-40': typeof LaSenalRuta40Route
   '/mapa': typeof MapaRoute
   '/reportes': typeof ReportesRoute
   '/casos/$codigo': typeof CasosCodigoRoute
@@ -106,6 +106,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/imagenes'
     | '/juego'
+    | '/la-senal-ruta-40'
     | '/mapa'
     | '/reportes'
     | '/casos/$codigo'
@@ -116,6 +117,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/imagenes'
     | '/juego'
+    | '/la-senal-ruta-40'
     | '/mapa'
     | '/reportes'
     | '/casos/$codigo'
@@ -126,6 +128,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/imagenes'
     | '/juego'
+    | '/la-senal-ruta-40'
     | '/mapa'
     | '/reportes'
     | '/casos/$codigo'
