@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as ImagenesRouteImport } from './routes/imagenes'
 import { Route as JuegoRouteImport } from './routes/juego'
+import { Route as LaSenalRuta40RouteImport } from './routes/la-senal-ruta-40'
 import { Route as MapaRouteImport } from './routes/mapa'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as CasosIndexRouteImport } from './routes/casos.index'
@@ -36,6 +37,11 @@ const ImagenesRoute = ImagenesRouteImport.update({
 const JuegoRoute = JuegoRouteImport.update({
   id: '/juego',
   path: '/juego',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LaSenalRuta40Route = LaSenalRuta40RouteImport.update({
+  id: '/la-senal-ruta-40',
+  path: '/la-senal-ruta-40',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapaRoute = MapaRouteImport.update({
@@ -64,6 +70,9 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/imagenes': typeof ImagenesRoute
   '/juego': typeof JuegoRoute
+  '/la-senal-ruta-40': typeof LaSenalRuta40Route
+  '/la-senal-ruta-40': typeof LaSenalRuta40Route
+  '/la-senal-ruta-40': typeof LaSenalRuta40Route
   '/mapa': typeof MapaRoute
   '/reportes': typeof ReportesRoute
   '/casos/$codigo': typeof CasosCodigoRoute
@@ -128,6 +137,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   ImagenesRoute: typeof ImagenesRoute
   JuegoRoute: typeof JuegoRoute
+  LaSenalRuta40Route: typeof LaSenalRuta40Route
   MapaRoute: typeof MapaRoute
   ReportesRoute: typeof ReportesRoute
   CasosCodigoRoute: typeof CasosCodigoRoute
@@ -162,6 +172,13 @@ declare module '@tanstack/react-router' {
       path: '/juego'
       fullPath: '/juego'
       preLoaderRoute: typeof JuegoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/la-senal-ruta-40': {
+      id: '/la-senal-ruta-40'
+      path: '/la-senal-ruta-40'
+      fullPath: '/la-senal-ruta-40'
+      preLoaderRoute: typeof LaSenalRuta40RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mapa': {
@@ -200,6 +217,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   ImagenesRoute: ImagenesRoute,
   JuegoRoute: JuegoRoute,
+  LaSenalRuta40Route: LaSenalRuta40Route,
   MapaRoute: MapaRoute,
   ReportesRoute: ReportesRoute,
   CasosCodigoRoute: CasosCodigoRoute,

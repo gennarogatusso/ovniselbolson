@@ -212,6 +212,15 @@ function Index() {
               Algo oculto se esconde en el Cerro de La Cruz. Explora el pueblo y sus secretos.
             </p>
 
+            <Link
+              to="/la-senal-ruta-40"
+              className="mt-8 inline-flex min-h-[54px] items-center gap-3 border border-cyan-100/45 bg-cyan-100/[0.08] px-5 py-3 font-mono text-[11px] font-semibold tracking-[0.16em] text-cyan-50 shadow-[0_0_28px_rgba(103,232,249,0.08)] transition-all hover:-translate-y-0.5 hover:border-cyan-100/80 hover:bg-cyan-100/[0.14]"
+            >
+              <Play size={15} fill="currentColor" />
+              VER PRIMERA CINEMÁTICA
+              <ArrowRight size={16} />
+            </Link>
+
             <div className="mt-9 flex flex-wrap gap-3">
               <span className="inline-flex items-center gap-2 border border-white/15 bg-black/25 px-4 py-3 text-sm text-white/90 backdrop-blur-sm">
                 <Gamepad2 size={17} className="text-cyan-200" />
