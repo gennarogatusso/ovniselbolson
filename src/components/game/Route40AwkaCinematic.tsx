@@ -241,7 +241,7 @@ function buildAwkaWorld() {
   return world;
 }
 
-function buildHero(pose: Pose) {
+function buildHero(pose: Pose, stride = 1) {
   const hero = new MeshBuilder();
   const jacket = hex("#242a31");
   const jacketLight = hex("#3b4148");
@@ -291,11 +291,11 @@ function buildHero(pose: Pose) {
       hero.beam([0.17, 0.86, 0], [0.37, 0.55, 0.18], 0.23, pants);
       hero.beam([0.37, 0.55, 0.18], [0.4, 0.23, 0.18], 0.2, pantsLight);
     } else {
-      hero.beam([-0.36, 1.72, 0], [-0.48, 1.12, -0.02], 0.22, jacket);
-      hero.beam([0.36, 1.72, 0], [0.48, 1.12, 0.02], 0.22, jacketLight);
+      hero.beam([-0.36, 1.72, 0], [-0.48, 1.12, -0.02 * stride], 0.22, jacket);
+      hero.beam([0.36, 1.72, 0], [0.48, 1.12, 0.02 * stride], 0.22, jacketLight);
       hero.box([-0.48, 1.1, -0.03], [0.18, 0.17, 0.16], skin);
       hero.box([0.48, 1.1, 0.04], [0.18, 0.17, 0.16], skin);
-      const legSwing = pose === "walk" ? 0.18 : 0;
+      const legSwing = pose === "walk" ? 0.18 * stride : 0;
       hero.beam([-0.17, 0.86, 0], [-0.2, 0.45, -legSwing], 0.23, pants);
       hero.beam([-0.2, 0.45, -legSwing], [-0.2, 0.17, -legSwing - 0.07], 0.2, pantsLight);
       hero.beam([0.17, 0.86, 0], [0.2, 0.45, legSwing], 0.23, pants);
@@ -317,6 +317,13 @@ function buildTableProps() {
   props.triangle([2.0, 1.045, -3.22], [2.11, 1.11, -3.12], [2.24, 1.045, -3.08], hex("#f1eee6"));
   props.beam([2.03, 1.052, -3.13], [2.2, 1.052, -3.17], 0.025, hex("#ffffff"));
   return props;
+}
+
+function buildPocketBag() {
+  const pocket = new MeshBuilder();
+  pocket.box([0, 0.93, -0.25], [0.19, 0.035, 0.15], hex("#e6e4dc"), hex("#bcbab4"));
+  pocket.triangle([-0.09, 0.95, -0.3], [0, 1.02, -0.28], [0.1, 0.95, -0.2], hex("#f1eee6"));
+  return pocket;
 }
 
 function buildPowderLine() {
@@ -548,11 +555,11 @@ function heroAt(time: number) {
   if (time < 7.9) {
     return { x: 2.3, y: 0, z: -1.85, yaw: 0, pose: "sit" as Pose };
   }
+  if (time < 9.05) {
+    return { x: 2.3, y: 0, z: -1.85, yaw: 0, pose: "sit" as Pose };
+  }
   if (time < 12) {
-    return {
-      x: 2.3, y: 0, z: -1.85, yaw: 0,
-      pose: "bag" as Pose,
-    };
+    return { x: 2.3, y: 0, z: -1.85, yaw: 0, pose: "bag" as Pose };
   }
   return { x: 2.3, y: 0, z: -1.85, yaw: Math.PI, pose: "bag" as Pose };
 }
@@ -603,10 +610,12 @@ export function Route40AwkaCinematic() {
       const world = make(buildAwkaWorld());
       const standing = make(buildHero("stand"));
       const climbing = make(buildHero("climb"));
-      const walking = make(buildHero("walk"));
+      const walking = make(buildHero("walk", 1));
+      const walkingAlt = make(buildHero("walk", -1));
       const sitting = make(buildHero("sit"));
       const bagPose = make(buildHero("bag"));
       const bag = make(buildTableProps());
+      const pocketBag = make(buildPocketBag());
       const powder = make(buildPowderLine());
       const police = make(buildPoliceHeadlights());
 
@@ -649,7 +658,7 @@ export function Route40AwkaCinematic() {
         const projection = perspective(54 * Math.PI / 180, width / height, 0.1, 180);
         const viewProjection = multiply(projection, view);
         const identity = modelMatrix(0, 0, 0);
-        const policeLevel = elapsed < 12 ? 0 : smooth(12.05, 13.5, elapsed) * (0.9 + 0.1 * Math.sin(elapsed * 13));
+        const policeLevel = elapsed < 12 ? 0 : smooth(12.02, 12.18, elapsed) * (0.92 + 0.08 * Math.sin(elapsed * 13));
         gl.uniform1f(policeMeshLocation, policeLevel);
 
         drawMesh(gl, program, world, viewProjection, view, identity, 1, policeLevel);
@@ -657,14 +666,26 @@ export function Route40AwkaCinematic() {
         const hero = heroAt(elapsed);
         const poseMesh = hero.pose === "stand" ? standing
           : hero.pose === "climb" ? climbing
-          : hero.pose === "walk" ? walking
+          : hero.pose === "walk" ? (Math.sin(elapsed * 9) > 0 ? walking : walkingAlt)
           : hero.pose === "sit" ? sitting : bagPose;
         drawMesh(
           gl, program, poseMesh, viewProjection, view,
           modelMatrix(hero.x, hero.y, hero.z, hero.yaw), 1, policeLevel,
         );
 
-        const bagOpacity = smooth(9.15, 9.75, elapsed) * (1 - smooth(14.7, 15, elapsed));
+        const bagOpacity = smooth(9.35, 9.82, elapsed);
+        const pocketOpacity = smooth(8.98, 9.12, elapsed) * (1 - smooth(9.28, 9.52, elapsed));
+        if (pocketOpacity > 0.01) {
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.depthMask(false);
+          drawMesh(
+            gl, program, pocketBag, viewProjection, view,
+            modelMatrix(hero.x, hero.y, hero.z, hero.yaw), pocketOpacity, policeLevel,
+          );
+          gl.depthMask(true);
+          gl.disable(gl.BLEND);
+        }
         if (bagOpacity > 0.01) {
           gl.enable(gl.BLEND);
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -673,7 +694,7 @@ export function Route40AwkaCinematic() {
           gl.depthMask(true);
           gl.disable(gl.BLEND);
         }
-        const lineOpacity = smooth(10.55, 11.35, elapsed);
+        const lineOpacity = smooth(10.5, 11.15, elapsed);
         if (lineOpacity > 0.01) {
           gl.enable(gl.BLEND);
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
