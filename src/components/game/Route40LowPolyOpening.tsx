@@ -64,12 +64,12 @@ class MeshBuilder {
       [x + sx, y + sy, z + sz], [x - sx, y + sy, z + sz],
     ];
     const c = color, d = alternate ?? color;
-    this.quad(p[0]!, p[1]!, p[2]!, p[3]!, c);
-    this.quad(p[5]!, p[4]!, p[7]!, p[6]!, d);
-    this.quad(p[4]!, p[0]!, p[3]!, p[7]!, d);
-    this.quad(p[1]!, p[5]!, p[6]!, p[2]!, c);
-    this.quad(p[3]!, p[2]!, p[6]!, p[7]!, c);
-    this.quad(p[4]!, p[5]!, p[1]!, p[0]!, d);
+    this.quad(p[0]!, p[3]!, p[2]!, p[1]!, c);
+    this.quad(p[4]!, p[5]!, p[6]!, p[7]!, d);
+    this.quad(p[0]!, p[4]!, p[7]!, p[3]!, d);
+    this.quad(p[1]!, p[2]!, p[6]!, p[5]!, c);
+    this.quad(p[3]!, p[7]!, p[6]!, p[2]!, c);
+    this.quad(p[0]!, p[1]!, p[5]!, p[4]!, d);
   }
 
   beam(a: V3, b: V3, width: number, color: V3) {
