@@ -149,13 +149,20 @@ function terrainY(x: number, z: number) {
   return 0.12 + Math.sin(x * 0.16 + z * 0.035) * 0.24 + Math.sin(z * 0.11 - x * 0.04) * 0.16;
 }
 function roadCenter(z: number) {
-  return Math.sin(z * 0.023) * 1.7 + Math.sin(z * 0.061) * 0.5;
+  const natural = Math.sin(z * 0.023) * 1.7 + Math.sin(z * 0.061) * 0.5;
+  // Curva amplia inicial: la ruta cae hacia la derecha y luego recupera su eje.
+  const turnIn = smooth(4, 46, -z);
+  const turnOut = smooth(58, 112, -z);
+  return natural + 8.2 * (turnIn - turnOut);
 }
 
 function roadHeightAt(z: number) {
+  const descentIn = smooth(3, 43, -z);
+  const descentOut = smooth(78, 128, -z);
+  const downhillDip = -6.2 * descentIn * (1 - descentOut);
   const progress = clamp((-z - 174) / 105, 0, 1);
   const eased = progress * progress * (3 - 2 * progress);
-  return 0.18 + eased * 15.5;
+  return 0.18 + downhillDip + eased * 15.5;
 }
 
 const PIXEL_GLYPHS: Record<string, string[]> = {
@@ -1326,7 +1333,7 @@ export function Route40LowPolyOpening() {
       const shakeY = Math.sin(now * 0.039) * shake * 0.62;
       const driverEye: V3 = [carX + shakeX, roadHeightAt(carZ) + 1.39 + shakeY, carZ + 0.56];
       const driverTarget: V3 = elapsed < DURATION
-        ? [Math.sin(elapsed * 0.44) * 0.35 + shakeX * 0.7, roadHeightAt(carZ - 39) + 2.6 + shakeY, carZ - 39]
+        ? [roadCenter(carZ - 39) + shakeX * 0.7, roadHeightAt(carZ - 39) + 2.6 + shakeY, carZ - 39]
         : [
             carX + Math.sin(lookYaw) * 39 + shakeX,
             roadHeightAt(carZ - 39) + 2.6 + lookPitch * 18 + shakeY,
