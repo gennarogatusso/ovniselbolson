@@ -641,47 +641,132 @@ function buildMoneyHandover() {
 
 function buildCockpit() {
   const cockpit = new MeshBuilder();
-  const dark = hex("#171d22");
-  const lighter = hex("#30373b");
-  const skin = hex("#b78364");
-  const sleeve = hex("#252f39");
-  cockpit.box([0, 0.78, -1.78], [3.45, 0.52, 1.15], dark, lighter);
-  cockpit.box([0, 0.99, -1.48], [3.35, 0.12, 0.72], hex("#252c31"));
-  cockpit.box([0, 0.63, -3.6], [3.3, 0.32, 2.6], hex("#20282d"), hex("#141a20"));
+  const dashTop = hex("#252b2e");
+  const dashFace = hex("#34383a");
+  const dashShadow = hex("#151b20");
+  const trim = hex("#64635b");
+  const silver = hex("#879195");
+  const silverDark = hex("#485258");
+  const leather = hex("#292b2a");
+  const glassBlue = hex("#49616a");
+  const amber = hex("#d6a45e");
+  const warmWhite = hex("#dfd1b2");
+  const screenGreen = hex("#9fb49a");
 
-  // Techo interior, parasol y espejo retrovisor.
-  cockpit.box([0, 2.34, -3.35], [3.48, 0.17, 2.62], hex("#20272b"), hex("#11171c"));
-  cockpit.box([0, 2.23, -2.22], [1.2, 0.09, 0.34], hex("#343a3d"));
-  cockpit.box([0, 2.03, -4.42], [0.48, 0.12, 0.16], hex("#080d12"));
-  cockpit.box([0, 1.93, -4.42], [0.62, 0.18, 0.08], hex("#30383c"));
+  // Tablero ancho de dos niveles, pensado para enmarcar la vista en horizontal.
+  cockpit.box([0, 0.77, -1.78], [3.68, 0.56, 1.28], dashFace, dashShadow);
+  cockpit.box([0, 1.035, -1.93], [3.72, 0.19, 1.03], dashTop, hex("#353b3c"));
+  cockpit.beam([-1.79, 1.105, -2.08], [1.79, 1.105, -2.08], 0.035, hex("#555b59"));
+  cockpit.beam([-1.7, 0.99, -1.31], [1.7, 0.99, -1.31], 0.025, trim);
+  cockpit.beam([-1.55, 0.58, -1.2], [1.55, 0.58, -1.2], 0.035, dashShadow);
 
-  // Marco de parabrisas y pilares de las ventanillas.
-  cockpit.beam([-1.62, 0.92, -2.15], [-1.78, 2.25, -4.65], 0.16, hex("#11181d"));
-  cockpit.beam([1.62, 0.92, -2.15], [1.78, 2.25, -4.65], 0.16, hex("#11181d"));
-  cockpit.beam([-1.78, 2.25, -4.65], [1.78, 2.25, -4.65], 0.16, hex("#11181d"));
-  cockpit.beam([-1.62, 0.94, -2.15], [1.62, 0.94, -2.15], 0.11, hex("#1a2126"));
-  cockpit.beam([-1.7, 1.05, -2.0], [-1.78, 1.68, -3.25], 0.055, hex("#47545a"));
-  cockpit.beam([1.7, 1.05, -2.0], [1.78, 1.68, -3.25], 0.055, hex("#47545a"));
+  // Costura superior y pequeñas líneas de textura del tablero.
+  for (let i = 0; i < 28; i++) {
+    const x = -1.55 + i * 0.115;
+    cockpit.beam([x, 1.126, -1.83], [x + 0.035, 1.126, -1.83], 0.012, hex("#77736a"));
+  }
 
-  // Volante y columna poligonales.
-  cockpit.torusXY(0, 1.03, -0.88, 0.46, 0.055, hex("#080c10"));
-  cockpit.beam([0, 1.03, -0.86], [0, 0.68, -0.88], 0.075, hex("#090d11"));
-  cockpit.beam([0, 1.03, -0.86], [-0.3, 1.22, -0.88], 0.07, hex("#090d11"));
-  cockpit.beam([0, 1.03, -0.86], [0.3, 1.22, -0.88], 0.07, hex("#090d11"));
-  cockpit.box([0, 1.03, -0.88], [0.22, 0.2, 0.09], hex("#282f34"));
+  // Consola central escalonada con radio, pantalla, mandos y climatizador.
+  cockpit.box([0, 0.69, -1.045], [1.08, 0.83, 0.19], dashShadow, hex("#30383c"));
+  cockpit.box([0, 0.91, -0.932], [0.86, 0.31, 0.055], hex("#10171b"));
+  cockpit.box([0, 0.91, -0.895], [0.72, 0.205, 0.025], glassBlue);
+  cockpit.box([0, 0.91, -0.877], [0.58, 0.025, 0.012], screenGreen);
+  cockpit.box([-0.22, 0.965, -0.874], [0.035, 0.025, 0.012], amber);
+  cockpit.box([0.22, 0.965, -0.874], [0.035, 0.025, 0.012], amber);
+  addPixelText(cockpit, "R40", 0, 0.875, -0.86, 0.017, warmWhite);
 
-  // Brazos más naturales: mangas completas, costuras, puños, palmas y dedos separados.
+  // Rejillas de ventilación con láminas metálicas.
+  for (const x of [-0.52, 0.52]) {
+    cockpit.box([x, 1.015, -1.075], [0.32, 0.13, 0.055], dashShadow);
+    for (let slat = 0; slat < 4; slat++) {
+      const y = 0.975 + slat * 0.026;
+      cockpit.beam([x - 0.12, y, -1.04], [x + 0.12, y, -1.04], 0.012, silver);
+    }
+    cockpit.box([x, 0.77, -0.92], [0.14, 0.045, 0.035], silverDark);
+  }
+
+  // Botonera y controles físicos, cada uno separado para dar volumen.
+  cockpit.box([0, 0.68, -0.925], [0.79, 0.12, 0.045], hex("#20282c"));
+  for (let i = 0; i < 5; i++) {
+    const x = -0.29 + i * 0.145;
+    cockpit.box([x, 0.68, -0.895], [0.075, 0.055, 0.025], i === 2 ? amber : silverDark);
+  }
+  for (const x of [-0.24, 0, 0.24]) {
+    cockpit.torusXY(x, 0.47, -0.905, 0.075, 0.018, silverDark);
+    cockpit.disc(x, 0.47, -0.89, 0.054, hex("#20292d"), 20);
+    cockpit.beam([x, 0.47, -0.87], [x + 0.025, 0.515, -0.87], 0.018, warmWhite);
+  }
+  cockpit.box([0, 0.32, -0.98], [0.88, 0.09, 0.34], hex("#171e22"));
+  cockpit.box([-0.35, 0.32, -0.79], [0.12, 0.06, 0.16], silverDark);
+  cockpit.box([0.35, 0.32, -0.79], [0.12, 0.06, 0.16], silverDark);
+
+  // Guantera del acompañante con tapa, bisagra y tirador.
+  cockpit.box([1.12, 0.69, -1.12], [0.91, 0.36, 0.13], hex("#292f32"));
+  cockpit.beam([0.7, 0.49, -1.04], [1.55, 0.49, -1.04], 0.024, dashShadow);
+  cockpit.box([1.16, 0.77, -1.025], [0.22, 0.045, 0.035], silverDark);
+  cockpit.box([1.16, 0.77, -1.002], [0.12, 0.018, 0.018], silver);
+
+  // Panel bajo el volante y zona de encendido.
+  cockpit.box([-1.08, 0.62, -0.99], [0.72, 0.35, 0.2], dashShadow);
+  cockpit.box([-1.23, 0.73, -0.875], [0.18, 0.12, 0.035], hex("#11171b"));
+  cockpit.torusXY(-0.86, 0.62, -0.865, 0.055, 0.014, silverDark);
+  cockpit.box([-0.87, 0.62, -0.842], [0.07, 0.035, 0.018], hex("#8d9a9b"));
+
+  // Instrumental doble: aros, escalas, agujas y testigos iluminados.
+  cockpit.box([0, 1.105, -1.37], [1.86, 0.32, 0.26], dashShadow, hex("#242c30"));
+  for (const x of [-0.72, 0.72]) {
+    cockpit.disc(x, 0.95, -1.105, 0.235, hex("#0a1013"), 32);
+    cockpit.torusXY(x, 0.95, -1.085, 0.205, 0.018, silverDark);
+    cockpit.disc(x, 0.95, -1.07, 0.174, hex("#6b604d"), 32);
+    cockpit.disc(x, 0.95, -1.055, 0.148, hex("#182127"), 32);
+    for (let tick = 0; tick <= 12; tick++) {
+      const angle = 0.2 + (tick / 12) * (Math.PI - 0.4);
+      const outerX = x + Math.cos(angle) * 0.132;
+      const outerY = 0.95 + Math.sin(angle) * 0.132;
+      const innerX = x + Math.cos(angle) * 0.108;
+      const innerY = 0.95 + Math.sin(angle) * 0.108;
+      cockpit.beam([innerX, innerY, -1.035], [outerX, outerY, -1.035], 0.012, warmWhite);
+    }
+    cockpit.beam([x, 0.95, -1.025], [x + (x < 0 ? 0.075 : -0.085), 1.045, -1.02], 0.022, hex("#cf7756"));
+    cockpit.disc(x, 0.95, -1.005, 0.027, silver, 12);
+  }
+  cockpit.box([0, 0.79, -1.105], [0.38, 0.12, 0.035], hex("#0c1317"));
+  cockpit.box([-0.12, 0.79, -1.08], [0.035, 0.035, 0.015], amber);
+  cockpit.box([0, 0.79, -1.08], [0.035, 0.035, 0.015], hex("#a94f42"));
+  cockpit.box([0.12, 0.79, -1.08], [0.035, 0.035, 0.015], hex("#7b9b72"));
+  addPixelText(cockpit, "064", 0, 1.0, -1.015, 0.027, hex("#dfc99b"));
+  addPixelText(cockpit, "KM/H", 0, 0.81, -1.014, 0.014, hex("#a9b2a8"));
+
+  // Volante poligonal más grueso, con radios, centro acolchado y costuras.
+  cockpit.torusXY(0, 1.03, -0.88, 0.48, 0.075, hex("#080c10"));
+  cockpit.torusXY(0, 1.03, -0.88, 0.48, 0.018, hex("#555a58"));
+  cockpit.beam([0, 1.03, -0.87], [0, 0.66, -0.87], 0.095, hex("#11171b"));
+  cockpit.beam([0, 1.03, -0.87], [-0.34, 1.22, -0.87], 0.085, hex("#11171b"));
+  cockpit.beam([0, 1.03, -0.87], [0.34, 1.22, -0.87], 0.085, hex("#11171b"));
+  cockpit.box([0, 1.03, -0.83], [0.29, 0.25, 0.12], hex("#30383b"), hex("#161d21"));
+  cockpit.box([0, 1.03, -0.755], [0.17, 0.14, 0.035], hex("#77756a"));
+  cockpit.box([0, 1.03, -0.73], [0.11, 0.09, 0.018], hex("#30383b"));
+  addPixelText(cockpit, "R40", 0, 1.0, -0.715, 0.015, warmWhite);
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2;
+    const x1 = Math.cos(a) * 0.475;
+    const y1 = 1.03 + Math.sin(a) * 0.475;
+    const x2 = Math.cos(a + 0.055) * 0.475;
+    const y2 = 1.03 + Math.sin(a + 0.055) * 0.475;
+    cockpit.beam([x1, y1, -0.795], [x2, y2, -0.795], 0.012, hex("#8a8170"));
+  }
+
+  // Brazos más naturales: mangas, costuras, puños, palmas y dedos separados.
   for (const side of [-1, 1]) {
     const palmX = side * 0.35;
-    const sleeve = hex("#202b35");
+    const sleeveColor = hex("#202b35");
     const sleeveLight = hex("#394753");
     const cuff = hex("#65727a");
-    cockpit.beam([side * 1.42, 0.68, -1.03], [side * 0.53, 1.12, -0.87], 0.39, sleeve);
+    cockpit.beam([side * 1.42, 0.68, -1.03], [side * 0.53, 1.12, -0.87], 0.39, sleeveColor);
     cockpit.beam([side * 1.16, 0.82, -0.98], [side * 0.62, 1.10, -0.85], 0.11, sleeveLight);
     cockpit.box([side * 0.54, 1.13, -0.84], [0.19, 0.29, 0.3], cuff, hex("#39434a"));
     cockpit.beam([side * 0.52, 1.15, -0.84], [palmX, 1.19, -0.79], 0.18, hex("#a77a60"));
-    cockpit.box([palmX, 1.2, -0.79], [0.34, 0.24, 0.2], skin, hex("#855b49"));
-    // Nudillos y cuatro dedos que rodean el volante.
+    cockpit.box([palmX, 1.2, -0.79], [0.34, 0.24, 0.2], hex("#b78364"), hex("#855b49"));
     for (let finger = 0; finger < 4; finger++) {
       const fingerX = palmX + side * ((finger - 1.5) * 0.075);
       const fingerTop = 1.24 - Math.abs(finger - 1.5) * 0.012;
@@ -689,37 +774,53 @@ function buildCockpit() {
       cockpit.box([fingerX, fingerTop - 0.015, -0.705], [0.074, 0.062, 0.065], hex("#d09b7a"));
       cockpit.box([fingerX + side * 0.018, 1.09, -0.59], [0.047, 0.038, 0.025], hex("#e1b596"));
     }
-    // Pulgar por el lateral interno de cada mano.
     cockpit.beam([palmX - side * 0.13, 1.18, -0.73], [palmX - side * 0.19, 1.08, -0.64], 0.09, hex("#b17c60"));
     cockpit.box([palmX - side * 0.18, 1.08, -0.64], [0.09, 0.075, 0.06], hex("#d09b7a"));
-    // Pliegues y costura del puño.
     cockpit.beam([side * 0.48, 1.08, -0.7], [side * 0.61, 1.1, -0.7], 0.018, hex("#87959a"));
   }
 
-  // Tablero: dos relojes, velocímetro analógico y lectura digital en píxeles.
-  cockpit.disc(-0.75, 0.92, -1.17, 0.22, hex("#090e12"));
-  cockpit.disc(-0.75, 0.92, -1.155, 0.17, hex("#7b684d"));
-  cockpit.disc(0.75, 0.92, -1.17, 0.22, hex("#090e12"));
-  cockpit.disc(0.75, 0.92, -1.155, 0.17, hex("#7b684d"));
-  for (let tick = 0; tick <= 10; tick++) {
-    const angle = 0.12 + (tick / 10) * (Math.PI - 0.24);
-    const outerX = 0.75 + Math.cos(angle) * 0.145;
-    const outerY = 0.92 + Math.sin(angle) * 0.145;
-    const innerX = 0.75 + Math.cos(angle) * 0.116;
-    const innerY = 0.92 + Math.sin(angle) * 0.116;
-    cockpit.beam([innerX, innerY, -1.125], [outerX, outerY, -1.125], 0.012, hex("#e0c89c"));
+  // Puertas interiores anchas, apoyabrazos, manijas y controles de ventanilla.
+  for (const side of [-1, 1]) {
+    cockpit.box([side * 1.69, 0.62, -1.32], [0.27, 0.72, 2.38], hex("#20282c"), hex("#30383b"));
+    cockpit.box([side * 1.64, 0.99, -1.42], [0.25, 0.13, 2.44], hex("#343b3e"));
+    cockpit.beam([side * 1.53, 0.78, -2.35], [side * 1.53, 0.78, -0.34], 0.035, hex("#596267"));
+    cockpit.box([side * 1.48, 0.69, -0.91], [0.38, 0.16, 0.82], hex("#3a4245"));
+    cockpit.beam([side * 1.42, 0.77, -1.1], [side * 1.25, 0.86, -1.1], 0.055, silver);
+    cockpit.box([side * 1.43, 0.88, -0.64], [0.25, 0.055, 0.25], dashShadow);
+    cockpit.box([side * 1.43, 0.92, -0.64], [0.11, 0.025, 0.09], silverDark);
+    cockpit.box([side * 1.51, 0.55, -1.72], [0.13, 0.31, 0.13], dashShadow);
+    cockpit.beam([side * 1.52, 0.96, -2.48], [side * 1.68, 1.7, -3.35], 0.09, hex("#1b2429"));
+    cockpit.beam([side * 1.68, 1.7, -3.35], [side * 1.73, 1.78, -4.15], 0.09, hex("#293337"));
+    cockpit.box([side * 1.92, 1.38, -2.53], [0.12, 0.3, 0.46], dashShadow);
+    cockpit.box([side * 1.99, 1.38, -2.53], [0.035, 0.22, 0.36], glassBlue);
+    cockpit.beam([side * 1.95, 1.19, -2.53], [side * 1.95, 1.57, -2.53], 0.025, silverDark);
   }
-  cockpit.beam([0.75, 0.92, -1.115], [0.64, 1.005, -1.105], 0.022, hex("#cf7756"));
-  cockpit.disc(0.75, 0.92, -1.095, 0.025, hex("#d7c5a0"), 12);
 
-  cockpit.box([0, 0.94, -1.16], [0.82, 0.36, 0.045], hex("#111b1f"));
-  cockpit.box([0, 0.64, -1.13], [0.8, 0.08, 0.08], hex("#11171c"));
-  // Número iluminado de velocidad: 064 km/h.
-  addPixelText(cockpit, "064", 0, 1.0, -1.125, 0.027, hex("#dfc99b"));
-  addPixelText(cockpit, "KM/H", 0, 0.81, -1.124, 0.014, hex("#a9b2a8"));
+  // Techo tapizado, parasoles, plafón y espejo retrovisor central.
+  cockpit.box([0, 2.34, -3.35], [3.58, 0.19, 2.62], hex("#20272b"), hex("#11171c"));
+  cockpit.beam([-1.68, 2.245, -4.56], [1.68, 2.245, -4.56], 0.11, hex("#11181d"));
+  for (const side of [-1, 1]) {
+    cockpit.box([side * 0.94, 2.22, -2.75], [0.72, 0.11, 0.48], hex("#34393a"));
+    cockpit.box([side * 0.94, 2.15, -2.52], [0.08, 0.08, 0.08], silverDark);
+  }
+  cockpit.box([0, 2.21, -3.02], [0.3, 0.07, 0.42], hex("#8a8170"));
+  cockpit.box([0, 2.16, -3.02], [0.16, 0.045, 0.28], warmWhite);
+  cockpit.beam([0, 2.08, -4.12], [0, 1.96, -4.4], 0.055, silverDark);
+  cockpit.box([0, 1.93, -4.42], [0.68, 0.18, 0.1], hex("#30383c"));
+  cockpit.box([0, 1.93, -4.35], [0.55, 0.13, 0.035], glassBlue);
+
+  // Marco del parabrisas con sellos de goma y limpiaparabrisas en la base.
+  cockpit.beam([-1.62, 0.92, -2.15], [-1.78, 2.25, -4.65], 0.18, hex("#11181d"));
+  cockpit.beam([1.62, 0.92, -2.15], [1.78, 2.25, -4.65], 0.18, hex("#11181d"));
+  cockpit.beam([-1.78, 2.25, -4.65], [1.78, 2.25, -4.65], 0.17, hex("#11181d"));
+  cockpit.beam([-1.62, 0.94, -2.15], [1.62, 0.94, -2.15], 0.13, hex("#1a2126"));
+  cockpit.beam([-1.58, 1.04, -2.25], [-1.74, 1.62, -3.34], 0.055, hex("#59636a"));
+  cockpit.beam([1.58, 1.04, -2.25], [1.74, 1.62, -3.34], 0.055, hex("#59636a"));
+  cockpit.beam([-1.38, 0.965, -2.19], [-0.27, 0.965, -2.19], 0.032, hex("#090e12"));
+  cockpit.beam([0.27, 0.965, -2.19], [1.38, 0.965, -2.19], 0.032, hex("#090e12"));
+
   return cockpit;
 }
-
 function buildWindshield() {
   const glass = new MeshBuilder();
   glass.quad(
