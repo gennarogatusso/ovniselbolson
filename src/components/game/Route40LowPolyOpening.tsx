@@ -153,30 +153,30 @@ function roadCenter(z: number) {
 }
 
 function mountainProfile(x: number, amplitude = 1) {
-  // Silueta reconstruida a partir de piltri.jpg: crestas irregulares,
-  // varias agujas nevadas y un macizo rocoso más alto hacia la derecha.
-  const ridge: [number, number][] = [
-    [-56, 4], [-52, 7], [-48, 10], [-44, 9], [-40, 12], [-36, 15],
-    [-32, 12], [-28, 10], [-24, 14], [-20, 17], [-17, 15], [-14, 19],
-    [-10, 16], [-7, 20], [-3, 18], [1, 22], [5, 19], [8, 24],
-    [12, 27], [16, 25], [19, 30], [22, 26], [25, 23], [29, 24],
-    [33, 20], [37, 18], [41, 15], [45, 13], [50, 9], [56, 5],
+  // Perfil inspirado en la cresta real del Piltriquitrón: hombro largo,
+  // varios picos nevados concentrados y una ladera oriental más abrupta.
+  const peaks: [number, number][] = [
+    [-56, 0.5], [-51, 1.5], [-46, 3.8], [-41, 7.2], [-36, 10.8],
+    [-32, 13.4], [-29, 11.7], [-26, 16.1], [-22, 14.2], [-18, 18.4],
+    [-14, 16.8], [-10, 22.6], [-6, 20.4], [-2, 25.5], [2, 22.3],
+    [6, 17.2], [10, 15.2], [13, 19.4], [17, 17.1], [21, 13.6],
+    [26, 11.9], [31, 9.2], [36, 6.8], [42, 4.2], [48, 1.7], [55, 0.4],
   ];
-  for (let i = 0; i < ridge.length - 1; i++) {
-    const left = ridge[i]!, right = ridge[i + 1]!;
+  for (let i = 0; i < peaks.length - 1; i++) {
+    const left = peaks[i]!, right = peaks[i + 1]!;
     if (x >= left[0] && x <= right[0]) {
       const t = (x - left[0]) / (right[0] - left[0]);
-      const base = mix(left[1], right[1], t);
-      const sharpness = Math.sin(t * Math.PI) * (i % 3 === 0 ? 0.8 : 0.34);
-      return (base + sharpness) * amplitude;
+      return mix(left[1], right[1], t) * amplitude;
     }
   }
-  return 4 * amplitude;
+  return 0.5 * amplitude;
 }
 
 
 const PIXEL_GLYPHS: Record<string, string[]> = {
   "A": ["01110","10001","10001","11111","10001","10001","10001"],
+  "Y": ["10001","10001","01010","00100","00100","00100","00100"],
+  "P": ["11110","10001","10001","11110","10000","10000","10000"],
   "C": ["01111","10000","10000","10000","10000","10000","01111"],
   "D": ["11110","10001","10001","10001","10001","10001","11110"],
   "F": ["11111","10000","10000","11110","10000","10000","10000"],
@@ -247,137 +247,161 @@ function addPine(mesh: MeshBuilder, x: number, z: number, base: number, height: 
 
 function addMountain(mesh: MeshBuilder, zCenter: number, amplitude: number, seed: number) {
   const random = randomSource(seed);
-  const columns = 84;
-  const rows = 18;
+  const columns = 42, rows = 12;
   for (let zi = 0; zi < rows; zi++) {
-    const z0 = zCenter - 20 + (zi / rows) * 40;
-    const z1 = zCenter - 20 + ((zi + 1) / rows) * 40;
+    const z0 = zCenter - 15 + (zi / rows) * 30;
+    const z1 = zCenter - 15 + ((zi + 1) / rows) * 30;
     for (let xi = 0; xi < columns; xi++) {
-      const x0 = -56 + (xi / columns) * 112;
-      const x1 = -56 + ((xi + 1) / columns) * 112;
+      const x0 = -53 + (xi / columns) * 106;
+      const x1 = -53 + ((xi + 1) / columns) * 106;
       const heightAt = (x: number, z: number) => {
-        const depth = 0.78 + 0.22 * Math.max(0, 1 - Math.abs(z - zCenter) / 20);
-        const rough = Math.sin(x * 0.47 + z * 0.16 + seed) * 0.62
-          + Math.sin(x * 0.21 - z * 0.37 + seed * 0.2) * 0.36
-          + Math.sin(x * 0.91 + z * 0.12) * 0.16;
-        return terrainY(x * 0.34, z) + Math.max(0, mountainProfile(x, amplitude) * depth + rough);
+        const depth = Math.max(0, 1 - Math.abs(z - zCenter) / 16);
+        const ridged = mountainProfile(x, amplitude);
+        const erosion = Math.sin(x * 0.43 + z * 0.19 + seed) * 0.7 + Math.sin(x * 0.18 - z * 0.32) * 0.42;
+        return terrainY(x * 0.34, z) + Math.max(0, ridged * depth + erosion * depth);
       };
       const a: V3 = [x0, heightAt(x0, z0), z0];
       const b: V3 = [x0, heightAt(x0, z1), z1];
       const c: V3 = [x1, heightAt(x1, z1), z1];
       const d: V3 = [x1, heightAt(x1, z0), z0];
       const avg = (a[1] + b[1] + c[1] + d[1]) / 4;
-      const snowLine = 14.2 + Math.sin((x0 + x1) * 0.075) * 1.55;
-      const snowPatch = avg > snowLine && random() > 0.19;
-      let base: V3;
-      if (snowPatch) {
-        base = hex(random() > 0.48 ? "#d9e0df" : "#b9c8ce");
-      } else if (avg > 18) {
-        base = hex(random() > 0.5 ? "#4c5962" : "#394851");
-      } else if (avg > 11) {
-        base = hex(random() > 0.5 ? "#56666b" : "#657477");
-      } else {
-        base = hex(random() > 0.5 ? "#354449" : "#45565a");
-      }
-      const shadeA = 0.82 + random() * 0.34;
-      const shadeB = 0.76 + random() * 0.38;
-      const colorA: V3 = [base[0] * shadeA, base[1] * shadeA, base[2] * shadeA];
-      const colorB: V3 = [base[0] * shadeB, base[1] * shadeB, base[2] * shadeB];
-      // Triángulos alternados para conseguir caras rocosas y nieve facetada.
-      mesh.triangle(a, b, c, colorA);
-      mesh.triangle(a, c, d, colorB);
+      let palette: V3;
+      if (avg > 15.5) palette = hex(random() > 0.45 ? "#9da8a7" : "#b3b9b4");
+      else if (avg > 10) palette = hex(random() > 0.5 ? "#657274" : "#78817d");
+      else palette = hex(random() > 0.5 ? "#455355" : "#596462");
+      const shade = 0.86 + random() * 0.22;
+      const color: V3 = [palette[0] * shade, palette[1] * shade, palette[2] * shade];
+      mesh.quad(a, b, c, d, color);
     }
   }
 }
 
 
-function addTown(mesh: MeshBuilder) {
-  const addShop = (
-    x: number,
-    z: number,
-    width: number,
-    height: number,
-    depth: number,
-    wall: V3,
-    roof: V3,
-    label: string,
-    open = false,
-  ) => {
-    const ground = terrainY(x, z);
-    const front = z + depth / 2 + 0.08;
-    mesh.box([x, ground + height / 2, z], [width, height, depth], wall, hex("#333b3c"));
-    mesh.box([x, ground + height + 0.22, z], [width + 0.5, 0.42, depth + 0.35], roof);
-    mesh.box([x, ground + height * 0.78, front], [width * 0.76, 0.12, 0.08], hex("#c2a17a"));
-    mesh.box([x - width * 0.24, ground + height * 0.49, front], [width * 0.27, height * 0.34, 0.09], hex("#c6d4d1"), hex("#526d74"));
-    mesh.box([x + width * 0.11, ground + height * 0.49, front], [width * 0.27, height * 0.34, 0.09], hex("#c6d4d1"), hex("#526d74"));
-    mesh.box([x + width * 0.31, ground + height * 0.31, front + 0.015], [width * 0.17, height * 0.58, 0.13], hex("#4d382b"), hex("#211b17"));
-    mesh.box([x + width * 0.31, ground + height * 0.31, front + 0.09], [0.045, 0.045, 0.035], hex("#e6c18e"));
-    const signY = ground + height * 0.84;
-    mesh.box([x, signY, front + 0.12], [Math.max(3.1, width * 0.63), 0.75, 0.12], hex("#342d28"), hex("#51443a"));
-    addPixelText(mesh, label, x, signY + 0.02, front + 0.2, label.length > 5 ? 0.065 : 0.1, hex("#f0dfbd"));
-    if (open) {
-      mesh.box([x, ground + height * 0.61, front + 0.14], [3.6, 0.5, 0.1], hex("#1d4938"), hex("#245e45"));
-      addPixelText(mesh, "ABIERTO", x, ground + height * 0.61 + 0.01, front + 0.205, 0.062, hex("#d5f0c7"));
-      mesh.box([x - width * 0.24, ground + height * 0.49, front + 0.11], [width * 0.27, height * 0.34, 0.035], hex("#f1bd74"));
-      mesh.box([x + width * 0.11, ground + height * 0.49, front + 0.11], [width * 0.27, height * 0.34, 0.035], hex("#eab56d"));
-      mesh.box([x, ground + height + 0.64, front + 0.04], [0.2, 0.75, 0.2], hex("#39312a"));
-      mesh.box([x, ground + height + 1.03, front + 0.04], [0.72, 0.18, 0.48], hex("#ffd28d"));
-    }
+function addRoadsideMountainRange(
+  mesh: MeshBuilder,
+  side: -1 | 1,
+  seed: number,
+  innerDistance: number,
+  outerDistance: number,
+  heightBase: number,
+) {
+  const random = randomSource(seed);
+  const sections = 30;
+  const startZ = 14;
+  const endZ = -94;
+  const section = (z: number) => {
+    const fade = z < -76 ? Math.max(0.12, (z + 94) / 18) : 1;
+    const sway = Math.sin(z * 0.043 + seed) * 3.8 + Math.sin(z * 0.091 + seed * 0.3) * 1.9;
+    const peakX = side * (innerDistance + 7.5 + Math.sin(z * 0.067 + seed) * 2.2);
+    const footY = terrainY(side * innerDistance, z);
+    const peakY = footY + (heightBase + sway + random() * 2.4) * fade;
+    const outerY = terrainY(side * outerDistance, z);
+    return {
+      inner: [side * innerDistance, footY, z] as V3,
+      peak: [peakX, peakY, z] as V3,
+      outer: [side * outerDistance, outerY, z] as V3,
+    };
   };
-
-  const addHouse = (x: number, z: number, wall: V3, roof: V3) => {
-    const ground = terrainY(x, z);
-    const width = 7.4;
-    const height = 3.7;
-    const depth = 6.8;
-    const front = z + depth / 2 + 0.05;
-    mesh.box([x, ground + height / 2, z], [width, height, depth], wall, hex("#554f46"));
-    mesh.triangle(
-      [x - width / 2 - 0.35, ground + height, front],
-      [x, ground + height + 2.1, front],
-      [x + width / 2 + 0.35, ground + height, front],
-      roof,
-    );
-    mesh.triangle(
-      [x - width / 2 - 0.35, ground + height, z - depth / 2],
-      [x + width / 2 + 0.35, ground + height, z - depth / 2],
-      [x, ground + height + 2.1, z - depth / 2],
-      hex("#394348"),
-    );
-    mesh.box([x - 1.75, ground + 2.1, front + 0.08], [1.35, 1.25, 0.09], hex("#b7ced0"), hex("#526f76"));
-    mesh.box([x + 1.2, ground + 2.1, front + 0.08], [1.25, 1.25, 0.09], hex("#e5bb79"), hex("#806247"));
-    mesh.box([x + 2.45, ground + 1.1, front + 0.1], [0.9, 2.2, 0.12], hex("#49372c"));
-  };
-
-  // Cartel de ingreso, grande y aislado de los árboles de la banquina.
-  const welcomeX = roadCenter(-146) - 10.8;
-  const welcomeZ = -146;
-  const welcomeGround = terrainY(welcomeX, welcomeZ);
-  mesh.box([welcomeX, welcomeGround + 2.38, welcomeZ], [10.2, 2.65, 0.28], hex("#263d43"), hex("#38585d"));
-  mesh.box([welcomeX, welcomeGround + 2.38, welcomeZ + 0.17], [9.8, 2.27, 0.08], hex("#174c43"));
-  mesh.box([welcomeX - 4.35, welcomeGround + 1.25, welcomeZ], [0.22, 2.5, 0.24], hex("#4b4033"));
-  mesh.box([welcomeX + 4.35, welcomeGround + 1.25, welcomeZ], [0.22, 2.5, 0.24], hex("#4b4033"));
-  addPixelText(mesh, "BIENVENIDO", welcomeX, welcomeGround + 2.85, welcomeZ + 0.23, 0.115, hex("#f2e9d6"));
-  addPixelText(mesh, "A EL BOLSÓN", welcomeX, welcomeGround + 1.97, welcomeZ + 0.23, 0.1, hex("#f2e9d6"));
-
-  addShop(-13.5, -164, 7.8, 4.6, 6.8, hex("#74604d"), hex("#34383a"), "CAFE");
-  addHouse(14.8, -160, hex("#8a715d"), hex("#34383a"));
-  addShop(13.2, -176, 7.2, 4.1, 6.2, hex("#69594b"), hex("#3c4243"), "TIENDA");
-  addHouse(-14.2, -181, hex("#78634f"), hex("#34383a"));
-  addShop(10.7, -190, 10.2, 5.0, 8.0, hex("#60483b"), hex("#2f3338"), "BAR", true);
-
-  // Faroles encendidos al atardecer y reflejo cálido sobre la calle.
-  for (const z of [-154, -170, -186, -202]) {
-    for (const side of [-1, 1]) {
-      const x = roadCenter(z) + side * 6.5;
-      const y = terrainY(x, z);
-      mesh.box([x, y + 3.0, z], [0.15, 6.0, 0.15], hex("#3d3932"));
-      mesh.beam([x, y + 5.6, z], [x - side * 1.2, y + 5.6, z - 0.35], 0.1, hex("#4c4940"));
-      mesh.box([x - side * 1.2, y + 5.48, z - 0.35], [0.56, 0.22, 0.45], hex("#ffd08a"));
-      mesh.box([x - side * 1.2, y + 5.32, z - 0.35], [0.8, 0.08, 0.66], hex("#e5a95f"));
+  let previous = section(startZ);
+  for (let i = 1; i <= sections; i++) {
+    const z = startZ + (endZ - startZ) * (i / sections);
+    const next = section(z);
+    const rock = hex(random() > 0.5 ? "#435058" : "#53616a");
+    const shadow = hex(random() > 0.5 ? "#303d45" : "#394951");
+    const lit = hex(random() > 0.5 ? "#69777c" : "#5e6d73");
+    mesh.triangle(previous.inner, previous.peak, next.peak, shadow);
+    mesh.triangle(previous.inner, next.peak, next.inner, rock);
+    mesh.triangle(previous.peak, previous.outer, next.outer, lit);
+    mesh.triangle(previous.peak, next.outer, next.peak, rock);
+    if (i % 2 === 0 && heightBase > 15) {
+      const snow = hex("#aeb9bc");
+      mesh.triangle(previous.peak, next.peak, [next.peak[0], next.peak[1] - 0.9, next.peak[2]], snow);
     }
+    previous = next;
   }
 }
+
+function addYPFStation(mesh: MeshBuilder) {
+  const stationX = 11.2;
+  const stationZ = -166;
+  const ground = terrainY(stationX, stationZ);
+  const blue = hex("#0875b9");
+  const deepBlue = hex("#07548b");
+  const white = hex("#e6edf0");
+  const concrete = hex("#777b7a");
+
+  // Playa de ingreso y pavimento de hormigón, separado de la Ruta 40.
+  mesh.quad(
+    [0.5, 0.19, -151], [25.5, 0.19, -151],
+    [25.5, 0.19, -184], [0.5, 0.19, -184],
+    hex("#55595a"),
+  );
+  mesh.quad(
+    [2.8, 0.205, -152], [25.5, 0.205, -152],
+    [25.5, 0.205, -154.5], [2.8, 0.205, -154.5],
+    hex("#7a7b74"),
+  );
+
+  // Edificio de servicios al fondo de la playa.
+  mesh.box([20.3, ground + 2.05, -174.8], [8.5, 4.1, 7.4], hex("#d5d8d4"), hex("#b6c0c2"));
+  mesh.box([20.3, ground + 4.25, -174.8], [9.0, 0.48, 7.9], deepBlue);
+  mesh.box([20.3, ground + 2.5, -170.98], [5.8, 1.8, 0.12], hex("#8eb2c4"), hex("#416477"));
+  mesh.box([23.25, ground + 1.55, -170.88], [1.05, 2.65, 0.16], hex("#6b523b"));
+
+  // Marquesina azul de YPF con iluminación blanca inferior.
+  mesh.box([11.4, ground + 5.55, stationZ], [18.2, 0.62, 11.2], blue, deepBlue);
+  mesh.box([11.4, ground + 5.19, stationZ + 0.02], [18.35, 0.1, 11.3], white);
+  mesh.box([11.4, ground + 5.18, stationZ + 5.62], [18.1, 0.72, 0.42], deepBlue);
+  addPixelText(mesh, "YPF", 11.4, ground + 5.08, stationZ + 5.86, 0.25, white);
+  mesh.box([11.4, ground + 5.0, stationZ - 5.6], [18.1, 0.28, 0.38], hex("#064b7a"));
+
+  // Columnas estructurales blancas con zócalos azules.
+  for (const x of [3.5, 19.2]) {
+    for (const z of [stationZ - 4.25, stationZ + 4.25]) {
+      mesh.box([x, ground + 2.75, z], [0.42, 5.1, 0.42], white);
+      mesh.box([x, ground + 0.42, z], [0.62, 0.82, 0.62], deepBlue);
+    }
+  }
+
+  // Surtidores blancos y azules, pantallas, mangueras y pistolas.
+  for (const x of [6.8, 13.7]) {
+    mesh.box([x, ground + 0.2, stationZ + 0.6], [3.25, 0.4, 2.0], concrete);
+    mesh.box([x, ground + 1.55, stationZ + 0.6], [1.52, 2.45, 1.05], white, hex("#c5d1d4"));
+    mesh.box([x, ground + 1.85, stationZ + 1.16], [1.12, 0.66, 0.055], hex("#122b38"));
+    mesh.box([x, ground + 1.18, stationZ + 1.17], [1.12, 0.36, 0.055], blue);
+    mesh.box([x, ground + 0.35, stationZ + 1.17], [0.52, 0.2, 0.055], deepBlue);
+    mesh.beam([x + 0.76, ground + 1.9, stationZ + 0.35], [x + 1.18, ground + 0.8, stationZ + 0.1], 0.075, hex("#202529"));
+    mesh.beam([x + 1.18, ground + 0.8, stationZ + 0.1], [x + 0.98, ground + 0.58, stationZ + 0.26], 0.11, hex("#252c30"));
+    mesh.box([x + 1.03, ground + 0.53, stationZ + 0.28], [0.16, 0.22, 0.28], hex("#111a20"));
+  }
+
+  // Cartel vertical de la estación, visible desde la ruta.
+  mesh.box([24.7, ground + 4.35, -160.5], [0.32, 8.4, 0.32], hex("#f1f1e9"));
+  mesh.box([24.7, ground + 8.35, -160.5], [3.4, 3.0, 0.34], deepBlue);
+  mesh.box([24.7, ground + 8.35, -160.28], [3.18, 2.76, 0.08], blue);
+  addPixelText(mesh, "YPF", 24.7, ground + 8.42, -160.19, 0.24, white);
+  mesh.box([24.7, ground + 6.15, -160.28], [2.95, 0.1, 0.08], white);
+
+  // Playero low poly con uniforme azul, gorra, rostro y brazos.
+  const attendantX = 16.1;
+  const attendantZ = -164.7;
+  mesh.box([attendantX, ground + 0.65, attendantZ], [0.82, 1.25, 0.48], deepBlue);
+  mesh.box([attendantX, ground + 1.54, attendantZ], [0.58, 0.62, 0.52], hex("#bb896b"));
+  mesh.box([attendantX, ground + 1.9, attendantZ], [0.68, 0.15, 0.62], blue);
+  mesh.box([attendantX, ground + 1.42, attendantZ + 0.27], [0.34, 0.06, 0.035], hex("#24292b"));
+  mesh.beam([attendantX - 0.35, ground + 1.0, attendantZ], [attendantX - 0.82, ground + 0.72, attendantZ + 0.22], 0.17, deepBlue);
+  mesh.beam([attendantX + 0.35, ground + 1.0, attendantZ], [attendantX + 0.8, ground + 0.8, attendantZ + 0.22], 0.17, deepBlue);
+  mesh.beam([attendantX - 0.17, ground + 0.1, attendantZ], [attendantX - 0.2, ground - 0.58, attendantZ], 0.2, hex("#202b35"));
+  mesh.beam([attendantX + 0.17, ground + 0.1, attendantZ], [attendantX + 0.2, ground - 0.58, attendantZ], 0.2, hex("#202b35"));
+  mesh.box([attendantX, ground + 0.92, attendantZ + 0.28], [0.42, 0.14, 0.1], white);
+  addPixelText(mesh, "YPF", attendantX, ground + 0.91, attendantZ + 0.34, 0.052, deepBlue);
+
+  // Farol de playa y luminarias cálidas debajo de la marquesina.
+  for (const x of [4.0, 18.8]) {
+    mesh.box([x, ground + 5.1, stationZ], [0.08, 0.08, 0.9], hex("#f6dba8"));
+  }
+}
+
 
 function buildWorld() {
   const world = new MeshBuilder();
@@ -405,6 +429,11 @@ function buildWorld() {
   // Dos cordones de montaña y el Piltriquitrón al fondo, todos con relieve real.
   addMountain(world, -135, 0.63, 17);
   addMountain(world, -101, 1, 91);
+  // Cordillera rocosa en ambos laterales, lejos del asfalto y de la playa YPF.
+  addRoadsideMountainRange(world, -1, 31, 11, 49, 17);
+  addRoadsideMountainRange(world, 1, 47, 11, 49, 17);
+  addRoadsideMountainRange(world, -1, 71, 48, 82, 23);
+  addRoadsideMountainRange(world, 1, 89, 48, 82, 23);
 
   // Banquinas, asfalto, marcas viales y pequeños parches de pavimento.
   for (let z = -292; z < 17; z += 2.5) {
@@ -518,7 +547,7 @@ function buildWorld() {
   world.box([destinationX, destinationY + 1.4, destinationSignZ + 0.2], [1.0, 0.12, 0.08], hex("#f4d8a1"));
   addPixelText(world, "EL BOLSÓN", destinationX, destinationY + 0.48, destinationSignZ + 0.23, 0.145, hex("#fff3db"));
   addPixelText(world, "2 KILÓMETROS", destinationX, destinationY - 0.55, destinationSignZ + 0.23, 0.11, hex("#fff3db"));
-  addTown(world);
+  addYPFStation(world);
 
   return world;
 }
@@ -553,6 +582,17 @@ function buildHeadlights() {
   lights.triangle([-0.45, 0.2, -2.1], [-5.3, 0.16, -39], [-0.2, 0.16, -39], warm);
   lights.triangle([0.45, 0.2, -2.1], [0.2, 0.16, -39], [5.3, 0.16, -39], warm);
   return lights;
+}
+
+function buildRefuelHose() {
+  const hose = new MeshBuilder();
+  const rubber = hex("#171b1e");
+  hose.beam([8.0, 1.95, -2.2], [7.0, 1.35, -1.7], 0.075, rubber);
+  hose.beam([7.0, 1.35, -1.7], [4.6, 0.95, -0.9], 0.065, rubber);
+  hose.beam([4.6, 0.95, -0.9], [1.02, 0.88, 0.78], 0.055, rubber);
+  hose.box([1.02, 0.86, 0.78], [0.15, 0.28, 0.34], hex("#232a2f"));
+  hose.beam([1.02, 0.98, 0.78], [0.91, 1.16, 0.62], 0.045, hex("#8b969b"));
+  return hose;
 }
 
 function buildCockpit() {
@@ -804,17 +844,76 @@ function bindMesh(
   gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
 }
 
+
+type EngineAudio = {
+  context: AudioContext; oscillator: OscillatorNode; secondOscillator: OscillatorNode;
+  filter: BiquadFilterNode; gain: GainNode;
+  setThrottle: (value: number) => void; stop: () => void; destroy: () => void;
+};
+function createEngineAudio(): EngineAudio {
+  const context = new window.AudioContext();
+  const filter = context.createBiquadFilter();
+  filter.type = "lowpass"; filter.frequency.value = 185; filter.Q.value = 0.7;
+  const gain = context.createGain(); gain.gain.value = 0;
+  filter.connect(gain); gain.connect(context.destination);
+  const oscillator = context.createOscillator();
+  oscillator.type = "sawtooth"; oscillator.frequency.value = 52;
+  oscillator.connect(filter); oscillator.start();
+  const secondOscillator = context.createOscillator();
+  secondOscillator.type = "triangle"; secondOscillator.frequency.value = 34;
+  const secondGain = context.createGain(); secondGain.gain.value = 0.24;
+  secondOscillator.connect(secondGain); secondGain.connect(filter); secondOscillator.start();
+  return {
+    context, oscillator, secondOscillator, filter, gain,
+    setThrottle(value: number) {
+      const amount = clamp(value, 0, 1), now = context.currentTime;
+      oscillator.frequency.setTargetAtTime(48 + amount * 74, now, 0.09);
+      secondOscillator.frequency.setTargetAtTime(31 + amount * 25, now, 0.12);
+      filter.frequency.setTargetAtTime(150 + amount * 620, now, 0.14);
+      gain.gain.setTargetAtTime(amount > 0 ? 0.035 + amount * 0.055 : 0, now, 0.18);
+    },
+    stop() { gain.gain.setTargetAtTime(0, context.currentTime, 0.24); },
+    destroy() {
+      try { oscillator.stop(); } catch { /* Ya detenido */ }
+      try { secondOscillator.stop(); } catch { /* Ya detenido */ }
+      void context.close();
+    },
+  };
+}
+
 export function Route40LowPolyOpening() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const titleRef = useRef<HTMLDivElement | null>(null);
   const blackRef = useRef<HTMLDivElement | null>(null);
   const endingTitleRef = useRef<HTMLDivElement | null>(null);
   const gameHudRef = useRef<HTMLDivElement | null>(null);
-  const arrivalRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef<HTMLDivElement | null>(null);
+  const speedRef = useRef<HTMLSpanElement | null>(null);
+  const fuelProgressRef = useRef<HTMLDivElement | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
-  const [arrived, setArrived] = useState(false);
+  const stageRef = useRef<"driving" | "stopped" | "onFoot" | "fueling" | "payment" | "warning">("driving");
+  const fuelStartedAtRef = useRef(0);
+  const exitStartedAtRef = useRef(0);
+  const warningStartedAtRef = useRef(0);
+  const engineAudioRef = useRef<EngineAudio | null>(null);
+  const [interactionStage, setInteractionStage] = useState<"driving" | "stopped" | "onFoot" | "fueling" | "payment" | "warning">("driving");
   const [fallback, setFallback] = useState(false);
+  const setStage = (next: "driving" | "stopped" | "onFoot" | "fueling" | "payment" | "warning") => {
+    stageRef.current = next;
+    if (next === "fueling") fuelStartedAtRef.current = performance.now();
+    if (next === "onFoot") exitStartedAtRef.current = performance.now();
+    if (next === "warning") warningStartedAtRef.current = performance.now();
+    setInteractionStage(next);
+  };
+  const startEngineAudio = () => {
+    try {
+      if (!engineAudioRef.current) engineAudioRef.current = createEngineAudio();
+      void engineAudioRef.current.context.resume();
+      engineAudioRef.current.setThrottle(0.32);
+    } catch (error) {
+      console.warn("El sonido del motor no está disponible en este navegador", error);
+    }
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -841,16 +940,26 @@ export function Route40LowPolyOpening() {
     let laneOffset = 0;
     let lookYaw = 0;
     let lookPitch = 0;
-    let arrivedLocal = false;
+    let fuelingComplete = false;
     const keys = keysRef.current;
     keys.clear();
-    setArrived(false);
-
+    stageRef.current = "driving";
+    setInteractionStage("driving");
+    const advanceInteraction = () => {
+      const stage = stageRef.current;
+      if (stage === "stopped") setStage("onFoot");
+      else if (stage === "onFoot") setStage("fueling");
+      else if (stage === "payment") setStage("warning");
+    };
     const onKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
       if (["w", "a", "d", "arrowleft", "arrowright", "arrowup", "arrowdown", "q", "e"].includes(key)) {
         if (key.startsWith("arrow")) event.preventDefault();
         keys.add(key);
+      }
+      if (key === "w" && stageRef.current === "driving" && performance.now() - startedAt >= DURATION * 1000) startEngineAudio();
+      if (key === "e" && !event.repeat && stageRef.current !== "driving" && stageRef.current !== "fueling" && stageRef.current !== "warning") {
+        event.preventDefault(); advanceInteraction(); keys.delete("e");
       }
     };
     const onKeyUp = (event: KeyboardEvent) => keys.delete(event.key.toLowerCase());
@@ -888,6 +997,7 @@ export function Route40LowPolyOpening() {
     let lightMesh: Mesh | null = null;
     let cockpitMesh: Mesh | null = null;
     let windshieldMesh: Mesh | null = null;
+    let fuelHoseMesh: Mesh | null = null;
     let program: WebGLProgram | null = null;
 
     try {
@@ -909,6 +1019,7 @@ export function Route40LowPolyOpening() {
       lightMesh = createMesh(gl, buildHeadlights());
       cockpitMesh = createMesh(gl, buildCockpit());
       windshieldMesh = createMesh(gl, buildWindshield());
+      fuelHoseMesh = createMesh(gl, buildRefuelHose());
     } catch (error) {
       console.error("No se pudo iniciar la escena low poly de Ruta 40", error);
       if (program) gl.deleteProgram(program);
@@ -930,7 +1041,7 @@ export function Route40LowPolyOpening() {
     setFallback(false);
 
     const animate = (now: number) => {
-      if (!active || !program || !worldMesh || !carMesh || !lightMesh || !cockpitMesh || !windshieldMesh) return;
+      if (!active || !program || !worldMesh || !carMesh || !lightMesh || !cockpitMesh || !windshieldMesh || !fuelHoseMesh) return;
       if (!started) {
         startedAt = now;
         previousFrame = now;
@@ -940,7 +1051,7 @@ export function Route40LowPolyOpening() {
       const dt = clamp((now - previousFrame) / 1000, 0, 0.05);
       previousFrame = now;
 
-      if (elapsed >= DURATION && !arrivedLocal) {
+      if (elapsed >= DURATION && stageRef.current === "driving") {
         if (keys.has("w")) {
           driveSpeed = Math.min(5.4, driveSpeed + dt * 3.8);
           driveElapsed += dt;
@@ -950,15 +1061,16 @@ export function Route40LowPolyOpening() {
         if (keys.has("a")) laneOffset = clamp(laneOffset - dt * 2.15, -2.35, 2.35);
         if (keys.has("d")) laneOffset = clamp(laneOffset + dt * 2.15, -2.35, 2.35);
         if (keys.has("arrowleft") || keys.has("q")) lookYaw = clamp(lookYaw - dt * 1.15, -1.18, 1.18);
-        if (keys.has("arrowright") || keys.has("e")) lookYaw = clamp(lookYaw + dt * 1.15, -1.18, 1.18);
+        if (keys.has("arrowright")) lookYaw = clamp(lookYaw + dt * 1.15, -1.18, 1.18);
         if (keys.has("arrowup")) lookPitch = clamp(lookPitch + dt * 0.7, -0.42, 0.42);
         if (keys.has("arrowdown")) lookPitch = clamp(lookPitch - dt * 0.7, -0.42, 0.42);
         travelled += driveSpeed * dt;
         if (driveElapsed >= 20) {
-          arrivedLocal = true;
-          driveSpeed = 0;
-          setArrived(true);
+          driveSpeed = 0; keys.clear(); setStage("stopped");
         }
+      }
+      if (stageRef.current === "fueling" && !fuelingComplete && now - fuelStartedAtRef.current >= 3400) {
+        fuelingComplete = true; setStage("payment");
       }
       const rect = canvas.getBoundingClientRect();
       const width = Math.max(1, rect.width);
@@ -981,38 +1093,66 @@ export function Route40LowPolyOpening() {
       const transition = smooth(4.48, 5.95, elapsed);
       const aerialEye: V3 = [0, 38, carZ + 13];
       const aerialTarget: V3 = [0, 0, carZ - 1.5];
-      const driverEye: V3 = [carX, 1.57, carZ + 0.56];
+      const outsideStage = stageRef.current === "onFoot" || stageRef.current === "fueling" ||
+        stageRef.current === "payment" || stageRef.current === "warning";
+      const shake = transition * (0.004 + driveSpeed * 0.0016) * (outsideStage ? 0 : 1);
+      const shakeX = Math.sin(now * 0.024) * shake;
+      const shakeY = Math.sin(now * 0.039) * shake * 0.62;
+      const driverEye: V3 = [carX + shakeX, 1.57 + shakeY, carZ + 0.56];
       const driverTarget: V3 = elapsed < DURATION
-        ? [Math.sin(elapsed * 0.44) * 0.35, 2.6, carZ - 39]
+        ? [Math.sin(elapsed * 0.44) * 0.35 + shakeX * 0.7, 2.6 + shakeY, carZ - 39]
         : [
-            carX + Math.sin(lookYaw) * 39,
-            2.6 + lookPitch * 18,
+            carX + Math.sin(lookYaw) * 39 + shakeX,
+            2.6 + lookPitch * 18 + shakeY,
             carZ + 0.56 - Math.cos(lookYaw) * 39,
           ];
-      const eye: V3 = [
+      const cockpitEye: V3 = [
         mix(aerialEye[0], driverEye[0], transition),
         mix(aerialEye[1], driverEye[1], transition),
         mix(aerialEye[2], driverEye[2], transition),
       ];
-      const target: V3 = [
+      const cockpitTarget: V3 = [
         mix(aerialTarget[0], driverTarget[0], transition),
         mix(aerialTarget[1], driverTarget[1], transition),
         mix(aerialTarget[2], driverTarget[2], transition),
       ];
+      const footEye: V3 = [carX + 2.8, 1.72, carZ + 0.82];
+      const warningLook = stageRef.current === "warning"
+        ? smooth(0, 0.9, (now - warningStartedAtRef.current) / 1000)
+        : 0;
+      const footTarget: V3 = [16.1, mix(2.25, 3.9, warningLook), -164.2];
+      const exitBlend = outsideStage
+        ? smooth(0, 0.9, (now - exitStartedAtRef.current) / 1000)
+        : 0;
+      const eye: V3 = [
+        mix(cockpitEye[0], footEye[0], exitBlend),
+        mix(cockpitEye[1], footEye[1], exitBlend),
+        mix(cockpitEye[2], footEye[2], exitBlend),
+      ];
+      const target: V3 = [
+        mix(cockpitTarget[0], footTarget[0], exitBlend),
+        mix(cockpitTarget[1], footTarget[1], exitBlend),
+        mix(cockpitTarget[2], footTarget[2], exitBlend),
+      ];
       const fov = mix(49, 66, transition) * Math.PI / 180;
       const projection = perspective(fov, width / height, 0.1, 340);
-      const view = lookAt(eye, target, [0, 1, 0]);
+      const cameraUp: V3 = [
+        Math.sin(now * 0.021) * shake * 0.16,
+        1,
+        Math.sin(now * 0.017) * shake * 0.12,
+      ];
+      const view = lookAt(eye, target, cameraUp);
       const viewProjection = multiply(projection, view);
       const identity = translation(0, 0, 0);
       bindMesh(gl, program, worldMesh, viewProjection, view, identity);
 
       const carModel = translation(carX, 0, carZ);
       const aerialVisibility = 1 - smooth(5.1, 5.95, elapsed);
-      if (aerialVisibility > 0.01) {
+      if (aerialVisibility > 0.01 || outsideStage) {
         bindMesh(gl, program, carMesh, viewProjection, view, carModel);
       }
       const lightVisibility = smooth(4.8, 5.65, elapsed);
-      if (lightVisibility > 0.01) {
+      if (lightVisibility > 0.01 && !outsideStage) {
         bindMesh(gl, program, lightMesh, viewProjection, view, carModel);
         bindMesh(gl, program, cockpitMesh, viewProjection, view, carModel);
         gl.enable(gl.BLEND);
@@ -1021,6 +1161,18 @@ export function Route40LowPolyOpening() {
         bindMesh(gl, program, windshieldMesh, viewProjection, view, carModel, 0.13);
         gl.depthMask(true);
         gl.disable(gl.BLEND);
+      }
+
+      if (stageRef.current === "fueling") {
+        bindMesh(gl, program, fuelHoseMesh, viewProjection, view, carModel);
+      }
+      if (engineAudioRef.current) {
+        if (stageRef.current === "driving" && elapsed >= DURATION) {
+          const throttle = keys.has("w") ? 0.2 + (driveSpeed / 5.4) * 0.8 : 0.12;
+          engineAudioRef.current.setThrottle(throttle);
+        } else {
+          engineAudioRef.current.stop();
+        }
       }
 
       if (titleRef.current) {
@@ -1037,14 +1189,17 @@ export function Route40LowPolyOpening() {
       }
       if (gameHudRef.current) {
         gameHudRef.current.style.opacity = String(
-          smooth(DURATION + 0.1, DURATION + 0.9, elapsed) * (arrivedLocal ? 0.32 : 1),
+          smooth(DURATION + 0.1, DURATION + 0.9, elapsed) *
+          (stageRef.current === "driving" ? 1 : 0),
         );
       }
       if (progressRef.current) {
         progressRef.current.style.width = String(clamp(driveElapsed / 20, 0, 1) * 100) + "%";
       }
-      if (arrivalRef.current) {
-        arrivalRef.current.style.opacity = arrivedLocal ? "1" : "0";
+      if (speedRef.current) speedRef.current.textContent = String(Math.round(driveSpeed * 19));
+      if (fuelProgressRef.current) {
+        const fill = clamp((now - fuelStartedAtRef.current) / 3400, 0, 1) * 100;
+        fuelProgressRef.current.style.width = String(fill) + "%";
       }
 
       frame = window.requestAnimationFrame(animate);
@@ -1054,6 +1209,8 @@ export function Route40LowPolyOpening() {
     return () => {
       active = false;
       keys.clear();
+      engineAudioRef.current?.destroy();
+      engineAudioRef.current = null;
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
@@ -1067,6 +1224,7 @@ export function Route40LowPolyOpening() {
       if (lightMesh) gl.deleteBuffer(lightMesh.buffer);
       if (cockpitMesh) gl.deleteBuffer(cockpitMesh.buffer);
       if (windshieldMesh) gl.deleteBuffer(windshieldMesh.buffer);
+      if (fuelHoseMesh) gl.deleteBuffer(fuelHoseMesh.buffer);
       if (program) gl.deleteProgram(program);
     };
   }, []);
@@ -1122,12 +1280,13 @@ export function Route40LowPolyOpening() {
         className="pointer-events-none absolute inset-x-0 bottom-5 z-30 flex flex-col items-center gap-2 px-3 text-center transition-opacity duration-300"
         style={{ opacity: 0 }}
       >
-        <div className="rounded-sm border border-amber-100/25 bg-[#101820]/70 px-4 py-2 font-mono text-[10px] tracking-[.14em] text-amber-50 shadow-[0_0_30px_rgba(255,176,105,.14)] backdrop-blur-md sm:text-xs">
-          W · AVANZAR
-          <span className="mx-3 text-amber-100/35">|</span>
-          A / D · MOVERSE POR LA RUTA
-          <span className="mx-3 text-amber-100/35">|</span>
-          ARRASTRÁ EL MOUSE · MIRAR
+        <div className="rounded-sm border border-amber-100/25 bg-[#101820]/70 px-4 py-2 font-mono text-[10px] tracking-[.12em] text-amber-50 shadow-[0_0_30px_rgba(255,176,105,.14)] backdrop-blur-md sm:text-xs">
+          W · ACELERAR
+          <span className="mx-2 text-amber-100/35">|</span>
+          A / D · MANTENERSE EN LA RUTA
+          <span className="mx-2 text-amber-100/35">|</span>
+          ARRASTRÁ PARA MIRAR
+          <span className="ml-3 border-l border-amber-100/20 pl-3 tabular-nums"><span ref={speedRef}>0</span> KM/H</span>
         </div>
         <div className="h-1 w-44 overflow-hidden rounded-full bg-white/15">
           <div ref={progressRef} className="h-full w-0 bg-amber-200 shadow-[0_0_12px_rgba(255,206,137,.9)] transition-[width] duration-100" />
@@ -1137,7 +1296,11 @@ export function Route40LowPolyOpening() {
             <button
               key={key}
               type="button"
-              onPointerDown={(event) => { event.preventDefault(); keysRef.current.add(key); }}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                keysRef.current.add(key);
+                if (key === "w") startEngineAudio();
+              }}
               onPointerUp={() => keysRef.current.delete(key)}
               onPointerLeave={() => keysRef.current.delete(key)}
               onPointerCancel={() => keysRef.current.delete(key)}
@@ -1149,20 +1312,64 @@ export function Route40LowPolyOpening() {
           ))}
         </div>
       </div>
-      {arrived && (
-      <div
-        ref={arrivalRef}
-        className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-[#090d10]/20 px-5 text-center transition-opacity duration-700"
-        style={{ opacity: 0 }}
-      >
-        <div className="border-y border-amber-100/25 bg-[#101820]/80 px-8 py-8 shadow-[0_0_70px_rgba(243,159,92,.2)] backdrop-blur-md">
-          <p className="font-mono text-[10px] tracking-[.34em] text-amber-100/70">HAS LLEGADO</p>
-          <p className="mt-3 font-serif text-3xl tracking-[.13em] text-[#f4dfc6] sm:text-5xl">EL BOLSÓN</p>
-          <p className="mt-3 font-mono text-xs tracking-[.3em] text-amber-100">BAR ABIERTO</p>
-          <div className="mx-auto mt-6 h-px w-20 bg-amber-100/45" />
-          <p className="mt-5 font-serif text-2xl tracking-[.2em] text-[#eac9a8] sm:text-3xl">CONTINUARÁ</p>
+      {interactionStage !== "driving" && (
+        <div className="pointer-events-none absolute inset-0 z-40 flex items-end justify-center px-4 pb-[max(92px,env(safe-area-inset-bottom))] sm:items-center sm:pb-0">
+          <div className="pointer-events-auto w-full max-w-lg border border-sky-200/25 bg-[#091b2b]/90 px-6 py-6 text-center shadow-[0_0_65px_rgba(24,117,185,.22)] backdrop-blur-xl">
+            {interactionStage === "stopped" && (
+              <>
+                <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">ESTACIÓN DE SERVICIO</p>
+                <h2 className="mt-3 font-serif text-3xl tracking-[.12em] text-white">YPF · EL BOLSÓN</h2>
+                <p className="mt-3 text-sm text-slate-200">Detenés el auto junto a los surtidores. El motor se apaga.</p>
+                <button type="button" onClick={() => setStage("onFoot")} className="mt-6 min-h-12 w-full border border-sky-200/40 bg-[#0875b9] px-5 py-3 font-mono text-xs tracking-[.18em] text-white shadow-[0_0_24px_rgba(8,117,185,.28)] hover:bg-[#0a88d2]">
+                  BAJAR DEL AUTO <span className="text-sky-100/70">· E</span>
+                </button>
+              </>
+            )}
+            {interactionStage === "onFoot" && (
+              <>
+                <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">JUNTO AL SURTIDOR</p>
+                <h2 className="mt-3 font-serif text-3xl tracking-[.12em] text-white">CARGAR NAFTA</h2>
+                <p className="mt-3 text-sm text-slate-200">El playero se acerca con la manguera.</p>
+                <button type="button" onClick={() => setStage("fueling")} className="mt-6 min-h-12 w-full border border-sky-200/40 bg-[#0875b9] px-5 py-3 font-mono text-xs tracking-[.18em] text-white hover:bg-[#0a88d2]">
+                  PEDIR QUE CARGUE NAFTA <span className="text-sky-100/70">· E</span>
+                </button>
+              </>
+            )}
+            {interactionStage === "fueling" && (
+              <>
+                <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">YPF · CARGA DE COMBUSTIBLE</p>
+                <h2 className="mt-3 font-serif text-2xl text-white">El playero está cargando nafta...</h2>
+                <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/10">
+                  <div ref={fuelProgressRef} className="h-full w-0 bg-sky-300 shadow-[0_0_16px_rgba(125,211,252,.8)]" />
+                </div>
+              </>
+            )}
+            {interactionStage === "payment" && (
+              <>
+                <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">TANQUE LLENO</p>
+                <h2 className="mt-3 font-serif text-3xl text-white">Es hora de pagar</h2>
+                <p className="mt-2 text-sm text-slate-200">Sacás unos billetes y se los acercás al playero.</p>
+                <div className="mx-auto mt-5 flex h-16 w-36 rotate-[-4deg] items-center justify-center border-2 border-emerald-100/60 bg-emerald-900/80 font-serif text-2xl text-emerald-100 shadow-lg">
+                  $ · PESOS
+                </div>
+                <button type="button" onClick={() => setStage("warning")} className="mt-6 min-h-12 w-full border border-sky-200/40 bg-[#0875b9] px-5 py-3 font-mono text-xs tracking-[.18em] text-white hover:bg-[#0a88d2]">
+                  ENTREGAR DINERO <span className="text-sky-100/70">· E</span>
+                </button>
+              </>
+            )}
+            {interactionStage === "warning" && (
+              <>
+                <p className="font-mono text-[10px] tracking-[.34em] text-amber-200/75">EL PLAYERO</p>
+                <div className="relative mt-4 border border-amber-100/20 bg-[#101820] px-5 py-6 shadow-[0_0_36px_rgba(255,190,126,.12)]">
+                  <span className="absolute -top-3 left-6 bg-[#101820] px-2 font-serif text-sm text-amber-100">Te mira preocupado</span>
+                  <p className="font-serif text-xl leading-relaxed text-white sm:text-2xl">“Hay algo raro en el cielo. Ten cuidado.”</p>
+                </div>
+                <p className="mt-6 font-mono text-xs tracking-[.34em] text-sky-100/70">LA SEÑAL EN LA RUTA 40</p>
+                <p className="mt-2 font-serif text-2xl tracking-[.28em] text-amber-100">CONTINUARÁ</p>
+              </>
+            )}
+          </div>
         </div>
-      </div>
       )}
       <div className="pointer-events-none absolute bottom-3 right-4 z-40 font-mono text-[9px] tracking-[.2em] text-white/30">
         LA SEÑAL EN LA RUTA 40 · PLAY / SP
