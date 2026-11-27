@@ -152,26 +152,11 @@ function roadCenter(z: number) {
   return Math.sin(z * 0.023) * 1.7 + Math.sin(z * 0.061) * 0.5;
 }
 
-function mountainProfile(x: number, amplitude = 1) {
-  // Perfil inspirado en la cresta real del Piltriquitrón: hombro largo,
-  // varios picos nevados concentrados y una ladera oriental más abrupta.
-  const peaks: [number, number][] = [
-    [-56, 0.5], [-51, 1.5], [-46, 3.8], [-41, 7.2], [-36, 10.8],
-    [-32, 13.4], [-29, 11.7], [-26, 16.1], [-22, 14.2], [-18, 18.4],
-    [-14, 16.8], [-10, 22.6], [-6, 20.4], [-2, 25.5], [2, 22.3],
-    [6, 17.2], [10, 15.2], [13, 19.4], [17, 17.1], [21, 13.6],
-    [26, 11.9], [31, 9.2], [36, 6.8], [42, 4.2], [48, 1.7], [55, 0.4],
-  ];
-  for (let i = 0; i < peaks.length - 1; i++) {
-    const left = peaks[i]!, right = peaks[i + 1]!;
-    if (x >= left[0] && x <= right[0]) {
-      const t = (x - left[0]) / (right[0] - left[0]);
-      return mix(left[1], right[1], t) * amplitude;
-    }
-  }
-  return 0.5 * amplitude;
+function roadHeightAt(z: number) {
+  const progress = clamp((-z - 174) / 105, 0, 1);
+  const eased = progress * progress * (3 - 2 * progress);
+  return 0.18 + eased * 15.5;
 }
-
 
 const PIXEL_GLYPHS: Record<string, string[]> = {
   "A": ["01110","10001","10001","11111","10001","10001","10001"],
@@ -245,38 +230,6 @@ function addPine(mesh: MeshBuilder, x: number, z: number, base: number, height: 
   }
 }
 
-function addMountain(mesh: MeshBuilder, zCenter: number, amplitude: number, seed: number) {
-  const random = randomSource(seed);
-  const columns = 42, rows = 12;
-  for (let zi = 0; zi < rows; zi++) {
-    const z0 = zCenter - 15 + (zi / rows) * 30;
-    const z1 = zCenter - 15 + ((zi + 1) / rows) * 30;
-    for (let xi = 0; xi < columns; xi++) {
-      const x0 = -53 + (xi / columns) * 106;
-      const x1 = -53 + ((xi + 1) / columns) * 106;
-      const heightAt = (x: number, z: number) => {
-        const depth = Math.max(0, 1 - Math.abs(z - zCenter) / 16);
-        const ridged = mountainProfile(x, amplitude);
-        const erosion = Math.sin(x * 0.43 + z * 0.19 + seed) * 0.7 + Math.sin(x * 0.18 - z * 0.32) * 0.42;
-        return terrainY(x * 0.34, z) + Math.max(0, ridged * depth + erosion * depth);
-      };
-      const a: V3 = [x0, heightAt(x0, z0), z0];
-      const b: V3 = [x0, heightAt(x0, z1), z1];
-      const c: V3 = [x1, heightAt(x1, z1), z1];
-      const d: V3 = [x1, heightAt(x1, z0), z0];
-      const avg = (a[1] + b[1] + c[1] + d[1]) / 4;
-      let palette: V3;
-      if (avg > 15.5) palette = hex(random() > 0.45 ? "#9da8a7" : "#b3b9b4");
-      else if (avg > 10) palette = hex(random() > 0.5 ? "#657274" : "#78817d");
-      else palette = hex(random() > 0.5 ? "#455355" : "#596462");
-      const shade = 0.86 + random() * 0.22;
-      const color: V3 = [palette[0] * shade, palette[1] * shade, palette[2] * shade];
-      mesh.quad(a, b, c, d, color);
-    }
-  }
-}
-
-
 function addRoadsideMountainRange(
   mesh: MeshBuilder,
   side: -1 | 1,
@@ -288,14 +241,15 @@ function addRoadsideMountainRange(
   const random = randomSource(seed);
   const sections = 30;
   const startZ = 14;
-  const endZ = -94;
+  const endZ = -292;
   const section = (z: number) => {
-    const fade = z < -76 ? Math.max(0.12, (z + 94) / 18) : 1;
+    const fade = z < -268 ? Math.max(0.12, (z + 292) / 24) : 1;
     const sway = Math.sin(z * 0.043 + seed) * 3.8 + Math.sin(z * 0.091 + seed * 0.3) * 1.9;
     const peakX = side * (innerDistance + 7.5 + Math.sin(z * 0.067 + seed) * 2.2);
-    const footY = terrainY(side * innerDistance, z);
+    const roadLift = roadHeightAt(z) - 0.18;
+    const footY = terrainY(side * innerDistance, z) + roadLift;
     const peakY = footY + (heightBase + sway + random() * 2.4) * fade;
-    const outerY = terrainY(side * outerDistance, z);
+    const outerY = terrainY(side * outerDistance, z) + roadLift;
     return {
       inner: [side * innerDistance, footY, z] as V3,
       peak: [peakX, peakY, z] as V3,
@@ -382,19 +336,66 @@ function addYPFStation(mesh: MeshBuilder) {
   addPixelText(mesh, "YPF", 24.7, ground + 8.42, -160.19, 0.24, white);
   mesh.box([24.7, ground + 6.15, -160.28], [2.95, 0.1, 0.08], white);
 
-  // Playero low poly con uniforme azul, gorra, rostro y brazos.
+  // Playero de YPF: uniforme con bolsillos, pantalón, botas, gorra y rostro definido.
   const attendantX = 16.1;
   const attendantZ = -164.7;
-  mesh.box([attendantX, ground + 0.65, attendantZ], [0.82, 1.25, 0.48], deepBlue);
-  mesh.box([attendantX, ground + 1.54, attendantZ], [0.58, 0.62, 0.52], hex("#bb896b"));
-  mesh.box([attendantX, ground + 1.9, attendantZ], [0.68, 0.15, 0.62], blue);
-  mesh.box([attendantX, ground + 1.42, attendantZ + 0.27], [0.34, 0.06, 0.035], hex("#24292b"));
-  mesh.beam([attendantX - 0.35, ground + 1.0, attendantZ], [attendantX - 0.82, ground + 0.72, attendantZ + 0.22], 0.17, deepBlue);
-  mesh.beam([attendantX + 0.35, ground + 1.0, attendantZ], [attendantX + 0.8, ground + 0.8, attendantZ + 0.22], 0.17, deepBlue);
-  mesh.beam([attendantX - 0.17, ground + 0.1, attendantZ], [attendantX - 0.2, ground - 0.58, attendantZ], 0.2, hex("#202b35"));
-  mesh.beam([attendantX + 0.17, ground + 0.1, attendantZ], [attendantX + 0.2, ground - 0.58, attendantZ], 0.2, hex("#202b35"));
-  mesh.box([attendantX, ground + 0.92, attendantZ + 0.28], [0.42, 0.14, 0.1], white);
-  addPixelText(mesh, "YPF", attendantX, ground + 0.91, attendantZ + 0.34, 0.052, deepBlue);
+  const attendantGround = terrainY(attendantX, attendantZ);
+  const skinTone = hex("#b98768");
+  const skinLight = hex("#d2a184");
+  const navy = hex("#064f83");
+  const uniform = hex("#0875b9");
+  const uniformLight = hex("#268dcc");
+  const pants = hex("#24333e");
+  const boots = hex("#141d25");
+  const faceZ = attendantZ + 0.31;
+
+  // Piernas, rodillas y zapatos de trabajo.
+  mesh.box([attendantX - 0.2, attendantGround + 0.43, attendantZ], [0.27, 0.91, 0.34], pants);
+  mesh.box([attendantX + 0.2, attendantGround + 0.43, attendantZ], [0.27, 0.91, 0.34], pants);
+  mesh.box([attendantX - 0.22, attendantGround + 0.08, attendantZ + 0.13], [0.42, 0.18, 0.58], boots);
+  mesh.box([attendantX + 0.22, attendantGround + 0.08, attendantZ + 0.13], [0.42, 0.18, 0.58], boots);
+
+  // Torso del uniforme, cuello, solapas, cinturón y bolsillo.
+  mesh.box([attendantX, attendantGround + 1.23, attendantZ], [0.92, 1.18, 0.53], uniform, navy);
+  mesh.box([attendantX, attendantGround + 1.75, attendantZ + 0.03], [0.42, 0.18, 0.56], hex("#e3e9e8"));
+  mesh.beam([attendantX - 0.12, attendantGround + 1.72, faceZ], [attendantX, attendantGround + 1.49, faceZ + 0.015], 0.045, hex("#e5eeee"));
+  mesh.beam([attendantX + 0.12, attendantGround + 1.72, faceZ], [attendantX, attendantGround + 1.49, faceZ + 0.015], 0.045, hex("#e5eeee"));
+  mesh.box([attendantX, attendantGround + 0.78, faceZ], [0.9, 0.11, 0.55], navy);
+  mesh.box([attendantX - 0.27, attendantGround + 1.39, faceZ + 0.285], [0.23, 0.31, 0.035], uniformLight);
+  mesh.box([attendantX - 0.27, attendantGround + 1.42, faceZ + 0.31], [0.16, 0.055, 0.025], white);
+  addPixelText(mesh, "YPF", attendantX - 0.27, attendantGround + 1.4, faceZ + 0.34, 0.034, white);
+
+  // Brazos: el derecho queda extendido hacia el cliente para recibir el pago.
+  mesh.beam([attendantX - 0.43, attendantGround + 1.62, attendantZ], [attendantX - 0.76, attendantGround + 1.34, attendantZ + 0.08], 0.25, navy);
+  mesh.beam([attendantX - 0.76, attendantGround + 1.34, attendantZ + 0.08], [attendantX - 1.25, attendantGround + 1.51, attendantZ + 0.16], 0.18, skinTone);
+  mesh.box([attendantX - 1.31, attendantGround + 1.52, attendantZ + 0.18], [0.28, 0.16, 0.2], skinTone, skinLight);
+  mesh.beam([attendantX + 0.43, attendantGround + 1.62, attendantZ], [attendantX + 0.7, attendantGround + 1.02, attendantZ + 0.1], 0.24, navy);
+  mesh.beam([attendantX + 0.7, attendantGround + 1.02, attendantZ + 0.1], [attendantX + 0.72, attendantGround + 0.9, attendantZ + 0.25], 0.16, skinTone);
+  mesh.box([attendantX + 0.72, attendantGround + 0.9, attendantZ + 0.29], [0.21, 0.14, 0.15], skinTone);
+
+  // Cuello, cabeza, orejas, cabello, cejas, ojos, nariz y boca.
+  mesh.box([attendantX, attendantGround + 1.9, attendantZ], [0.31, 0.31, 0.3], skinTone);
+  mesh.box([attendantX, attendantGround + 2.3, attendantZ], [0.68, 0.77, 0.57], skinTone, hex("#a9765b"));
+  mesh.box([attendantX - 0.37, attendantGround + 2.3, attendantZ], [0.13, 0.24, 0.18], skinLight);
+  mesh.box([attendantX + 0.37, attendantGround + 2.3, attendantZ], [0.13, 0.24, 0.18], skinTone);
+  mesh.box([attendantX, attendantGround + 2.61, attendantZ - 0.05], [0.64, 0.19, 0.52], hex("#42332e"));
+  mesh.box([attendantX, attendantGround + 2.68, attendantZ - 0.06], [0.58, 0.13, 0.5], hex("#332a27"));
+  mesh.box([attendantX - 0.15, attendantGround + 2.41, faceZ + 0.005], [0.12, 0.045, 0.045], hex("#64483d"));
+  mesh.box([attendantX + 0.15, attendantGround + 2.41, faceZ + 0.005], [0.12, 0.045, 0.045], hex("#64483d"));
+  mesh.box([attendantX - 0.15, attendantGround + 2.34, faceZ + 0.025], [0.06, 0.07, 0.045], hex("#242b30"));
+  mesh.box([attendantX + 0.15, attendantGround + 2.34, faceZ + 0.025], [0.06, 0.07, 0.045], hex("#242b30"));
+  mesh.box([attendantX, attendantGround + 2.24, faceZ + 0.06], [0.1, 0.16, 0.12], skinLight);
+  mesh.box([attendantX, attendantGround + 2.08, faceZ + 0.055], [0.17, 0.035, 0.055], hex("#704b42"));
+
+  // Gorra azul con visera y logo blanco de la estación.
+  mesh.box([attendantX, attendantGround + 2.77, attendantZ], [0.77, 0.2, 0.63], uniform);
+  mesh.box([attendantX, attendantGround + 2.69, faceZ + 0.18], [0.8, 0.07, 0.34], navy);
+  mesh.box([attendantX, attendantGround + 2.78, faceZ + 0.32], [0.36, 0.1, 0.035], white);
+  addPixelText(mesh, "YPF", attendantX, attendantGround + 2.78, faceZ + 0.35, 0.043, deepBlue);
+
+  // Un detalle de reloj y una insignia en el uniforme.
+  mesh.box([attendantX + 0.53, attendantGround + 1.32, attendantZ + 0.09], [0.12, 0.16, 0.12], hex("#aab7bd"));
+  mesh.box([attendantX + 0.53, attendantGround + 1.32, attendantZ + 0.16], [0.08, 0.1, 0.025], hex("#273a46"));
 
   // Farol de playa y luminarias cálidas debajo de la marquesina.
   for (const x of [4.0, 18.8]) {
@@ -426,14 +427,11 @@ function buildWorld() {
     }
   }
 
-  // Dos cordones de montaña y el Piltriquitrón al fondo, todos con relieve real.
-  addMountain(world, -135, 0.63, 17);
-  addMountain(world, -101, 1, 91);
-  // Cordillera rocosa en ambos laterales, lejos del asfalto y de la playa YPF.
-  addRoadsideMountainRange(world, -1, 31, 11, 49, 17);
-  addRoadsideMountainRange(world, 1, 47, 11, 49, 17);
-  addRoadsideMountainRange(world, -1, 71, 48, 82, 23);
-  addRoadsideMountainRange(world, 1, 89, 48, 82, 23);
+  // Solo cordilleras laterales: el horizonte frontal queda despejado.
+  addRoadsideMountainRange(world, -1, 31, 13, 46, 15);
+  addRoadsideMountainRange(world, 1, 47, 13, 46, 15);
+  addRoadsideMountainRange(world, -1, 71, 52, 84, 20);
+  addRoadsideMountainRange(world, 1, 89, 52, 84, 20);
 
   // Banquinas, asfalto, marcas viales y pequeños parches de pavimento.
   for (let z = -292; z < 17; z += 2.5) {
@@ -441,39 +439,40 @@ function buildWorld() {
     const c0 = roadCenter(z), c1 = roadCenter(next);
     const left0 = c0 - 4.15, right0 = c0 + 4.15;
     const left1 = c1 - 4.15, right1 = c1 + 4.15;
-    world.quad([left0, 0.18, z], [left1, 0.18, next], [right1, 0.18, next], [right0, 0.18, z], hex("#383d40"));
-    world.quad([c0 - 5.25, 0.13, z], [c1 - 5.25, 0.13, next], [left1, 0.13, next], [left0, 0.13, z], hex("#716d5e"));
-    world.quad([right0, 0.13, z], [right1, 0.13, next], [c1 + 5.25, 0.13, next], [c0 + 5.25, 0.13, z], hex("#716d5e"));
+    const roadY0 = roadHeightAt(z);
+    const roadY1 = roadHeightAt(next);
+    world.quad([left0, roadY0, z], [left1, roadY1, next], [right1, roadY1, next], [right0, roadY0, z], hex("#383d40"));
+    world.quad([c0 - 5.25, roadY0 - 0.05, z], [c1 - 5.25, roadY1 - 0.05, next], [left1, roadY1 - 0.05, next], [left0, roadY0 - 0.05, z], hex("#716d5e"));
+    world.quad([right0, roadY0 - 0.05, z], [right1, roadY1 - 0.05, next], [c1 + 5.25, roadY1 - 0.05, next], [c0 + 5.25, roadY0 - 0.05, z], hex("#716d5e"));
     // Doble línea central amarilla, continua y gastada.
     for (const offset of [-0.105, 0.105]) {
       world.quad(
-        [c0 + offset - 0.035, 0.195, z], [c1 + offset - 0.035, 0.195, next],
-        [c1 + offset + 0.035, 0.195, next], [c0 + offset + 0.035, 0.195, z],
+        [c0 + offset - 0.035, roadY0 + 0.018, z], [c1 + offset - 0.035, roadY1 + 0.018, next],
+        [c1 + offset + 0.035, roadY1 + 0.018, next], [c0 + offset + 0.035, roadY0 + 0.018, z],
         hex("#b7a16e"),
       );
     }
     for (const offset of [-3.92, 3.92]) {
       world.quad(
-        [c0 + offset - 0.045, 0.198, z], [c1 + offset - 0.045, 0.198, next],
-        [c1 + offset + 0.045, 0.198, next], [c0 + offset + 0.045, 0.198, z],
+        [c0 + offset - 0.045, roadY0 + 0.02, z], [c1 + offset - 0.045, roadY1 + 0.02, next],
+        [c1 + offset + 0.045, roadY1 + 0.02, next], [c0 + offset + 0.045, roadY0 + 0.02, z],
         hex("#a9aaa0"),
       );
     }
     if (Math.floor((z + 148) / 2.5) % 3 === 0) {
-      world.quad([c0 - 3.8, 0.205, z], [c1 - 3.8, 0.205, next], [c1 - 3.55, 0.205, next], [c0 - 3.55, 0.205, z], hex("#4a4b48"));
+      world.quad([c0 - 3.8, roadY0 + 0.025, z], [c1 - 3.8, roadY1 + 0.025, next], [c1 - 3.55, roadY1 + 0.025, next], [c0 - 3.55, roadY0 + 0.025, z], hex("#4a4b48"));
     }
   }
 
   // Guardarraíles metálicos con postes separados y sombras propias.
   for (const side of [-1, 1]) {
-    for (let z = -146; z < 15; z += 4.2) {
+    for (let z = -289; z < 15; z += 4.2) {
       const x = roadCenter(z) + side * 4.72;
-      const ground = terrainY(x, z);
-      world.box([x, ground + 0.49, z], [0.14, 0.98, 0.14], hex("#555d5e"));
+      world.box([x, roadHeightAt(z) + 0.49, z], [0.14, 0.98, 0.14], hex("#555d5e"));
     }
-    for (let z = -146; z < 14; z += 4.2) {
+    for (let z = -289; z < 14; z += 4.2) {
       const mid = z + 2.1, x = roadCenter(mid) + side * 4.72;
-      world.box([x, terrainY(x, mid) + 0.92, mid], [0.19, 0.18, 4.3], hex("#727a79"), hex("#424c50"));
+      world.box([x, roadHeightAt(mid) + 0.92, mid], [0.19, 0.18, 4.3], hex("#727a79"), hex("#424c50"));
     }
   }
 
@@ -495,6 +494,35 @@ function buildWorld() {
     }
   }
 
+  // Taludes rocosos que acompañan la pendiente y árboles pegados al camino.
+  for (const side of [-1, 1]) {
+    for (let z = -178; z >= -288; z -= 5.2) {
+      const next = z - 5.2;
+      const c0 = roadCenter(z), c1 = roadCenter(next);
+      const y0 = roadHeightAt(z), y1 = roadHeightAt(next);
+      const inner0 = c0 + side * 4.25;
+      const inner1 = c1 + side * 4.25;
+      const outer0 = c0 + side * 25.5;
+      const outer1 = c1 + side * 25.5;
+      world.quad(
+        [inner0, y0 - 0.03, z], [inner1, y1 - 0.03, next],
+        [outer1, y1 - 7.2, next], [outer0, y0 - 7.2, z],
+        hex(side < 0 ? "#3f494b" : "#485152"),
+      );
+    }
+    for (let z = -180; z >= -287; z -= 8.4) {
+      const x = roadCenter(z) + side * (8.2 + random() * 2.6);
+      const y = roadHeightAt(z) - 1.4 - random() * 0.8;
+      const height = 5.2 + random() * 5.5;
+      addPine(world, x, z, y, height, Math.floor(random() * 1000));
+    }
+    for (let z = -184; z >= -286; z -= 13.5) {
+      const x = roadCenter(z) + side * (18 + random() * 6.2);
+      const y = roadHeightAt(z) - 6.2 - random() * 0.7;
+      addPine(world, x, z, y, 6.5 + random() * 5.5, Math.floor(random() * 1000));
+    }
+  }
+
   // Matorrales y rocas facetadas junto a las banquinas.
   for (let i = 0; i < 85; i++) {
     const side = random() > 0.5 ? 1 : -1;
@@ -513,18 +541,18 @@ function buildWorld() {
   // Postes de madera y cables a ambos lados de la Ruta 40.
   for (const side of [-1, 1]) {
     const poleOffset = side < 0 ? -11.5 : 15.8;
-    for (let i = 0; i < 13; i++) {
-      const z = 7 - i * 15;
+    for (let i = 0; i < 22; i++) {
+      const z = 7 - i * 14;
       const x = roadCenter(z) + poleOffset;
-      const y = terrainY(x, z);
+      const y = roadHeightAt(z) - 0.18;
       world.box([x, y + 4.3, z], [0.24, 8.6, 0.24], hex("#40372d"));
       world.box([x, y + 7.7, z], [2.7, 0.16, 0.16], hex("#4a4035"));
       world.box([x - 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
       world.box([x + 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
-      if (i < 12) {
+      if (i < 21) {
         const nextZ = z - 15, nextX = roadCenter(nextZ) + poleOffset;
-        world.beam([x - 0.8, y + 7.75, z], [nextX - 0.8, terrainY(nextX, nextZ) + 7.75, nextZ], 0.045, hex("#232c31"));
-        world.beam([x + 0.8, y + 7.75, z], [nextX + 0.8, terrainY(nextX, nextZ) + 7.75, nextZ], 0.045, hex("#30373a"));
+        world.beam([x - 0.8, y + 7.75, z], [nextX - 0.8, roadHeightAt(nextZ) - 0.18 + 7.75, nextZ], 0.045, hex("#232c31"));
+        world.beam([x + 0.8, y + 7.75, z], [nextX + 0.8, roadHeightAt(nextZ) - 0.18 + 7.75, nextZ], 0.045, hex("#30373a"));
       }
     }
   }
@@ -595,6 +623,22 @@ function buildRefuelHose() {
   return hose;
 }
 
+function buildMoneyHandover() {
+  const money = new MeshBuilder();
+  const sleeve = hex("#222f3a");
+  const skin = hex("#bd896b");
+  const bill = hex("#4e9971");
+  const billLight = hex("#8cc69a");
+  money.beam([-1.15, -0.03, 0], [-0.18, 0.03, 0], 0.24, sleeve);
+  money.box([0.04, 0.05, 0], [0.48, 0.22, 0.2], skin, hex("#9e7058"));
+  money.box([0.63, 0.23, -0.02], [0.88, 0.48, 0.035], bill, hex("#347755"));
+  money.box([0.63, 0.23, 0.012], [0.72, 0.34, 0.018], billLight);
+  money.box([0.63, 0.23, 0.026], [0.16, 0.18, 0.012], hex("#3f855d"));
+  money.beam([0.21, 0.13, -0.02], [0.34, 0.27, -0.02], 0.085, skin);
+  money.beam([0.22, 0.09, 0.04], [0.46, 0.1, 0.04], 0.07, skin);
+  return money;
+}
+
 function buildCockpit() {
   const cockpit = new MeshBuilder();
   const dark = hex("#171d22");
@@ -626,23 +670,30 @@ function buildCockpit() {
   cockpit.beam([0, 1.03, -0.86], [0.3, 1.22, -0.88], 0.07, hex("#090d11"));
   cockpit.box([0, 1.03, -0.88], [0.22, 0.2, 0.09], hex("#282f34"));
 
-  // Brazos con mangas, puños y ambas manos agarrando el aro del volante.
-  cockpit.beam([-1.3, 0.78, -1.05], [-0.38, 1.18, -0.86], 0.31, sleeve);
-  cockpit.beam([1.3, 0.78, -1.05], [0.38, 1.18, -0.86], 0.31, sleeve);
+  // Brazos más naturales: mangas completas, costuras, puños, palmas y dedos separados.
   for (const side of [-1, 1]) {
-    const palmX = side * 0.34;
-    const cuff = hex("#66717a");
-    cockpit.beam([side * 0.52, 1.17, -0.84], [palmX, 1.22, -0.79], 0.22, cuff);
-    cockpit.box([palmX, 1.22, -0.79], [0.28, 0.2, 0.18], skin, hex("#855b49"));
+    const palmX = side * 0.35;
+    const sleeve = hex("#202b35");
+    const sleeveLight = hex("#394753");
+    const cuff = hex("#65727a");
+    cockpit.beam([side * 1.42, 0.68, -1.03], [side * 0.53, 1.12, -0.87], 0.39, sleeve);
+    cockpit.beam([side * 1.16, 0.82, -0.98], [side * 0.62, 1.10, -0.85], 0.11, sleeveLight);
+    cockpit.box([side * 0.54, 1.13, -0.84], [0.19, 0.29, 0.3], cuff, hex("#39434a"));
+    cockpit.beam([side * 0.52, 1.15, -0.84], [palmX, 1.19, -0.79], 0.18, hex("#a77a60"));
+    cockpit.box([palmX, 1.2, -0.79], [0.34, 0.24, 0.2], skin, hex("#855b49"));
+    // Nudillos y cuatro dedos que rodean el volante.
     for (let finger = 0; finger < 4; finger++) {
-      const fingerY = 1.13 + finger * 0.035;
-      const startX = palmX + side * (finger * 0.055 - 0.08);
-      const endX = startX + side * 0.045;
-      cockpit.beam([startX, fingerY, -0.72], [endX, fingerY - 0.025, -0.64], 0.062, skin);
-      cockpit.box([startX, fingerY, -0.715], [0.075, 0.065, 0.065], hex("#c49372"));
+      const fingerX = palmX + side * ((finger - 1.5) * 0.075);
+      const fingerTop = 1.24 - Math.abs(finger - 1.5) * 0.012;
+      cockpit.beam([fingerX, fingerTop, -0.7], [fingerX + side * 0.018, 1.08, -0.59], 0.067, hex("#c18e70"));
+      cockpit.box([fingerX, fingerTop - 0.015, -0.705], [0.074, 0.062, 0.065], hex("#d09b7a"));
+      cockpit.box([fingerX + side * 0.018, 1.09, -0.59], [0.047, 0.038, 0.025], hex("#e1b596"));
     }
-    cockpit.beam([palmX - side * 0.1, 1.25, -0.76], [palmX - side * 0.18, 1.18, -0.7], 0.085, hex("#ad785d"));
-    cockpit.beam([palmX - side * 0.09, 1.16, -0.695], [palmX + side * 0.07, 1.16, -0.695], 0.018, hex("#d3a183"));
+    // Pulgar por el lateral interno de cada mano.
+    cockpit.beam([palmX - side * 0.13, 1.18, -0.73], [palmX - side * 0.19, 1.08, -0.64], 0.09, hex("#b17c60"));
+    cockpit.box([palmX - side * 0.18, 1.08, -0.64], [0.09, 0.075, 0.06], hex("#d09b7a"));
+    // Pliegues y costura del puño.
+    cockpit.beam([side * 0.48, 1.08, -0.7], [side * 0.61, 1.1, -0.7], 0.018, hex("#87959a"));
   }
 
   // Tablero: dos relojes, velocímetro analógico y lectura digital en píxeles.
@@ -890,19 +941,24 @@ export function Route40LowPolyOpening() {
   const progressRef = useRef<HTMLDivElement | null>(null);
   const speedRef = useRef<HTMLSpanElement | null>(null);
   const fuelProgressRef = useRef<HTMLDivElement | null>(null);
+  const payingProgressRef = useRef<HTMLDivElement | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
-  const stageRef = useRef<"driving" | "stopped" | "onFoot" | "fueling" | "payment" | "warning">("driving");
+  const stageRef = useRef<"driving" | "stopped" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished">("driving");
   const fuelStartedAtRef = useRef(0);
   const exitStartedAtRef = useRef(0);
+  const payingStartedAtRef = useRef(0);
   const warningStartedAtRef = useRef(0);
+  const returnStartedAtRef = useRef(0);
   const engineAudioRef = useRef<EngineAudio | null>(null);
-  const [interactionStage, setInteractionStage] = useState<"driving" | "stopped" | "onFoot" | "fueling" | "payment" | "warning">("driving");
+  const [interactionStage, setInteractionStage] = useState<"driving" | "stopped" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished">("driving");
   const [fallback, setFallback] = useState(false);
-  const setStage = (next: "driving" | "stopped" | "onFoot" | "fueling" | "payment" | "warning") => {
+  const setStage = (next: "driving" | "stopped" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished") => {
     stageRef.current = next;
     if (next === "fueling") fuelStartedAtRef.current = performance.now();
     if (next === "onFoot") exitStartedAtRef.current = performance.now();
+    if (next === "paying") payingStartedAtRef.current = performance.now();
     if (next === "warning") warningStartedAtRef.current = performance.now();
+    if (next === "returning") returnStartedAtRef.current = performance.now();
     setInteractionStage(next);
   };
   const startEngineAudio = () => {
@@ -935,12 +991,14 @@ export function Route40LowPolyOpening() {
     let started = false;
     let previousFrame = 0;
     let driveElapsed = 0;
+    let climbElapsed = 0;
     let travelled = 0;
     let driveSpeed = 0;
     let laneOffset = 0;
     let lookYaw = 0;
     let lookPitch = 0;
     let fuelingComplete = false;
+    let payingComplete = false;
     const keys = keysRef.current;
     keys.clear();
     stageRef.current = "driving";
@@ -949,7 +1007,8 @@ export function Route40LowPolyOpening() {
       const stage = stageRef.current;
       if (stage === "stopped") setStage("onFoot");
       else if (stage === "onFoot") setStage("fueling");
-      else if (stage === "payment") setStage("warning");
+      else if (stage === "payment") setStage("paying");
+      else if (stage === "warning") setStage("returning");
     };
     const onKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
@@ -957,8 +1016,9 @@ export function Route40LowPolyOpening() {
         if (key.startsWith("arrow")) event.preventDefault();
         keys.add(key);
       }
-      if (key === "w" && stageRef.current === "driving" && performance.now() - startedAt >= DURATION * 1000) startEngineAudio();
-      if (key === "e" && !event.repeat && stageRef.current !== "driving" && stageRef.current !== "fueling" && stageRef.current !== "warning") {
+      if (key === "w" && (stageRef.current === "driving" || stageRef.current === "climbing") &&
+        (stageRef.current === "climbing" || performance.now() - startedAt >= DURATION * 1000)) startEngineAudio();
+      if (key === "e" && !event.repeat && ["stopped", "onFoot", "payment", "warning"].includes(stageRef.current)) {
         event.preventDefault(); advanceInteraction(); keys.delete("e");
       }
     };
@@ -998,6 +1058,7 @@ export function Route40LowPolyOpening() {
     let cockpitMesh: Mesh | null = null;
     let windshieldMesh: Mesh | null = null;
     let fuelHoseMesh: Mesh | null = null;
+    let paymentMesh: Mesh | null = null;
     let program: WebGLProgram | null = null;
 
     try {
@@ -1020,6 +1081,7 @@ export function Route40LowPolyOpening() {
       cockpitMesh = createMesh(gl, buildCockpit());
       windshieldMesh = createMesh(gl, buildWindshield());
       fuelHoseMesh = createMesh(gl, buildRefuelHose());
+      paymentMesh = createMesh(gl, buildMoneyHandover());
     } catch (error) {
       console.error("No se pudo iniciar la escena low poly de Ruta 40", error);
       if (program) gl.deleteProgram(program);
@@ -1069,8 +1131,33 @@ export function Route40LowPolyOpening() {
           driveSpeed = 0; keys.clear(); setStage("stopped");
         }
       }
+      if (stageRef.current === "climbing") {
+        if (keys.has("w")) {
+          driveSpeed = Math.min(5.4, driveSpeed + dt * 2.8);
+          climbElapsed += dt;
+        } else {
+          driveSpeed = Math.max(0, driveSpeed - dt * 5.4);
+        }
+        if (keys.has("a")) laneOffset = clamp(laneOffset - dt * 1.85, -2.35, 2.35);
+        if (keys.has("d")) laneOffset = clamp(laneOffset + dt * 1.85, -2.35, 2.35);
+        if (keys.has("arrowleft") || keys.has("q")) lookYaw = clamp(lookYaw - dt * 1.1, -1.18, 1.18);
+        if (keys.has("arrowright")) lookYaw = clamp(lookYaw + dt * 1.1, -1.18, 1.18);
+        travelled += driveSpeed * dt;
+        if (climbElapsed >= 14) {
+          driveSpeed = 0; keys.clear(); setStage("finished");
+        }
+      }
       if (stageRef.current === "fueling" && !fuelingComplete && now - fuelStartedAtRef.current >= 3400) {
         fuelingComplete = true; setStage("payment");
+      }
+      if (stageRef.current === "paying" && !payingComplete && now - payingStartedAtRef.current >= 1900) {
+        payingComplete = true;
+        setStage("warning");
+      }
+      if (stageRef.current === "returning" && now - returnStartedAtRef.current >= 1450) {
+        lookYaw = 0;
+        lookPitch = 0;
+        setStage("climbing");
       }
       const rect = canvas.getBoundingClientRect();
       const width = Math.max(1, rect.width);
@@ -1090,20 +1177,22 @@ export function Route40LowPolyOpening() {
 
       const carZ = elapsed < DURATION ? -elapsed * 4.1 : -DURATION * 4.1 - travelled;
       const carX = roadCenter(carZ) + laneOffset;
+      const carY = roadHeightAt(carZ) - 0.18;
       const transition = smooth(4.48, 5.95, elapsed);
-      const aerialEye: V3 = [0, 38, carZ + 13];
-      const aerialTarget: V3 = [0, 0, carZ - 1.5];
+      const aerialEye: V3 = [0, 38 + roadHeightAt(carZ), carZ + 13];
+      const aerialTarget: V3 = [0, roadHeightAt(carZ), carZ - 1.5];
       const outsideStage = stageRef.current === "onFoot" || stageRef.current === "fueling" ||
-        stageRef.current === "payment" || stageRef.current === "warning";
-      const shake = transition * (0.004 + driveSpeed * 0.0016) * (outsideStage ? 0 : 1);
+        stageRef.current === "payment" || stageRef.current === "paying" ||
+        stageRef.current === "warning" || stageRef.current === "returning";
+      const shake = transition * (0.005 + driveSpeed * 0.0021) * (outsideStage ? 0 : 1);
       const shakeX = Math.sin(now * 0.024) * shake;
       const shakeY = Math.sin(now * 0.039) * shake * 0.62;
-      const driverEye: V3 = [carX + shakeX, 1.57 + shakeY, carZ + 0.56];
+      const driverEye: V3 = [carX + shakeX, roadHeightAt(carZ) + 1.39 + shakeY, carZ + 0.56];
       const driverTarget: V3 = elapsed < DURATION
-        ? [Math.sin(elapsed * 0.44) * 0.35 + shakeX * 0.7, 2.6 + shakeY, carZ - 39]
+        ? [Math.sin(elapsed * 0.44) * 0.35 + shakeX * 0.7, roadHeightAt(carZ - 39) + 2.6 + shakeY, carZ - 39]
         : [
             carX + Math.sin(lookYaw) * 39 + shakeX,
-            2.6 + lookPitch * 18 + shakeY,
+            roadHeightAt(carZ - 39) + 2.6 + lookPitch * 18 + shakeY,
             carZ + 0.56 - Math.cos(lookYaw) * 39,
           ];
       const cockpitEye: V3 = [
@@ -1116,14 +1205,25 @@ export function Route40LowPolyOpening() {
         mix(aerialTarget[1], driverTarget[1], transition),
         mix(aerialTarget[2], driverTarget[2], transition),
       ];
-      const footEye: V3 = [carX + 2.8, 1.72, carZ + 0.82];
+      const footEye: V3 = [11.2, roadHeightAt(carZ) + 1.62, carZ + 1.5];
       const warningLook = stageRef.current === "warning"
         ? smooth(0, 0.9, (now - warningStartedAtRef.current) / 1000)
+        : stageRef.current === "returning"
+          ? 1 - smooth(0, 0.55, (now - returnStartedAtRef.current) / 1000)
+          : 0;
+      const footTarget: V3 = [
+        16.1,
+        roadHeightAt(-164) + mix(2.25, 8.4, warningLook),
+        mix(-164.2, -169.8, warningLook),
+      ];
+      const returnBlend = stageRef.current === "returning"
+        ? 1 - smooth(0, 1.45, (now - returnStartedAtRef.current) / 1000)
         : 0;
-      const footTarget: V3 = [16.1, mix(2.25, 3.9, warningLook), -164.2];
-      const exitBlend = outsideStage
-        ? smooth(0, 0.9, (now - exitStartedAtRef.current) / 1000)
-        : 0;
+      const exitBlend = stageRef.current === "returning"
+        ? returnBlend
+        : outsideStage
+          ? smooth(0, 0.9, (now - exitStartedAtRef.current) / 1000)
+          : 0;
       const eye: V3 = [
         mix(cockpitEye[0], footEye[0], exitBlend),
         mix(cockpitEye[1], footEye[1], exitBlend),
@@ -1146,13 +1246,14 @@ export function Route40LowPolyOpening() {
       const identity = translation(0, 0, 0);
       bindMesh(gl, program, worldMesh, viewProjection, view, identity);
 
-      const carModel = translation(carX, 0, carZ);
+      const carModel = translation(carX, carY, carZ);
       const aerialVisibility = 1 - smooth(5.1, 5.95, elapsed);
-      if (aerialVisibility > 0.01 || outsideStage) {
+      const returningToCar = stageRef.current === "returning";
+      if (aerialVisibility > 0.01 || (outsideStage && !returningToCar)) {
         bindMesh(gl, program, carMesh, viewProjection, view, carModel);
       }
       const lightVisibility = smooth(4.8, 5.65, elapsed);
-      if (lightVisibility > 0.01 && !outsideStage) {
+      if (lightVisibility > 0.01 && (!outsideStage || returningToCar)) {
         bindMesh(gl, program, lightMesh, viewProjection, view, carModel);
         bindMesh(gl, program, cockpitMesh, viewProjection, view, carModel);
         gl.enable(gl.BLEND);
@@ -1166,8 +1267,16 @@ export function Route40LowPolyOpening() {
       if (stageRef.current === "fueling") {
         bindMesh(gl, program, fuelHoseMesh, viewProjection, view, carModel);
       }
+      if (stageRef.current === "paying" && paymentMesh) {
+        const handover = smooth(0, 1, (now - payingStartedAtRef.current) / 1900);
+        const handX = mix(11.2, 14.7, handover);
+        const handY = roadHeightAt(-164) + 1.8 + Math.sin(handover * Math.PI) * 0.2;
+        const handZ = mix(-162.4, -164.25, handover);
+        bindMesh(gl, program, paymentMesh, viewProjection, view, translation(handX, handY, handZ));
+      }
       if (engineAudioRef.current) {
-        if (stageRef.current === "driving" && elapsed >= DURATION) {
+        if ((stageRef.current === "driving" || stageRef.current === "climbing") &&
+          (stageRef.current === "climbing" || elapsed >= DURATION)) {
           const throttle = keys.has("w") ? 0.2 + (driveSpeed / 5.4) * 0.8 : 0.12;
           engineAudioRef.current.setThrottle(throttle);
         } else {
@@ -1190,16 +1299,21 @@ export function Route40LowPolyOpening() {
       if (gameHudRef.current) {
         gameHudRef.current.style.opacity = String(
           smooth(DURATION + 0.1, DURATION + 0.9, elapsed) *
-          (stageRef.current === "driving" ? 1 : 0),
+          (stageRef.current === "driving" || stageRef.current === "climbing" ? 1 : 0),
         );
       }
       if (progressRef.current) {
-        progressRef.current.style.width = String(clamp(driveElapsed / 20, 0, 1) * 100) + "%";
+        const progress = stageRef.current === "climbing" ? climbElapsed / 14 : driveElapsed / 20;
+        progressRef.current.style.width = String(clamp(progress, 0, 1) * 100) + "%";
       }
       if (speedRef.current) speedRef.current.textContent = String(Math.round(driveSpeed * 19));
       if (fuelProgressRef.current) {
         const fill = clamp((now - fuelStartedAtRef.current) / 3400, 0, 1) * 100;
         fuelProgressRef.current.style.width = String(fill) + "%";
+      }
+      if (payingProgressRef.current) {
+        const fill = clamp((now - payingStartedAtRef.current) / 1900, 0, 1) * 100;
+        payingProgressRef.current.style.width = String(fill) + "%";
       }
 
       frame = window.requestAnimationFrame(animate);
@@ -1225,6 +1339,7 @@ export function Route40LowPolyOpening() {
       if (cockpitMesh) gl.deleteBuffer(cockpitMesh.buffer);
       if (windshieldMesh) gl.deleteBuffer(windshieldMesh.buffer);
       if (fuelHoseMesh) gl.deleteBuffer(fuelHoseMesh.buffer);
+      if (paymentMesh) gl.deleteBuffer(paymentMesh.buffer);
       if (program) gl.deleteProgram(program);
     };
   }, []);
@@ -1281,7 +1396,7 @@ export function Route40LowPolyOpening() {
         style={{ opacity: 0 }}
       >
         <div className="rounded-sm border border-amber-100/25 bg-[#101820]/70 px-4 py-2 font-mono text-[10px] tracking-[.12em] text-amber-50 shadow-[0_0_30px_rgba(255,176,105,.14)] backdrop-blur-md sm:text-xs">
-          W · ACELERAR
+          {interactionStage === "climbing" ? "W · SUBIR LA CUESTA" : "W · ACELERAR"}
           <span className="mx-2 text-amber-100/35">|</span>
           A / D · MANTENERSE EN LA RUTA
           <span className="mx-2 text-amber-100/35">|</span>
@@ -1291,35 +1406,40 @@ export function Route40LowPolyOpening() {
         <div className="h-1 w-44 overflow-hidden rounded-full bg-white/15">
           <div ref={progressRef} className="h-full w-0 bg-amber-200 shadow-[0_0_12px_rgba(255,206,137,.9)] transition-[width] duration-100" />
         </div>
-        <div className="pointer-events-auto flex items-center gap-3 md:hidden">
-          {(["a", "w", "d"] as const).map((key) => (
-            <button
-              key={key}
-              type="button"
-              onPointerDown={(event) => {
-                event.preventDefault();
-                keysRef.current.add(key);
-                if (key === "w") startEngineAudio();
-              }}
-              onPointerUp={() => keysRef.current.delete(key)}
-              onPointerLeave={() => keysRef.current.delete(key)}
-              onPointerCancel={() => keysRef.current.delete(key)}
-              className="grid h-12 w-12 place-items-center rounded border border-amber-100/35 bg-black/60 font-mono text-sm font-bold text-amber-50 shadow-lg backdrop-blur-md active:bg-amber-100/25"
-              aria-label={key === "w" ? "Avanzar" : key === "a" ? "Moverse a la izquierda" : "Moverse a la derecha"}
-            >
-              {key.toUpperCase()}
-            </button>
-          ))}
+        <div className="pointer-events-auto flex flex-col items-center gap-2 md:hidden">
+          <p className="font-mono text-[9px] tracking-[.18em] text-amber-50/70">MANTENÉ W PARA AVANZAR · DESLIZÁ EL FONDO PARA MIRAR</p>
+          <div className="flex items-center gap-3">
+            {(["a", "w", "d"] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onContextMenu={(event) => event.preventDefault()}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  keysRef.current.add(key);
+                  if (key === "w") startEngineAudio();
+                }}
+                onPointerUp={() => keysRef.current.delete(key)}
+                onLostPointerCapture={() => keysRef.current.delete(key)}
+                onPointerCancel={() => keysRef.current.delete(key)}
+                className="grid h-14 w-14 touch-none select-none place-items-center rounded-xl border border-amber-100/45 bg-[#101820]/85 font-mono text-lg font-black text-amber-50 shadow-[0_5px_22px_rgba(0,0,0,.4)] backdrop-blur-md active:translate-y-0.5 active:bg-amber-100/25"
+                aria-label={key === "w" ? "Mantener para acelerar" : key === "a" ? "Mantener para girar a la izquierda" : "Mantener para girar a la derecha"}
+              >
+                {key === "a" ? "◀" : key === "d" ? "▶" : "W"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      {interactionStage !== "driving" && (
+      {interactionStage !== "driving" && interactionStage !== "climbing" && interactionStage !== "finished" && (
         <div className="pointer-events-none absolute inset-0 z-40 flex items-end justify-center px-4 pb-[max(92px,env(safe-area-inset-bottom))] sm:items-center sm:pb-0">
           <div className="pointer-events-auto w-full max-w-lg border border-sky-200/25 bg-[#091b2b]/90 px-6 py-6 text-center shadow-[0_0_65px_rgba(24,117,185,.22)] backdrop-blur-xl">
             {interactionStage === "stopped" && (
               <>
                 <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">ESTACIÓN DE SERVICIO</p>
                 <h2 className="mt-3 font-serif text-3xl tracking-[.12em] text-white">YPF · EL BOLSÓN</h2>
-                <p className="mt-3 text-sm text-slate-200">Detenés el auto junto a los surtidores. El motor se apaga.</p>
+                <p className="mt-3 text-sm text-slate-200">Estacionaste junto a los surtidores. El motor se apaga.</p>
                 <button type="button" onClick={() => setStage("onFoot")} className="mt-6 min-h-12 w-full border border-sky-200/40 bg-[#0875b9] px-5 py-3 font-mono text-xs tracking-[.18em] text-white shadow-[0_0_24px_rgba(8,117,185,.28)] hover:bg-[#0a88d2]">
                   BAJAR DEL AUTO <span className="text-sky-100/70">· E</span>
                 </button>
@@ -1329,7 +1449,7 @@ export function Route40LowPolyOpening() {
               <>
                 <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">JUNTO AL SURTIDOR</p>
                 <h2 className="mt-3 font-serif text-3xl tracking-[.12em] text-white">CARGAR NAFTA</h2>
-                <p className="mt-3 text-sm text-slate-200">El playero se acerca con la manguera.</p>
+                <p className="mt-3 text-sm text-slate-200">El playero se acerca y prepara la manguera.</p>
                 <button type="button" onClick={() => setStage("fueling")} className="mt-6 min-h-12 w-full border border-sky-200/40 bg-[#0875b9] px-5 py-3 font-mono text-xs tracking-[.18em] text-white hover:bg-[#0a88d2]">
                   PEDIR QUE CARGUE NAFTA <span className="text-sky-100/70">· E</span>
                 </button>
@@ -1348,26 +1468,53 @@ export function Route40LowPolyOpening() {
               <>
                 <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">TANQUE LLENO</p>
                 <h2 className="mt-3 font-serif text-3xl text-white">Es hora de pagar</h2>
-                <p className="mt-2 text-sm text-slate-200">Sacás unos billetes y se los acercás al playero.</p>
-                <div className="mx-auto mt-5 flex h-16 w-36 rotate-[-4deg] items-center justify-center border-2 border-emerald-100/60 bg-emerald-900/80 font-serif text-2xl text-emerald-100 shadow-lg">
+                <p className="mt-2 text-sm text-slate-200">Sacás unos billetes del bolsillo para pagarle al playero.</p>
+                <div className="mx-auto mt-5 flex h-16 w-40 rotate-[-4deg] items-center justify-center border-2 border-emerald-100/60 bg-emerald-900/80 font-serif text-2xl text-emerald-100 shadow-lg">
                   $ · PESOS
                 </div>
-                <button type="button" onClick={() => setStage("warning")} className="mt-6 min-h-12 w-full border border-sky-200/40 bg-[#0875b9] px-5 py-3 font-mono text-xs tracking-[.18em] text-white hover:bg-[#0a88d2]">
-                  ENTREGAR DINERO <span className="text-sky-100/70">· E</span>
+                <button type="button" onClick={() => setStage("paying")} className="mt-6 min-h-12 w-full border border-sky-200/40 bg-[#0875b9] px-5 py-3 font-mono text-xs tracking-[.18em] text-white hover:bg-[#0a88d2]">
+                  SACAR BILLETES Y PAGAR <span className="text-sky-100/70">· E</span>
                 </button>
+              </>
+            )}
+            {interactionStage === "paying" && (
+              <>
+                <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">PAGO EN EFECTIVO</p>
+                <h2 className="mt-3 font-serif text-2xl text-white">Le entregás los billetes al playero</h2>
+                <p className="mt-2 text-sm text-slate-200">El playero estira la mano y recibe el dinero.</p>
+                <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/10">
+                  <div ref={payingProgressRef} className="h-full w-0 bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,.8)]" />
+                </div>
               </>
             )}
             {interactionStage === "warning" && (
               <>
                 <p className="font-mono text-[10px] tracking-[.34em] text-amber-200/75">EL PLAYERO</p>
                 <div className="relative mt-4 border border-amber-100/20 bg-[#101820] px-5 py-6 shadow-[0_0_36px_rgba(255,190,126,.12)]">
-                  <span className="absolute -top-3 left-6 bg-[#101820] px-2 font-serif text-sm text-amber-100">Te mira preocupado</span>
+                  <span className="absolute -top-3 left-6 bg-[#101820] px-2 font-serif text-sm text-amber-100">Te mira hacia el cielo, preocupado</span>
                   <p className="font-serif text-xl leading-relaxed text-white sm:text-2xl">“Hay algo raro en el cielo. Ten cuidado.”</p>
                 </div>
-                <p className="mt-6 font-mono text-xs tracking-[.34em] text-sky-100/70">LA SEÑAL EN LA RUTA 40</p>
-                <p className="mt-2 font-serif text-2xl tracking-[.28em] text-amber-100">CONTINUARÁ</p>
+                <button type="button" onClick={() => setStage("returning")} className="mt-6 min-h-12 w-full border border-sky-200/40 bg-[#0875b9] px-5 py-3 font-mono text-xs tracking-[.18em] text-white hover:bg-[#0a88d2]">
+                  VOLVER AL AUTO <span className="text-sky-100/70">· E</span>
+                </button>
               </>
             )}
+            {interactionStage === "returning" && (
+              <>
+                <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">ESTACIÓN YPF</p>
+                <h2 className="mt-3 font-serif text-2xl text-white">Volvés al auto...</h2>
+                <p className="mt-2 text-sm text-slate-200">Cerrás la puerta y encendés el motor.</p>
+                <div className="mx-auto mt-5 h-px w-24 bg-sky-200/60" />
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {interactionStage === "finished" && (
+        <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-[#06101a]/35 px-5 text-center">
+          <div className="border-y border-amber-100/25 bg-[#101820]/80 px-8 py-8 shadow-[0_0_65px_rgba(243,159,92,.2)] backdrop-blur-md">
+            <p className="font-mono text-[10px] tracking-[.34em] text-amber-100/70">EL CAMINO SIGUE HACIA LA MONTAÑA</p>
+            <p className="mt-4 font-serif text-3xl tracking-[.14em] text-[#f4dfc6] sm:text-5xl">CONTINUARÁ</p>
           </div>
         </div>
       )}
