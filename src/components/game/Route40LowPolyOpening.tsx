@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { ArrowLeft, RotateCcw } from "lucide-react";
 import { Route40Opening as CanvasFallback } from "./Route40Opening";
 
 type V3 = [number, number, number];
@@ -155,27 +153,34 @@ function roadCenter(z: number) {
 }
 
 function mountainProfile(x: number, amplitude = 1) {
-  // Perfil inspirado en la cresta real del Piltriquitrón: hombro largo,
-  // varios picos nevados concentrados y una ladera oriental más abrupta.
-  const peaks: [number, number][] = [
-    [-56, 0.5], [-51, 1.5], [-46, 3.8], [-41, 7.2], [-36, 10.8],
-    [-32, 13.4], [-29, 11.7], [-26, 16.1], [-22, 14.2], [-18, 18.4],
-    [-14, 16.8], [-10, 22.6], [-6, 20.4], [-2, 25.5], [2, 22.3],
-    [6, 17.2], [10, 15.2], [13, 19.4], [17, 17.1], [21, 13.6],
-    [26, 11.9], [31, 9.2], [36, 6.8], [42, 4.2], [48, 1.7], [55, 0.4],
+  // Silueta reconstruida a partir de piltri.jpg: crestas irregulares,
+  // varias agujas nevadas y un macizo rocoso más alto hacia la derecha.
+  const ridge: [number, number][] = [
+    [-56, 4], [-52, 7], [-48, 10], [-44, 9], [-40, 12], [-36, 15],
+    [-32, 12], [-28, 10], [-24, 14], [-20, 17], [-17, 15], [-14, 19],
+    [-10, 16], [-7, 20], [-3, 18], [1, 22], [5, 19], [8, 24],
+    [12, 27], [16, 25], [19, 30], [22, 26], [25, 23], [29, 24],
+    [33, 20], [37, 18], [41, 15], [45, 13], [50, 9], [56, 5],
   ];
-  for (let i = 0; i < peaks.length - 1; i++) {
-    const left = peaks[i]!, right = peaks[i + 1]!;
+  for (let i = 0; i < ridge.length - 1; i++) {
+    const left = ridge[i]!, right = ridge[i + 1]!;
     if (x >= left[0] && x <= right[0]) {
       const t = (x - left[0]) / (right[0] - left[0]);
-      return mix(left[1], right[1], t) * amplitude;
+      const base = mix(left[1], right[1], t);
+      const sharpness = Math.sin(t * Math.PI) * (i % 3 === 0 ? 0.8 : 0.34);
+      return (base + sharpness) * amplitude;
     }
   }
-  return 0.5 * amplitude;
+  return 4 * amplitude;
 }
 
 
 const PIXEL_GLYPHS: Record<string, string[]> = {
+  "A": ["01110","10001","10001","11111","10001","10001","10001"],
+  "C": ["01111","10000","10000","10000","10000","10000","01111"],
+  "D": ["11110","10001","10001","10001","10001","10001","11110"],
+  "F": ["11111","10000","10000","11110","10000","10000","10000"],
+  "V": ["10001","10001","10001","10001","10001","01010","00100"],
   "E": ["11111","10000","10000","11110","10000","10000","11111"],
   "L": ["10000","10000","10000","10000","10000","10000","11111"],
   "B": ["11110","10001","10001","11110","10001","10001","11110"],
@@ -242,31 +247,134 @@ function addPine(mesh: MeshBuilder, x: number, z: number, base: number, height: 
 
 function addMountain(mesh: MeshBuilder, zCenter: number, amplitude: number, seed: number) {
   const random = randomSource(seed);
-  const columns = 42, rows = 12;
+  const columns = 84;
+  const rows = 18;
   for (let zi = 0; zi < rows; zi++) {
-    const z0 = zCenter - 15 + (zi / rows) * 30;
-    const z1 = zCenter - 15 + ((zi + 1) / rows) * 30;
+    const z0 = zCenter - 20 + (zi / rows) * 40;
+    const z1 = zCenter - 20 + ((zi + 1) / rows) * 40;
     for (let xi = 0; xi < columns; xi++) {
-      const x0 = -53 + (xi / columns) * 106;
-      const x1 = -53 + ((xi + 1) / columns) * 106;
+      const x0 = -56 + (xi / columns) * 112;
+      const x1 = -56 + ((xi + 1) / columns) * 112;
       const heightAt = (x: number, z: number) => {
-        const depth = Math.max(0, 1 - Math.abs(z - zCenter) / 16);
-        const ridged = mountainProfile(x, amplitude);
-        const erosion = Math.sin(x * 0.43 + z * 0.19 + seed) * 0.7 + Math.sin(x * 0.18 - z * 0.32) * 0.42;
-        return terrainY(x * 0.34, z) + Math.max(0, ridged * depth + erosion * depth);
+        const depth = 0.78 + 0.22 * Math.max(0, 1 - Math.abs(z - zCenter) / 20);
+        const rough = Math.sin(x * 0.47 + z * 0.16 + seed) * 0.62
+          + Math.sin(x * 0.21 - z * 0.37 + seed * 0.2) * 0.36
+          + Math.sin(x * 0.91 + z * 0.12) * 0.16;
+        return terrainY(x * 0.34, z) + Math.max(0, mountainProfile(x, amplitude) * depth + rough);
       };
       const a: V3 = [x0, heightAt(x0, z0), z0];
       const b: V3 = [x0, heightAt(x0, z1), z1];
       const c: V3 = [x1, heightAt(x1, z1), z1];
       const d: V3 = [x1, heightAt(x1, z0), z0];
       const avg = (a[1] + b[1] + c[1] + d[1]) / 4;
-      let palette: V3;
-      if (avg > 15.5) palette = hex(random() > 0.45 ? "#9da8a7" : "#b3b9b4");
-      else if (avg > 10) palette = hex(random() > 0.5 ? "#657274" : "#78817d");
-      else palette = hex(random() > 0.5 ? "#455355" : "#596462");
-      const shade = 0.86 + random() * 0.22;
-      const color: V3 = [palette[0] * shade, palette[1] * shade, palette[2] * shade];
-      mesh.quad(a, b, c, d, color);
+      const snowLine = 14.2 + Math.sin((x0 + x1) * 0.075) * 1.55;
+      const snowPatch = avg > snowLine && random() > 0.19;
+      let base: V3;
+      if (snowPatch) {
+        base = hex(random() > 0.48 ? "#d9e0df" : "#b9c8ce");
+      } else if (avg > 18) {
+        base = hex(random() > 0.5 ? "#4c5962" : "#394851");
+      } else if (avg > 11) {
+        base = hex(random() > 0.5 ? "#56666b" : "#657477");
+      } else {
+        base = hex(random() > 0.5 ? "#354449" : "#45565a");
+      }
+      const shadeA = 0.82 + random() * 0.34;
+      const shadeB = 0.76 + random() * 0.38;
+      const colorA: V3 = [base[0] * shadeA, base[1] * shadeA, base[2] * shadeA];
+      const colorB: V3 = [base[0] * shadeB, base[1] * shadeB, base[2] * shadeB];
+      // Triángulos alternados para conseguir caras rocosas y nieve facetada.
+      mesh.triangle(a, b, c, colorA);
+      mesh.triangle(a, c, d, colorB);
+    }
+  }
+}
+
+
+function addTown(mesh: MeshBuilder) {
+  const addShop = (
+    x: number,
+    z: number,
+    width: number,
+    height: number,
+    depth: number,
+    wall: V3,
+    roof: V3,
+    label: string,
+    open = false,
+  ) => {
+    const ground = terrainY(x, z);
+    const front = z + depth / 2 + 0.08;
+    mesh.box([x, ground + height / 2, z], [width, height, depth], wall, hex("#333b3c"));
+    mesh.box([x, ground + height + 0.22, z], [width + 0.5, 0.42, depth + 0.35], roof);
+    mesh.box([x, ground + height * 0.78, front], [width * 0.76, 0.12, 0.08], hex("#c2a17a"));
+    mesh.box([x - width * 0.24, ground + height * 0.49, front], [width * 0.27, height * 0.34, 0.09], hex("#c6d4d1"), hex("#526d74"));
+    mesh.box([x + width * 0.11, ground + height * 0.49, front], [width * 0.27, height * 0.34, 0.09], hex("#c6d4d1"), hex("#526d74"));
+    mesh.box([x + width * 0.31, ground + height * 0.31, front + 0.015], [width * 0.17, height * 0.58, 0.13], hex("#4d382b"), hex("#211b17"));
+    mesh.box([x + width * 0.31, ground + height * 0.31, front + 0.09], [0.045, 0.045, 0.035], hex("#e6c18e"));
+    const signY = ground + height * 0.84;
+    mesh.box([x, signY, front + 0.12], [Math.max(3.1, width * 0.63), 0.75, 0.12], hex("#342d28"), hex("#51443a"));
+    addPixelText(mesh, label, x, signY + 0.02, front + 0.2, label.length > 5 ? 0.065 : 0.1, hex("#f0dfbd"));
+    if (open) {
+      mesh.box([x, ground + height * 0.61, front + 0.14], [3.6, 0.5, 0.1], hex("#1d4938"), hex("#245e45"));
+      addPixelText(mesh, "ABIERTO", x, ground + height * 0.61 + 0.01, front + 0.205, 0.062, hex("#d5f0c7"));
+      mesh.box([x - width * 0.24, ground + height * 0.49, front + 0.11], [width * 0.27, height * 0.34, 0.035], hex("#f1bd74"));
+      mesh.box([x + width * 0.11, ground + height * 0.49, front + 0.11], [width * 0.27, height * 0.34, 0.035], hex("#eab56d"));
+      mesh.box([x, ground + height + 0.64, front + 0.04], [0.2, 0.75, 0.2], hex("#39312a"));
+      mesh.box([x, ground + height + 1.03, front + 0.04], [0.72, 0.18, 0.48], hex("#ffd28d"));
+    }
+  };
+
+  const addHouse = (x: number, z: number, wall: V3, roof: V3) => {
+    const ground = terrainY(x, z);
+    const width = 7.4;
+    const height = 3.7;
+    const depth = 6.8;
+    const front = z + depth / 2 + 0.05;
+    mesh.box([x, ground + height / 2, z], [width, height, depth], wall, hex("#554f46"));
+    mesh.triangle(
+      [x - width / 2 - 0.35, ground + height, front],
+      [x, ground + height + 2.1, front],
+      [x + width / 2 + 0.35, ground + height, front],
+      roof,
+    );
+    mesh.triangle(
+      [x - width / 2 - 0.35, ground + height, z - depth / 2],
+      [x + width / 2 + 0.35, ground + height, z - depth / 2],
+      [x, ground + height + 2.1, z - depth / 2],
+      hex("#394348"),
+    );
+    mesh.box([x - 1.75, ground + 2.1, front + 0.08], [1.35, 1.25, 0.09], hex("#b7ced0"), hex("#526f76"));
+    mesh.box([x + 1.2, ground + 2.1, front + 0.08], [1.25, 1.25, 0.09], hex("#e5bb79"), hex("#806247"));
+    mesh.box([x + 2.45, ground + 1.1, front + 0.1], [0.9, 2.2, 0.12], hex("#49372c"));
+  };
+
+  // Cartel de ingreso, grande y aislado de los árboles de la banquina.
+  const welcomeX = roadCenter(-146) - 10.8;
+  const welcomeZ = -146;
+  const welcomeGround = terrainY(welcomeX, welcomeZ);
+  mesh.box([welcomeX, welcomeGround + 2.38, welcomeZ], [10.2, 2.65, 0.28], hex("#263d43"), hex("#38585d"));
+  mesh.box([welcomeX, welcomeGround + 2.38, welcomeZ + 0.17], [9.8, 2.27, 0.08], hex("#174c43"));
+  mesh.box([welcomeX - 4.35, welcomeGround + 1.25, welcomeZ], [0.22, 2.5, 0.24], hex("#4b4033"));
+  mesh.box([welcomeX + 4.35, welcomeGround + 1.25, welcomeZ], [0.22, 2.5, 0.24], hex("#4b4033"));
+  addPixelText(mesh, "BIENVENIDO", welcomeX, welcomeGround + 2.85, welcomeZ + 0.23, 0.115, hex("#f2e9d6"));
+  addPixelText(mesh, "A EL BOLSÓN", welcomeX, welcomeGround + 1.97, welcomeZ + 0.23, 0.1, hex("#f2e9d6"));
+
+  addShop(-13.5, -164, 7.8, 4.6, 6.8, hex("#74604d"), hex("#34383a"), "CAFE");
+  addHouse(14.8, -160, hex("#8a715d"), hex("#34383a"));
+  addShop(13.2, -176, 7.2, 4.1, 6.2, hex("#69594b"), hex("#3c4243"), "TIENDA");
+  addHouse(-14.2, -181, hex("#78634f"), hex("#34383a"));
+  addShop(10.7, -190, 10.2, 5.0, 8.0, hex("#60483b"), hex("#2f3338"), "BAR", true);
+
+  // Faroles encendidos al atardecer y reflejo cálido sobre la calle.
+  for (const z of [-154, -170, -186, -202]) {
+    for (const side of [-1, 1]) {
+      const x = roadCenter(z) + side * 6.5;
+      const y = terrainY(x, z);
+      mesh.box([x, y + 3.0, z], [0.15, 6.0, 0.15], hex("#3d3932"));
+      mesh.beam([x, y + 5.6, z], [x - side * 1.2, y + 5.6, z - 0.35], 0.1, hex("#4c4940"));
+      mesh.box([x - side * 1.2, y + 5.48, z - 0.35], [0.56, 0.22, 0.45], hex("#ffd08a"));
+      mesh.box([x - side * 1.2, y + 5.32, z - 0.35], [0.8, 0.08, 0.66], hex("#e5a95f"));
     }
   }
 }
@@ -277,10 +385,10 @@ function buildWorld() {
   const destinationSignZ = -53;
 
   // Terreno patagónico irregular: una malla triangulada, no una imagen de fondo.
-  const xSteps = 34, zSteps = 54;
+  const xSteps = 36, zSteps = 106;
   for (let zi = 0; zi < zSteps; zi++) {
-    const z0 = -148 + (zi / zSteps) * 166;
-    const z1 = -148 + ((zi + 1) / zSteps) * 166;
+    const z0 = -304 + (zi / zSteps) * 322;
+    const z1 = -304 + ((zi + 1) / zSteps) * 322;
     for (let xi = 0; xi < xSteps; xi++) {
       const x0 = -84 + (xi / xSteps) * 168;
       const x1 = -84 + ((xi + 1) / xSteps) * 168;
@@ -299,7 +407,7 @@ function buildWorld() {
   addMountain(world, -101, 1, 91);
 
   // Banquinas, asfalto, marcas viales y pequeños parches de pavimento.
-  for (let z = -148; z < 17; z += 2.5) {
+  for (let z = -292; z < 17; z += 2.5) {
     const next = z + 2.5;
     const c0 = roadCenter(z), c1 = roadCenter(next);
     const left0 = c0 - 4.15, right0 = c0 + 4.15;
@@ -329,12 +437,12 @@ function buildWorld() {
 
   // Guardarraíles metálicos con postes separados y sombras propias.
   for (const side of [-1, 1]) {
-    for (let z = -88; z < 15; z += 4.2) {
+    for (let z = -146; z < 15; z += 4.2) {
       const x = roadCenter(z) + side * 4.72;
       const ground = terrainY(x, z);
       world.box([x, ground + 0.49, z], [0.14, 0.98, 0.14], hex("#555d5e"));
     }
-    for (let z = -88; z < 14; z += 4.2) {
+    for (let z = -146; z < 14; z += 4.2) {
       const mid = z + 2.1, x = roadCenter(mid) + side * 4.72;
       world.box([x, terrainY(x, mid) + 0.92, mid], [0.19, 0.18, 4.3], hex("#727a79"), hex("#424c50"));
     }
@@ -344,14 +452,14 @@ function buildWorld() {
   for (const side of [-1, 1]) {
     for (let i = 0; i < 30; i++) {
       const z = 10 - i * 5.25 - random() * 2.7;
-      if (side === 1 && Math.abs(z - destinationSignZ) < 10) continue;
+      if (side === 1 && Math.abs(z - destinationSignZ) < 22) continue;
       const x = roadCenter(z) + side * (6.1 + random() * 8.5);
       const height = 4.2 + random() * 6.4;
       addPine(world, x, z, terrainY(x, z), height, Math.floor(random() * 1000));
     }
     for (let i = 0; i < 21; i++) {
       const z = 7 - i * 6.9 - random() * 3;
-      if (side === 1 && Math.abs(z - destinationSignZ) < 10) continue;
+      if (side === 1 && Math.abs(z - destinationSignZ) < 22) continue;
       const x = roadCenter(z) + side * (16 + random() * 23);
       const height = 5.5 + random() * 8;
       addPine(world, x, z, terrainY(x, z), height, Math.floor(random() * 1000));
@@ -362,6 +470,7 @@ function buildWorld() {
   for (let i = 0; i < 85; i++) {
     const side = random() > 0.5 ? 1 : -1;
     const z = 12 - random() * 135;
+    if (side === 1 && Math.abs(z - destinationSignZ) < 24) continue;
     const x = roadCenter(z) + side * (5.3 + random() * 9.5);
     const y = terrainY(x, z);
     if (i % 3 === 0) {
@@ -375,7 +484,7 @@ function buildWorld() {
   // Postes de madera y cables a ambos lados de la Ruta 40.
   for (const side of [-1, 1]) {
     const poleOffset = side < 0 ? -11.5 : 15.8;
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 13; i++) {
       const z = 7 - i * 15;
       const x = roadCenter(z) + poleOffset;
       const y = terrainY(x, z);
@@ -383,7 +492,7 @@ function buildWorld() {
       world.box([x, y + 7.7, z], [2.7, 0.16, 0.16], hex("#4a4035"));
       world.box([x - 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
       world.box([x + 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
-      if (i < 8) {
+      if (i < 12) {
         const nextZ = z - 15, nextX = roadCenter(nextZ) + poleOffset;
         world.beam([x - 0.8, y + 7.75, z], [nextX - 0.8, terrainY(nextX, nextZ) + 7.75, nextZ], 0.045, hex("#232c31"));
         world.beam([x + 0.8, y + 7.75, z], [nextX + 0.8, terrainY(nextX, nextZ) + 7.75, nextZ], 0.045, hex("#30373a"));
@@ -397,17 +506,19 @@ function buildWorld() {
   world.box([signX, signY + 2.38, signZ], [1.25, 0.98, 0.16], hex("#9b8a6e"), hex("#5d5448"));
   world.cone(signX, signY + 2.1, signZ - 0.11, 0.31, 0.55, 3, hex("#a94f3f"));
 
-  const destinationX = roadCenter(destinationSignZ) + 11.2;
+  const destinationX = roadCenter(destinationSignZ) + 12.6;
   const destinationGround = terrainY(destinationX, destinationSignZ);
-  const destinationY = destinationGround + 3.55;
-  for (const dx of [-2.72, 2.72]) {
-    world.box([destinationX + dx, destinationGround + 1.45, destinationSignZ], [0.18, 2.9, 0.18], hex("#4a4034"));
+  const destinationY = destinationGround + 4.0;
+  for (const dx of [-3.4, 3.4]) {
+    world.box([destinationX + dx, destinationGround + 1.65, destinationSignZ], [0.24, 3.3, 0.24], hex("#514638"));
   }
-  world.box([destinationX, destinationY, destinationSignZ], [7.15, 2.05, 0.2], hex("#104637"), hex("#1b5945"));
-  world.box([destinationX, destinationY + 0.91, destinationSignZ + 0.115], [6.95, 0.045, 0.035], hex("#83a99a"));
-  world.box([destinationX, destinationY - 0.91, destinationSignZ + 0.115], [6.95, 0.045, 0.035], hex("#83a99a"));
-  addPixelText(world, "EL BOLSÓN", destinationX, destinationY + 0.43, destinationSignZ + 0.14, 0.1, hex("#f0eee0"));
-  addPixelText(world, "2 KILÓMETROS", destinationX, destinationY - 0.48, destinationSignZ + 0.14, 0.08, hex("#f0eee0"));
+  world.box([destinationX, destinationY, destinationSignZ], [9.25, 2.75, 0.32], hex("#102f35"), hex("#1c5a4a"));
+  world.box([destinationX, destinationY + 1.18, destinationSignZ + 0.19], [8.95, 0.06, 0.04], hex("#d3c28f"));
+  world.box([destinationX, destinationY - 1.18, destinationSignZ + 0.19], [8.95, 0.06, 0.04], hex("#d3c28f"));
+  world.box([destinationX, destinationY + 1.4, destinationSignZ + 0.2], [1.0, 0.12, 0.08], hex("#f4d8a1"));
+  addPixelText(world, "EL BOLSÓN", destinationX, destinationY + 0.48, destinationSignZ + 0.23, 0.145, hex("#fff3db"));
+  addPixelText(world, "2 KILÓMETROS", destinationX, destinationY - 0.55, destinationSignZ + 0.23, 0.11, hex("#fff3db"));
+  addTown(world);
 
   return world;
 }
@@ -438,7 +549,7 @@ function buildCar() {
 
 function buildHeadlights() {
   const lights = new MeshBuilder();
-  const warm = hex("#625b46");
+  const warm = hex("#c4a77a");
   lights.triangle([-0.45, 0.2, -2.1], [-5.3, 0.16, -39], [-0.2, 0.16, -39], warm);
   lights.triangle([0.45, 0.2, -2.1], [0.2, 0.16, -39], [5.3, 0.16, -39], warm);
   return lights;
@@ -448,8 +559,8 @@ function buildCockpit() {
   const cockpit = new MeshBuilder();
   const dark = hex("#171d22");
   const lighter = hex("#30373b");
-  const skin = hex("#9c725b");
-  const sleeve = hex("#2c353d");
+  const skin = hex("#b78364");
+  const sleeve = hex("#252f39");
   cockpit.box([0, 0.78, -1.78], [3.45, 0.52, 1.15], dark, lighter);
   cockpit.box([0, 0.99, -1.48], [3.35, 0.12, 0.72], hex("#252c31"));
   cockpit.box([0, 0.63, -3.6], [3.3, 0.32, 2.6], hex("#20282d"), hex("#141a20"));
@@ -476,14 +587,23 @@ function buildCockpit() {
   cockpit.box([0, 1.03, -0.88], [0.22, 0.2, 0.09], hex("#282f34"));
 
   // Brazos con mangas, puños y ambas manos agarrando el aro del volante.
-  cockpit.beam([-1.3, 0.78, -1.05], [-0.38, 1.18, -0.86], 0.29, sleeve);
-  cockpit.beam([1.3, 0.78, -1.05], [0.38, 1.18, -0.86], 0.29, sleeve);
-  cockpit.beam([-0.48, 1.17, -0.83], [-0.34, 1.23, -0.87], 0.2, hex("#4c4b47"));
-  cockpit.beam([0.48, 1.17, -0.83], [0.34, 1.23, -0.87], 0.2, hex("#4c4b47"));
-  cockpit.box([-0.34, 1.21, -0.79], [0.22, 0.18, 0.18], skin, hex("#725342"));
-  cockpit.box([0.34, 1.21, -0.79], [0.22, 0.18, 0.18], skin, hex("#725342"));
-  cockpit.box([-0.29, 1.24, -0.72], [0.12, 0.10, 0.12], hex("#b88b70"));
-  cockpit.box([0.29, 1.24, -0.72], [0.12, 0.10, 0.12], hex("#b88b70"));
+  cockpit.beam([-1.3, 0.78, -1.05], [-0.38, 1.18, -0.86], 0.31, sleeve);
+  cockpit.beam([1.3, 0.78, -1.05], [0.38, 1.18, -0.86], 0.31, sleeve);
+  for (const side of [-1, 1]) {
+    const palmX = side * 0.34;
+    const cuff = hex("#66717a");
+    cockpit.beam([side * 0.52, 1.17, -0.84], [palmX, 1.22, -0.79], 0.22, cuff);
+    cockpit.box([palmX, 1.22, -0.79], [0.28, 0.2, 0.18], skin, hex("#855b49"));
+    for (let finger = 0; finger < 4; finger++) {
+      const fingerY = 1.13 + finger * 0.035;
+      const startX = palmX + side * (finger * 0.055 - 0.08);
+      const endX = startX + side * 0.045;
+      cockpit.beam([startX, fingerY, -0.72], [endX, fingerY - 0.025, -0.64], 0.062, skin);
+      cockpit.box([startX, fingerY, -0.715], [0.075, 0.065, 0.065], hex("#c49372"));
+    }
+    cockpit.beam([palmX - side * 0.1, 1.25, -0.76], [palmX - side * 0.18, 1.18, -0.7], 0.085, hex("#ad785d"));
+    cockpit.beam([palmX - side * 0.09, 1.16, -0.695], [palmX + side * 0.07, 1.16, -0.695], 0.018, hex("#d3a183"));
+  }
 
   // Tablero: dos relojes, velocímetro analógico y lectura digital en píxeles.
   cockpit.disc(-0.75, 0.92, -1.17, 0.22, hex("#090e12"));
@@ -585,9 +705,11 @@ void main() {
   vec3 n = normalize(vNormal);
   vec3 sun = normalize(vec3(-0.38, 0.78, 0.42));
   float diffuse = max(dot(n, sun), 0.0);
-  float light = 0.66 + floor(diffuse * 3.0) * 0.105;
-  vec3 color = vColor * light;
-  float fog = smoothstep(53.0, 142.0, vDepth);
+  float ambient = 0.62 + max(n.y, 0.0) * 0.15;
+  float light = ambient + diffuse * 0.48 + floor(diffuse * 4.0) * 0.035;
+  vec3 color = vColor * light * vec3(1.11, 1.02, 0.91);
+  color += vec3(0.045, 0.018, 0.004) * max(n.y, 0.0);
+  float fog = smoothstep(76.0, 205.0, vDepth);
   color = mix(color, uFogColor, fog);
   float scan = 1.0 - 0.022 * (0.5 + 0.5 * sin(gl_FragCoord.y * 3.14159));
   float grain = (hash(floor(gl_FragCoord.xy * 0.72) + floor(uTime * 8.0)) - 0.5) * 0.022;
@@ -687,8 +809,11 @@ export function Route40LowPolyOpening() {
   const titleRef = useRef<HTMLDivElement | null>(null);
   const blackRef = useRef<HTMLDivElement | null>(null);
   const endingTitleRef = useRef<HTMLDivElement | null>(null);
-  const [replay, setReplay] = useState(0);
-  const [finished, setFinished] = useState(false);
+  const gameHudRef = useRef<HTMLDivElement | null>(null);
+  const arrivalRef = useRef<HTMLDivElement | null>(null);
+  const progressRef = useRef<HTMLDivElement | null>(null);
+  const keysRef = useRef<Set<string>>(new Set());
+  const [arrived, setArrived] = useState(false);
   const [fallback, setFallback] = useState(false);
 
   useEffect(() => {
@@ -709,7 +834,55 @@ export function Route40LowPolyOpening() {
     let frame = 0;
     let startedAt = 0;
     let started = false;
-    let ended = false;
+    let previousFrame = 0;
+    let driveElapsed = 0;
+    let travelled = 0;
+    let driveSpeed = 0;
+    let laneOffset = 0;
+    let lookYaw = 0;
+    let lookPitch = 0;
+    let arrivedLocal = false;
+    const keys = keysRef.current;
+    keys.clear();
+    setArrived(false);
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if (["w", "a", "d", "arrowleft", "arrowright", "arrowup", "arrowdown", "q", "e"].includes(key)) {
+        if (key.startsWith("arrow")) event.preventDefault();
+        keys.add(key);
+      }
+    };
+    const onKeyUp = (event: KeyboardEvent) => keys.delete(event.key.toLowerCase());
+    const onBlur = () => keys.clear();
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+
+    let dragging = false;
+    let pointerX = 0;
+    let pointerY = 0;
+    const onPointerDown = (event: PointerEvent) => {
+      dragging = true;
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      try { canvas.setPointerCapture(event.pointerId); } catch { /* Captura opcional */ }
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (!dragging) return;
+      const dx = event.clientX - pointerX;
+      const dy = event.clientY - pointerY;
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      lookYaw = clamp(lookYaw + dx * 0.0038, -1.18, 1.18);
+      lookPitch = clamp(lookPitch - dy * 0.0023, -0.42, 0.42);
+    };
+    const onPointerUp = () => { dragging = false; };
+    canvas.style.touchAction = "none";
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerUp);
     let worldMesh: Mesh | null = null;
     let carMesh: Mesh | null = null;
     let lightMesh: Mesh | null = null;
@@ -750,20 +923,43 @@ export function Route40LowPolyOpening() {
     gl.clearColor(0, 0, 0, 0);
 
     const fogLocation = gl.getUniformLocation(program, "uFogColor");
-    gl.uniform3fv(fogLocation, new Float32Array([0.31, 0.35, 0.36]));
+    gl.uniform3fv(fogLocation, new Float32Array([0.53, 0.36, 0.30]));
     const resolutionLocation = gl.getUniformLocation(program, "uResolution");
     const timeLocation = gl.getUniformLocation(program, "uTime");
 
-    setFinished(false);
     setFallback(false);
 
     const animate = (now: number) => {
       if (!active || !program || !worldMesh || !carMesh || !lightMesh || !cockpitMesh || !windshieldMesh) return;
       if (!started) {
         startedAt = now;
+        previousFrame = now;
         started = true;
       }
-      const elapsed = Math.min(DURATION, Math.max(0, (now - startedAt) / 1000));
+      const elapsed = Math.max(0, (now - startedAt) / 1000);
+      const dt = clamp((now - previousFrame) / 1000, 0, 0.05);
+      previousFrame = now;
+
+      if (elapsed >= DURATION && !arrivedLocal) {
+        if (keys.has("w")) {
+          driveSpeed = Math.min(5.4, driveSpeed + dt * 3.8);
+          driveElapsed += dt;
+        } else {
+          driveSpeed = Math.max(0, driveSpeed - dt * 7.0);
+        }
+        if (keys.has("a")) laneOffset = clamp(laneOffset - dt * 2.15, -2.35, 2.35);
+        if (keys.has("d")) laneOffset = clamp(laneOffset + dt * 2.15, -2.35, 2.35);
+        if (keys.has("arrowleft") || keys.has("q")) lookYaw = clamp(lookYaw - dt * 1.15, -1.18, 1.18);
+        if (keys.has("arrowright") || keys.has("e")) lookYaw = clamp(lookYaw + dt * 1.15, -1.18, 1.18);
+        if (keys.has("arrowup")) lookPitch = clamp(lookPitch + dt * 0.7, -0.42, 0.42);
+        if (keys.has("arrowdown")) lookPitch = clamp(lookPitch - dt * 0.7, -0.42, 0.42);
+        travelled += driveSpeed * dt;
+        if (driveElapsed >= 20) {
+          arrivedLocal = true;
+          driveSpeed = 0;
+          setArrived(true);
+        }
+      }
       const rect = canvas.getBoundingClientRect();
       const width = Math.max(1, rect.width);
       const height = Math.max(1, rect.height);
@@ -780,12 +976,19 @@ export function Route40LowPolyOpening() {
       gl.uniform1f(timeLocation, elapsed);
       gl.useProgram(program);
 
-      const carZ = -elapsed * 4.1;
+      const carZ = elapsed < DURATION ? -elapsed * 4.1 : -DURATION * 4.1 - travelled;
+      const carX = roadCenter(carZ) + laneOffset;
       const transition = smooth(4.48, 5.95, elapsed);
       const aerialEye: V3 = [0, 38, carZ + 13];
       const aerialTarget: V3 = [0, 0, carZ - 1.5];
-      const driverEye: V3 = [Math.sin(elapsed * 1.3) * 0.035, 1.57, carZ + 0.56];
-      const driverTarget: V3 = [Math.sin(elapsed * 0.44) * 0.35, 2.6, carZ - 39];
+      const driverEye: V3 = [carX, 1.57, carZ + 0.56];
+      const driverTarget: V3 = elapsed < DURATION
+        ? [Math.sin(elapsed * 0.44) * 0.35, 2.6, carZ - 39]
+        : [
+            carX + Math.sin(lookYaw) * 39,
+            2.6 + lookPitch * 18,
+            carZ + 0.56 - Math.cos(lookYaw) * 39,
+          ];
       const eye: V3 = [
         mix(aerialEye[0], driverEye[0], transition),
         mix(aerialEye[1], driverEye[1], transition),
@@ -797,13 +1000,13 @@ export function Route40LowPolyOpening() {
         mix(aerialTarget[2], driverTarget[2], transition),
       ];
       const fov = mix(49, 66, transition) * Math.PI / 180;
-      const projection = perspective(fov, width / height, 0.1, 240);
+      const projection = perspective(fov, width / height, 0.1, 340);
       const view = lookAt(eye, target, [0, 1, 0]);
       const viewProjection = multiply(projection, view);
       const identity = translation(0, 0, 0);
       bindMesh(gl, program, worldMesh, viewProjection, view, identity);
 
-      const carModel = translation(0, 0, carZ);
+      const carModel = translation(carX, 0, carZ);
       const aerialVisibility = 1 - smooth(5.1, 5.95, elapsed);
       if (aerialVisibility > 0.01) {
         bindMesh(gl, program, carMesh, viewProjection, view, carModel);
@@ -824,23 +1027,40 @@ export function Route40LowPolyOpening() {
         titleRef.current.style.opacity = String(smooth(0.28, 0.9, elapsed) * (1 - smooth(4.1, 4.7, elapsed)));
       }
       if (blackRef.current) {
-        blackRef.current.style.opacity = String(smooth(11.55, 12.95, elapsed) * 0.985);
+        const fadeToPlay = smooth(11.6, 12.45, elapsed) * (1 - smooth(13.05, 13.9, elapsed));
+        blackRef.current.style.opacity = String(fadeToPlay * 0.985);
       }
       if (endingTitleRef.current) {
-        endingTitleRef.current.style.opacity = String(smooth(12.65, 13.5, elapsed));
+        endingTitleRef.current.style.opacity = String(
+          smooth(12.25, 12.75, elapsed) * (1 - smooth(13.28, 13.92, elapsed)),
+        );
+      }
+      if (gameHudRef.current) {
+        gameHudRef.current.style.opacity = String(
+          smooth(DURATION + 0.1, DURATION + 0.9, elapsed) * (arrivedLocal ? 0.32 : 1),
+        );
+      }
+      if (progressRef.current) {
+        progressRef.current.style.width = String(clamp(driveElapsed / 20, 0, 1) * 100) + "%";
+      }
+      if (arrivalRef.current) {
+        arrivalRef.current.style.opacity = arrivedLocal ? "1" : "0";
       }
 
-      if (elapsed >= DURATION) {
-        ended = true;
-        setFinished(true);
-        return;
-      }
-      if (!ended) frame = window.requestAnimationFrame(animate);
+      frame = window.requestAnimationFrame(animate);
     };
 
     frame = window.requestAnimationFrame(animate);
     return () => {
       active = false;
+      keys.clear();
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointercancel", onPointerUp);
       window.cancelAnimationFrame(frame);
       if (worldMesh) gl.deleteBuffer(worldMesh.buffer);
       if (carMesh) gl.deleteBuffer(carMesh.buffer);
@@ -849,7 +1069,7 @@ export function Route40LowPolyOpening() {
       if (windshieldMesh) gl.deleteBuffer(windshieldMesh.buffer);
       if (program) gl.deleteProgram(program);
     };
-  }, [replay]);
+  }, []);
 
   if (fallback) return <CanvasFallback />;
 
@@ -859,12 +1079,12 @@ export function Route40LowPolyOpening() {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, #111923 0%, #26323a 37%, #827160 67%, #50594f 100%)",
+            "radial-gradient(ellipse at 76% 48%, rgba(255,190,126,.34), transparent 36%), linear-gradient(180deg, #182333 0%, #46545e 35%, #c37d5d 66%, #e0a776 100%)",
         }}
       />
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 h-full w-full"
+        className="absolute inset-0 h-full w-full touch-none"
         role="img"
         aria-label="Cinemática 3D low poly de La Señal en la Ruta 40: un auto atraviesa una carretera patagónica con pinos geométricos y el Piltriquitrón reconstruido como una montaña de polígonos."
       />
@@ -891,28 +1111,58 @@ export function Route40LowPolyOpening() {
         style={{ opacity: 0 }}
       >
         <div className="text-center">
-          <p className="font-serif text-4xl tracking-[0.18em] text-[#e8d2b6] drop-shadow-[0_0_24px_rgba(202,126,84,0.35)] sm:text-6xl">
-            CONTINUARÁ
+          <p className="font-serif text-4xl tracking-[0.16em] text-[#f0d8bd] drop-shadow-[0_0_32px_rgba(255,170,105,0.55)] sm:text-6xl">
+            EL BOLSÓN · RÍO NEGRO
           </p>
           <div className="mx-auto mt-5 h-px w-28 bg-[#c28e69]/70" />
         </div>
       </div>
-      {finished && (
-        <div className="absolute inset-x-0 bottom-[max(28px,env(safe-area-inset-bottom))] z-40 flex flex-wrap items-center justify-center gap-3 px-4">
-          <button
-            type="button"
-            onClick={() => setReplay((value) => value + 1)}
-            className="inline-flex min-h-11 items-center gap-2 border border-amber-100/35 bg-black/55 px-5 py-3 font-mono text-[11px] tracking-[.18em] text-amber-100 backdrop-blur-md transition hover:border-amber-100/80 hover:bg-black/80"
-          >
-            <RotateCcw size={14} /> REPETIR CINEMÁTICA
-          </button>
-          <Link
-            to="/"
-            className="inline-flex min-h-11 items-center gap-2 border border-white/20 bg-black/40 px-5 py-3 font-mono text-[11px] tracking-[.18em] text-white/75 backdrop-blur-md transition hover:border-white/60 hover:text-white"
-          >
-            <ArrowLeft size={14} /> VOLVER AL INICIO
-          </Link>
+      <div
+        ref={gameHudRef}
+        className="pointer-events-none absolute inset-x-0 bottom-5 z-30 flex flex-col items-center gap-2 px-3 text-center transition-opacity duration-300"
+        style={{ opacity: 0 }}
+      >
+        <div className="rounded-sm border border-amber-100/25 bg-[#101820]/70 px-4 py-2 font-mono text-[10px] tracking-[.14em] text-amber-50 shadow-[0_0_30px_rgba(255,176,105,.14)] backdrop-blur-md sm:text-xs">
+          W · AVANZAR
+          <span className="mx-3 text-amber-100/35">|</span>
+          A / D · MOVERSE POR LA RUTA
+          <span className="mx-3 text-amber-100/35">|</span>
+          ARRASTRÁ EL MOUSE · MIRAR
         </div>
+        <div className="h-1 w-44 overflow-hidden rounded-full bg-white/15">
+          <div ref={progressRef} className="h-full w-0 bg-amber-200 shadow-[0_0_12px_rgba(255,206,137,.9)] transition-[width] duration-100" />
+        </div>
+        <div className="pointer-events-auto flex items-center gap-3 md:hidden">
+          {(["a", "w", "d"] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onPointerDown={(event) => { event.preventDefault(); keysRef.current.add(key); }}
+              onPointerUp={() => keysRef.current.delete(key)}
+              onPointerLeave={() => keysRef.current.delete(key)}
+              onPointerCancel={() => keysRef.current.delete(key)}
+              className="grid h-12 w-12 place-items-center rounded border border-amber-100/35 bg-black/60 font-mono text-sm font-bold text-amber-50 shadow-lg backdrop-blur-md active:bg-amber-100/25"
+              aria-label={key === "w" ? "Avanzar" : key === "a" ? "Moverse a la izquierda" : "Moverse a la derecha"}
+            >
+              {key.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+      {arrived && (
+      <div
+        ref={arrivalRef}
+        className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-[#090d10]/20 px-5 text-center transition-opacity duration-700"
+        style={{ opacity: 0 }}
+      >
+        <div className="border-y border-amber-100/25 bg-[#101820]/80 px-8 py-8 shadow-[0_0_70px_rgba(243,159,92,.2)] backdrop-blur-md">
+          <p className="font-mono text-[10px] tracking-[.34em] text-amber-100/70">HAS LLEGADO</p>
+          <p className="mt-3 font-serif text-3xl tracking-[.13em] text-[#f4dfc6] sm:text-5xl">EL BOLSÓN</p>
+          <p className="mt-3 font-mono text-xs tracking-[.3em] text-amber-100">BAR ABIERTO</p>
+          <div className="mx-auto mt-6 h-px w-20 bg-amber-100/45" />
+          <p className="mt-5 font-serif text-2xl tracking-[.2em] text-[#eac9a8] sm:text-3xl">CONTINUARÁ</p>
+        </div>
+      </div>
       )}
       <div className="pointer-events-none absolute bottom-3 right-4 z-40 font-mono text-[9px] tracking-[.2em] text-white/30">
         LA SEÑAL EN LA RUTA 40 · PLAY / SP
