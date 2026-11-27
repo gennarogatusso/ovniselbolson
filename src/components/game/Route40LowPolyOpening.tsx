@@ -580,6 +580,34 @@ function buildWorld() {
   return world;
 }
 
+
+function buildSkyDressing() {
+  const sky = new MeshBuilder();
+  const sunCore = hex("#fff0c4");
+  const sunGold = hex("#ffd18b");
+  const cloudLight = hex("#e4d9c6");
+  const cloudShade = hex("#b9c0c0");
+  // Sol bajo de Patagonia, con discos superpuestos para un halo suave.
+  sky.disc(-17, 31, -205, 7.2, hex("#f0a96f"), 48);
+  sky.disc(-17, 31, -204.8, 5.1, sunGold, 48);
+  sky.disc(-17, 31, -204.6, 3.35, sunCore, 48);
+  // Nubes cúmulo low-poly en varias capas, con volumen y bordes cálidos.
+  const clouds = [
+    [-37, 36, -190, 13, 3.1, 4.2], [-29, 37.2, -190, 11, 4.1, 4.8],
+    [-20, 36.2, -190, 12, 3.2, 4.2], [5, 40, -215, 15, 3.2, 5.2],
+    [16, 41.2, -215, 12, 4.1, 5.2], [27, 39.8, -215, 14, 3.2, 5.2],
+    [-48, 29, -164, 11, 2.5, 4.2], [-39, 30, -164, 9, 3.2, 4.2],
+    [39, 33, -188, 13, 2.8, 4.8], [48, 34, -188, 9, 3.5, 4.8],
+  ];
+  for (let i = 0; i < clouds.length; i++) {
+    const [x,y,z,w,h,d] = clouds[i]!;
+    sky.box([x, y, z], [w, h, d], cloudShade, hex("#aeb8bb"));
+    sky.box([x - w * 0.2, y + h * 0.27, z - 0.08], [w * 0.58, h * 0.68, d * 0.9], cloudLight);
+    sky.box([x + w * 0.24, y + h * 0.2, z + 0.06], [w * 0.48, h * 0.56, d * 0.88], i % 2 ? cloudLight : hex("#d7d1c4"));
+  }
+  return sky;
+}
+
 function buildCar() {
   const car = new MeshBuilder();
   car.box([0, 0.48, 0], [1.9, 0.62, 4.45], hex("#252c32"), hex("#465158"));
@@ -901,6 +929,9 @@ void main() {
   float light = ambient + diffuse * 0.48 + floor(diffuse * 4.0) * 0.035;
   vec3 color = vColor * light * vec3(1.11, 1.02, 0.91);
   color += vec3(0.045, 0.018, 0.004) * max(n.y, 0.0);
+  // Bloom aproximado de bajo costo: halo de altas luces sin un segundo render.
+  vec3 highlights = max(color - vec3(0.58, 0.56, 0.52), vec3(0.0));
+  color += highlights * 0.19;
   float fog = smoothstep(76.0, 205.0, vDepth);
   color = mix(color, uFogColor, fog);
   float scan = 1.0 - 0.022 * (0.5 + 0.5 * sin(gl_FragCoord.y * 3.14159));
@@ -1044,19 +1075,19 @@ export function Route40LowPolyOpening() {
   const fuelProgressRef = useRef<HTMLDivElement | null>(null);
   const payingProgressRef = useRef<HTMLDivElement | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
-  const stageRef = useRef<"driving" | "stopped" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished">("driving");
+  const stageRef = useRef<"driving" | "stopped" | "exiting" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished">("driving");
   const fuelStartedAtRef = useRef(0);
   const exitStartedAtRef = useRef(0);
   const payingStartedAtRef = useRef(0);
   const warningStartedAtRef = useRef(0);
   const returnStartedAtRef = useRef(0);
   const engineAudioRef = useRef<EngineAudio | null>(null);
-  const [interactionStage, setInteractionStage] = useState<"driving" | "stopped" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished">("driving");
+  const [interactionStage, setInteractionStage] = useState<"driving" | "stopped" | "exiting" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished">("driving");
   const [fallback, setFallback] = useState(false);
-  const setStage = (next: "driving" | "stopped" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished") => {
+  const setStage = (next: "driving" | "stopped" | "exiting" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished") => {
     stageRef.current = next;
     if (next === "fueling") fuelStartedAtRef.current = performance.now();
-    if (next === "onFoot") exitStartedAtRef.current = performance.now();
+    if (next === "exiting" || next === "onFoot") exitStartedAtRef.current = performance.now();
     if (next === "paying") payingStartedAtRef.current = performance.now();
     if (next === "warning") warningStartedAtRef.current = performance.now();
     if (next === "returning") returnStartedAtRef.current = performance.now();
@@ -1106,7 +1137,7 @@ export function Route40LowPolyOpening() {
     setInteractionStage("driving");
     const advanceInteraction = () => {
       const stage = stageRef.current;
-      if (stage === "stopped") setStage("onFoot");
+      if (stage === "stopped") setStage("exiting");
       else if (stage === "onFoot") setStage("fueling");
       else if (stage === "payment") setStage("paying");
       else if (stage === "warning") setStage("returning");
@@ -1154,6 +1185,7 @@ export function Route40LowPolyOpening() {
     canvas.addEventListener("pointerup", onPointerUp);
     canvas.addEventListener("pointercancel", onPointerUp);
     let worldMesh: Mesh | null = null;
+    let skyMesh: Mesh | null = null;
     let carMesh: Mesh | null = null;
     let lightMesh: Mesh | null = null;
     let cockpitMesh: Mesh | null = null;
@@ -1177,6 +1209,7 @@ export function Route40LowPolyOpening() {
       }
 
       worldMesh = createMesh(gl, buildWorld());
+      skyMesh = createMesh(gl, buildSkyDressing());
       carMesh = createMesh(gl, buildCar());
       lightMesh = createMesh(gl, buildHeadlights());
       cockpitMesh = createMesh(gl, buildCockpit());
@@ -1248,6 +1281,9 @@ export function Route40LowPolyOpening() {
           driveSpeed = 0; keys.clear(); setStage("finished");
         }
       }
+      if (stageRef.current === "exiting" && now - exitStartedAtRef.current >= 1450) {
+        setStage("onFoot");
+      }
       if (stageRef.current === "fueling" && !fuelingComplete && now - fuelStartedAtRef.current >= 3400) {
         fuelingComplete = true; setStage("payment");
       }
@@ -1282,7 +1318,7 @@ export function Route40LowPolyOpening() {
       const transition = smooth(4.48, 5.95, elapsed);
       const aerialEye: V3 = [0, 38 + roadHeightAt(carZ), carZ + 13];
       const aerialTarget: V3 = [0, roadHeightAt(carZ), carZ - 1.5];
-      const outsideStage = stageRef.current === "onFoot" || stageRef.current === "fueling" ||
+      const outsideStage = stageRef.current === "exiting" || stageRef.current === "onFoot" || stageRef.current === "fueling" ||
         stageRef.current === "payment" || stageRef.current === "paying" ||
         stageRef.current === "warning" || stageRef.current === "returning";
       const shake = transition * (0.005 + driveSpeed * 0.0021) * (outsideStage ? 0 : 1);
@@ -1323,7 +1359,7 @@ export function Route40LowPolyOpening() {
       const exitBlend = stageRef.current === "returning"
         ? returnBlend
         : outsideStage
-          ? smooth(0, 0.9, (now - exitStartedAtRef.current) / 1000)
+          ? smooth(0, 1.45, (now - exitStartedAtRef.current) / 1000)
           : 0;
       const eye: V3 = [
         mix(cockpitEye[0], footEye[0], exitBlend),
@@ -1346,6 +1382,7 @@ export function Route40LowPolyOpening() {
       const viewProjection = multiply(projection, view);
       const identity = translation(0, 0, 0);
       bindMesh(gl, program, worldMesh, viewProjection, view, identity);
+      if (skyMesh) bindMesh(gl, program, skyMesh, viewProjection, view, identity);
 
       const carModel = translation(carX, carY, carZ);
       const aerialVisibility = 1 - smooth(5.1, 5.95, elapsed);
@@ -1354,7 +1391,7 @@ export function Route40LowPolyOpening() {
         bindMesh(gl, program, carMesh, viewProjection, view, carModel);
       }
       const lightVisibility = smooth(4.8, 5.65, elapsed);
-      if (lightVisibility > 0.01 && (!outsideStage || returningToCar)) {
+      if (lightVisibility > 0.01 && (!outsideStage || returningToCar || (stageRef.current === "exiting" && exitBlend < 0.82))) {
         bindMesh(gl, program, lightMesh, viewProjection, view, carModel);
         bindMesh(gl, program, cockpitMesh, viewProjection, view, carModel);
         gl.enable(gl.BLEND);
@@ -1435,6 +1472,7 @@ export function Route40LowPolyOpening() {
       canvas.removeEventListener("pointercancel", onPointerUp);
       window.cancelAnimationFrame(frame);
       if (worldMesh) gl.deleteBuffer(worldMesh.buffer);
+      if (skyMesh) gl.deleteBuffer(skyMesh.buffer);
       if (carMesh) gl.deleteBuffer(carMesh.buffer);
       if (lightMesh) gl.deleteBuffer(lightMesh.buffer);
       if (cockpitMesh) gl.deleteBuffer(cockpitMesh.buffer);
@@ -1541,9 +1579,17 @@ export function Route40LowPolyOpening() {
                 <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">ESTACIÓN DE SERVICIO</p>
                 <h2 className="mt-3 font-serif text-3xl tracking-[.12em] text-white">YPF · EL BOLSÓN</h2>
                 <p className="mt-3 text-sm text-slate-200">Estacionaste junto a los surtidores. El motor se apaga.</p>
-                <button type="button" onClick={() => setStage("onFoot")} className="mt-6 min-h-12 w-full border border-sky-200/40 bg-[#0875b9] px-5 py-3 font-mono text-xs tracking-[.18em] text-white shadow-[0_0_24px_rgba(8,117,185,.28)] hover:bg-[#0a88d2]">
+                <button type="button" onClick={() => setStage("exiting")} className="mt-6 min-h-12 w-full border border-sky-200/40 bg-[#0875b9] px-5 py-3 font-mono text-xs tracking-[.18em] text-white shadow-[0_0_24px_rgba(8,117,185,.28)] hover:bg-[#0a88d2]">
                   BAJAR DEL AUTO <span className="text-sky-100/70">· E</span>
                 </button>
+              </>
+            )}
+            {interactionStage === "exiting" && (
+              <>
+                <p className="font-mono text-[10px] tracking-[.34em] text-sky-200/75">YPF · ESTACIÓN DE SERVICIO</p>
+                <h2 className="mt-3 font-serif text-2xl text-white">Bajás del auto...</h2>
+                <p className="mt-2 text-sm text-slate-200">Abrís la puerta, apoyás un pie en el suelo y salís del vehículo.</p>
+                <div className="mx-auto mt-5 h-px w-24 bg-sky-200/60" />
               </>
             )}
             {interactionStage === "onFoot" && (
