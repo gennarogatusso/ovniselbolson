@@ -2322,7 +2322,7 @@ export function Route40LowPolyOpening() {
       pointerX = event.clientX;
       pointerY = event.clientY;
       if (event.pointerType === "mouse") {
-        if ((stageRef.current === "driving" && performance.now() - startedAt >= DURATION * 1000) || stageRef.current === "climbing" || stageRef.current === "escape") {
+        if ((stageRef.current === "driving" && performance.now() - startedAt >= DURATION * 1000) || stageRef.current === "climbing" || stageRef.current === "escape" || stageRef.current === "campApproach") {
           startEngineAudio();
           const requestLock = (canvas as HTMLCanvasElement & { requestPointerLock?: () => void | Promise<void> }).requestPointerLock;
           if (requestLock) {
@@ -3075,7 +3075,10 @@ export function Route40LowPolyOpening() {
       }
 
       if (engineAudioRef.current) {
-        if ((stageRef.current === "driving" || stageRef.current === "climbing" || stageRef.current === "escape") &&
+        if (stageRef.current === "campApproach") {
+          engineAudioRef.current.setThrottle(0.16 + (campSpeed / 8.4) * 0.58);
+          engineAudioRef.current.setRoadSpeed(campSpeed / 8.4);
+        } else if ((stageRef.current === "driving" || stageRef.current === "climbing" || stageRef.current === "escape") &&
           (stageRef.current === "climbing" || stageRef.current === "escape" || elapsed >= DURATION)) {
           const accelerating = keys.has("w") && !keys.has("s");
           const throttle = stageRef.current === "escape" ? 0.98 : accelerating
@@ -3103,6 +3106,14 @@ export function Route40LowPolyOpening() {
           : 0;
         driverReactionRef.current.style.opacity = String(reactionOpacity);
       }
+      if (starIndicatorRef.current) {
+        const starOpacity = impactElapsed >= 0
+          ? smooth(0.12, 0.48, impactElapsed) * (1 - smooth(5.7, 6.6, impactElapsed))
+          : 0;
+        const starSlide = 1 - smooth(0.12, 0.55, impactElapsed);
+        starIndicatorRef.current.style.opacity = String(starOpacity);
+        starIndicatorRef.current.style.transform = `translate3d(0,${-12 * starSlide}px,0) scale(${0.92 + 0.08 * smooth(0.12, 0.55, impactElapsed)})`;
+      }
       if (timeJumpRef.current) {
         const timeJumpOpacity = impactElapsed >= 0
           ? smooth(10, 10.65, impactElapsed) * (1 - smooth(13.75, 14.45, impactElapsed))
@@ -3112,16 +3123,18 @@ export function Route40LowPolyOpening() {
       if (gameHudRef.current) {
         gameHudRef.current.style.opacity = String(
           smooth(DURATION + 0.1, DURATION + 0.9, elapsed) *
-          (stageRef.current === "driving" || stageRef.current === "climbing" || stageRef.current === "escape" ? 1 : 0),
+          (stageRef.current === "driving" || stageRef.current === "climbing" || stageRef.current === "escape" || stageRef.current === "campApproach" ? 1 : 0),
         );
       }
       if (progressRef.current) {
-        const progress = stageRef.current === "escape"
-          ? (npcImpactAt>0?(now-npcImpactAt)/15500:(now-escapeStartedAt)/18500)
-          : stageRef.current === "climbing" ? climbElapsed/8.6 : driveElapsed/20;
+        const progress = stageRef.current === "campApproach"
+          ? campDistance / CAMP_STOP_DISTANCE
+          : stageRef.current === "escape"
+            ? (npcImpactAt>0?(now-npcImpactAt)/15500:(now-escapeStartedAt)/18500)
+            : stageRef.current === "climbing" ? climbElapsed/8.6 : driveElapsed/20;
         progressRef.current.style.width = String(clamp(progress, 0, 1) * 100) + "%";
       }
-      if (speedRef.current) speedRef.current.textContent = String(Math.round(driveSpeed * 19));
+      if (speedRef.current) speedRef.current.textContent = String(Math.round((stageRef.current === "campApproach" ? campSpeed : driveSpeed) * 19));
 
       frame = window.requestAnimationFrame(animate);
     };
@@ -3130,6 +3143,8 @@ export function Route40LowPolyOpening() {
     return () => {
       active = false;
       keys.clear();
+      interactionActionRef.current = null;
+      campAmbientStop?.();
       engineAudioRef.current?.destroy();
       engineAudioRef.current = null;
       window.removeEventListener("keydown", onKeyDown);
@@ -3221,6 +3236,18 @@ export function Route40LowPolyOpening() {
         <p className="font-serif text-3xl tracking-[0.12em] text-[#f4e4d1] drop-shadow-[0_3px_24px_rgba(0,0,0,0.9)] sm:text-5xl">
           30 minutos más tarde...
         </p>
+      </div>
+      <div
+        ref={starIndicatorRef}
+        className="pointer-events-none absolute left-5 top-5 z-40 flex items-center gap-1 rounded-md border border-white/15 bg-[#111820]/65 px-3 py-2 shadow-[0_5px_22px_rgba(0,0,0,.42)] backdrop-blur-sm"
+        style={{ opacity: 0, transform: "translate3d(0,-12px,0) scale(.92)" }}
+        aria-hidden="true"
+      >
+        <span className="text-xl leading-none text-amber-300 drop-shadow-[0_0_8px_rgba(255,195,88,.9)]">★</span>
+        <span className="text-xl leading-none text-slate-500/45">★</span>
+        <span className="text-xl leading-none text-slate-500/45">★</span>
+        <span className="text-xl leading-none text-slate-500/45">★</span>
+        <span className="text-xl leading-none text-slate-500/45">★</span>
       </div>
       <div
         ref={gameHudRef}
