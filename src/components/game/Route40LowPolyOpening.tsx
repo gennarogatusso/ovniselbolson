@@ -1390,6 +1390,49 @@ function buildCampingDoor() {
   return door;
 }
 
+function buildCampingCarExterior() {
+  const car = new MeshBuilder();
+  const body = hex("#252c32"), bodyLight = hex("#465158");
+  const dark = hex("#11191e"), glass = hex("#344c55"), trim = hex("#758087");
+
+  // Carrocería exterior exclusiva del camping: el compartimiento trasero queda abierto por arriba.
+  car.box([0, 0.48, -0.48], [1.9, 0.62, 2.95], body, bodyLight);
+  car.box([0, 0.9, -0.18], [1.52, 0.85, 2.2], hex("#192630"), hex("#485b62"));
+  car.box([0, 1.26, -0.2], [1.43, 0.09, 2.05], hex("#293940"));
+  car.box([0, 1.315, -0.18], [1.18, 0.025, 1.52], hex("#3b4850"));
+  car.box([0, 1.03, -0.93], [1.44, 0.56, 0.08], hex("#54656a"));
+  car.box([0, 1.03, 0.7], [1.4, 0.56, 0.08], hex("#192a32"));
+
+  // Vidrios laterales, techo y marcos, manteniendo la silueta del vehículo anterior.
+  for (const side of [-1, 1]) {
+    car.box([side * 0.78, 1.03, -0.08], [0.055, 0.53, 1.72], glass);
+    car.beam([side * 0.8, 1.28, -0.96], [side * 0.8, 1.28, 0.78], 0.045, trim);
+    car.beam([side * 0.8, 0.77, -0.96], [side * 0.8, 0.77, 0.78], 0.045, dark);
+    car.box([side * 0.98, 0.42, -1.35], [0.22, 0.58, 0.86], dark);
+    car.box([side * 0.98, 0.42, 1.35], [0.22, 0.58, 0.86], dark);
+    car.box([side * 0.62, 0.55, -2.05], [0.33, 0.16, 0.1], hex("#d8cfb5"));
+    car.box([side * 0.62, 0.55, 2.03], [0.33, 0.16, 0.1], hex("#a4463d"));
+  }
+
+  // Piso y paredes bajas del baúl; la bolsa y la caja quedan dentro de sus límites.
+  car.box([0, 0.31, 1.58], [1.58, 0.16, 1.05], hex("#242a2d"), hex("#3c4546"));
+  car.box([-0.78, 0.65, 1.58], [0.14, 0.62, 1.05], body, bodyLight);
+  car.box([0.78, 0.65, 1.58], [0.14, 0.62, 1.05], body, bodyLight);
+  car.box([0, 0.58, 2.08], [1.58, 0.52, 0.12], body, bodyLight);
+  car.box([0, 0.35, 2.22], [1.86, 0.25, 0.16], hex("#20272c"));
+  car.box([0, 0.81, -2.02], [1.1, 0.08, 0.12], dark);
+  car.box([0, 0.81, 1.52], [1.58, 0.12, 0.12], dark);
+  return car;
+}
+
+function buildCampingTrunkClosed() {
+  const hatch = new MeshBuilder();
+  hatch.box([0, -0.43, 0], [1.54, 0.9, 0.18], hex("#252e35"), hex("#48555d"));
+  hatch.box([0, -0.27, -0.11], [1.28, 0.44, 0.035], hex("#455b63"));
+  hatch.box([0, -0.73, -0.105], [0.34, 0.1, 0.035], hex("#9b8b72"));
+  return hatch;
+}
+
 function buildCampingTrunkLid() {
   const lid = new MeshBuilder();
   lid.box([0, -0.43, 0], [1.52, 0.9, 0.18], hex("#252e35"), hex("#48555d"));
@@ -2263,14 +2306,6 @@ export function Route40LowPolyOpening() {
     let lookPitch = 0;
     let crashStartedAt = 0;
     let crashExplosionMesh: Mesh | null = null;
-    let campingWorldMesh: Mesh | null = null;
-    let campingWaterMesh: Mesh | null = null;
-    let campingBridgeMesh: Mesh | null = null;
-    let campingGateLeafMesh: Mesh | null = null;
-    let campingDoorMesh: Mesh | null = null;
-    let campingTrunkLidMesh: Mesh | null = null;
-    let campingCharacterMesh: Mesh | null = null;
-    let campingGearMesh: Mesh | null = null;
     const keys = keysRef.current;
     keys.clear();
     stageRef.current = "driving";
@@ -2374,7 +2409,9 @@ export function Route40LowPolyOpening() {
     let campingWaterMesh: Mesh | null = null;
     let campingBridgeMesh: Mesh | null = null;
     let campingGateLeafMesh: Mesh | null = null;
+    let campingCarExteriorMesh: Mesh | null = null;
     let campingDoorMesh: Mesh | null = null;
+    let campingTrunkClosedMesh: Mesh | null = null;
     let campingTrunkLidMesh: Mesh | null = null;
     let campingCharacterMesh: Mesh | null = null;
     let campingGearMesh: Mesh | null = null;
@@ -2416,7 +2453,9 @@ export function Route40LowPolyOpening() {
       campingWaterMesh = createMesh(gl, buildCampingWater());
       campingBridgeMesh = createMesh(gl, buildCampingBridge());
       campingGateLeafMesh = createMesh(gl, buildCampingGateLeaf());
+      campingCarExteriorMesh = createMesh(gl, buildCampingCarExterior());
       campingDoorMesh = createMesh(gl, buildCampingDoor());
+      campingTrunkClosedMesh = createMesh(gl, buildCampingTrunkClosed());
       campingTrunkLidMesh = createMesh(gl, buildCampingTrunkLid());
       campingCharacterMesh = createMesh(gl, buildCampingCharacter());
       campingGearMesh = createMesh(gl, buildCampingGear());
@@ -2811,7 +2850,7 @@ export function Route40LowPolyOpening() {
           gl.enable(gl.BLEND);
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
           gl.depthMask(false);
-          bindMesh(gl, program, carMesh, viewProjection, view, carModel, outsideBlend);
+          if (campingCarExteriorMesh) bindMesh(gl, program, campingCarExteriorMesh, viewProjection, view, carModel, outsideBlend);
           gl.depthMask(true);
           gl.disable(gl.BLEND);
         }
@@ -2853,7 +2892,7 @@ export function Route40LowPolyOpening() {
         if (playerVisible && campingCharacterMesh) {
           const footstep = stageRef.current === "walkingToTrunk" ? Math.abs(Math.sin((now - walkStartedAt) * 0.009)) * 0.07 : 0;
           const playerModel = multiply(
-            translation(playerX, footstep, playerZ),
+            translation(playerX, campGroundY(playerX, playerZ) + footstep, playerZ),
             rotationY(playerFacing),
           );
           gl.enable(gl.BLEND);
@@ -2870,6 +2909,14 @@ export function Route40LowPolyOpening() {
           : stageRef.current === "trunkOpening"
             ? smooth(0.08, 1.65, (now - trunkStartedAt) / 1000)
             : 0;
+        if (campingTrunkClosedMesh && trunkProgress < 0.995 && outsideBlend > 0.005) {
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.depthMask(false);
+          bindMesh(gl, program, campingTrunkClosedMesh, viewProjection, view, carModel, outsideBlend * (1 - trunkProgress));
+          gl.depthMask(true);
+          gl.disable(gl.BLEND);
+        }
         if (campingTrunkLidMesh && trunkProgress > 0.005) {
           const lidModel = multiply(
             translation(carX, carY + 1.25, carZ + 2.2),
@@ -3168,6 +3215,8 @@ export function Route40LowPolyOpening() {
       if (document.pointerLockElement === canvas) document.exitPointerLock();
       window.cancelAnimationFrame(frame);
       if (worldMesh) gl.deleteBuffer(worldMesh.buffer);
+      if (campingCarExteriorMesh) gl.deleteBuffer(campingCarExteriorMesh.buffer);
+      if (campingTrunkClosedMesh) gl.deleteBuffer(campingTrunkClosedMesh.buffer);
       if (destinationSignMesh) gl.deleteBuffer(destinationSignMesh.buffer);
       if (skyMesh) gl.deleteBuffer(skyMesh.buffer);
       if (carMesh) gl.deleteBuffer(carMesh.buffer);
