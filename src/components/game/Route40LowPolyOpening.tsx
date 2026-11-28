@@ -1172,6 +1172,12 @@ function campGroundY(x: number, z: number) {
 
 function addCampingTree(mesh: MeshBuilder, x: number, z: number, height: number, seed: number, broadleaf: boolean) {
   const base = campGroundY(x, z);
+  // La luz rasante del atardecer proyecta una sombra geométrica larga hacia el claro.
+  const shadowTipX = x + height * 0.28, shadowTipZ = z + height * 0.72;
+  const shadowLeft: V3 = [x - height * 0.075, base + 0.018, z + height * 0.06];
+  const shadowRight: V3 = [x + height * 0.075, base + 0.018, z + height * 0.06];
+  const shadowTip: V3 = [shadowTipX, campGroundY(shadowTipX, shadowTipZ) + 0.018, shadowTipZ];
+  mesh.triangle(shadowLeft, shadowRight, shadowTip, hex("#29382f"));
   const trunkColor = hex(seed % 2 ? "#49372b" : "#58402f");
   const trunkHeight = height * (broadleaf ? 0.56 : 0.72);
   mesh.box([x, base + trunkHeight * 0.5, z], [height * 0.065, trunkHeight, height * 0.07], trunkColor);
