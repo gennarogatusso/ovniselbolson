@@ -1155,6 +1155,285 @@ function buildCar() {
   return car;
 }
 
+
+const CAMP_STOP_DISTANCE = 86;
+const CAMP_GATE_Z = -26;
+const CAMP_RIVER_Z = -153;
+
+function campRoadX(z: number) {
+  return Math.sin(z * 0.024) * 2.7 + Math.sin(z * 0.061) * 0.62;
+}
+
+function campGroundY(x: number, z: number) {
+  return -0.12 + Math.sin(x * 0.16 + z * 0.055) * 0.13 + Math.sin(z * 0.095 - x * 0.035) * 0.085;
+}
+
+function addCampingTree(mesh: MeshBuilder, x: number, z: number, height: number, seed: number, broadleaf: boolean) {
+  const base = campGroundY(x, z);
+  const trunkColor = hex(seed % 2 ? "#49372b" : "#58402f");
+  const trunkHeight = height * (broadleaf ? 0.56 : 0.72);
+  mesh.box([x, base + trunkHeight * 0.5, z], [height * 0.065, trunkHeight, height * 0.07], trunkColor);
+  if (broadleaf) {
+    const foliage = [hex("#31513b"), hex("#3c6244"), hex("#496f4c"), hex("#294834")];
+    const crownY = base + height * 0.73;
+    mesh.ellipsoid(x, crownY, z, height * 0.3, height * 0.25, height * 0.27, foliage[Math.floor(seed) % foliage.length]!, 10, 6);
+    mesh.ellipsoid(x - height * 0.17, crownY - height * 0.06, z + height * 0.08, height * 0.2, height * 0.19, height * 0.2, foliage[(Math.floor(seed) + 1) % foliage.length]!, 9, 5);
+    mesh.ellipsoid(x + height * 0.16, crownY - height * 0.03, z - height * 0.07, height * 0.19, height * 0.18, height * 0.2, foliage[(Math.floor(seed) + 2) % foliage.length]!, 9, 5);
+  } else {
+    const greens = [hex("#183c32"), hex("#20503a"), hex("#285a40"), hex("#316346")];
+    const layers = 4;
+    for (let layer = 0; layer < layers; layer++) {
+      const fraction = layer / layers;
+      const crownBase = base + height * (0.19 + fraction * 0.43);
+      const radius = height * (0.34 - fraction * 0.065) * (0.92 + (seed % 7) * 0.018);
+      mesh.cone(x, crownBase, z, radius, height * (0.48 - fraction * 0.055), 6, greens[(Math.floor(seed + layer) % greens.length)]!, greens[(Math.floor(seed + layer + 1) % greens.length)]!);
+    }
+  }
+}
+
+function buildCampingWorld() {
+  const world = new MeshBuilder();
+  const random = randomSource(9164);
+
+  // Terreno irregular: praderas, pequeñas ondulaciones y una depresión natural bajo el río.
+  for (let z0 = 24; z0 > -238; z0 -= 10) {
+    const z1 = z0 - 10;
+    for (let x0 = -100; x0 < 100; x0 += 10) {
+      const x1 = x0 + 10;
+      const point = (x: number, z: number): V3 => {
+        const basin = (1 - smooth(30, 47, Math.abs(x))) * (1 - smooth(18, 31, Math.abs(z - CAMP_RIVER_Z)));
+        return [x, campGroundY(x, z) - basin * 2.65, z];
+      };
+      const p00 = point(x0, z0), p10 = point(x1, z0), p11 = point(x1, z1), p01 = point(x0, z1);
+      const shade = random();
+      const color = hex(shade > 0.72 ? "#405a3b" : shade > 0.36 ? "#354f38" : "#2d4834");
+      world.triangle(p00, p10, p11, color);
+      world.triangle(p00, p11, p01, color);
+    }
+  }
+
+  // Camino de ripio con curvas suaves; el ancho nunca se estrecha en la tranquera.
+  for (let z = 18; z > -122; z -= 2.4) {
+    const next = z - 2.4;
+    const center0 = campRoadX(z), center1 = campRoadX(next);
+    const y0 = 0.035 + campGroundY(center0, z) * 0.12;
+    const y1 = 0.035 + campGroundY(center1, next) * 0.12;
+    const color = hex(Math.floor((z + 122) / 2.4) % 3 === 0 ? "#8c785d" : "#79684f");
+    world.quad([center0 - 3.7, y0, z], [center0 + 3.7, y0, z], [center1 + 3.7, y1, next], [center1 - 3.7, y1, next], color);
+    world.quad([center0 - 4.25, y0 - 0.012, z], [center0 - 3.72, y0 - 0.012, z], [center1 - 3.72, y1 - 0.012, next], [center1 - 4.25, y1 - 0.012, next], hex("#9a8666"));
+    world.quad([center0 + 3.72, y0 - 0.012, z], [center0 + 4.25, y0 - 0.012, z], [center1 + 4.25, y1 - 0.012, next], [center1 + 3.72, y1 - 0.012, next], hex("#9a8666"));
+  }
+
+  // Piedras pequeñas y pastos silvestres a los costados del camino.
+  for (let i = 0; i < 170; i++) {
+    const z = 17 - random() * 168;
+    const side = random() > 0.5 ? 1 : -1;
+    const x = campRoadX(z) + side * (5.2 + random() * 16.5);
+    if (Math.abs(z - CAMP_RIVER_Z) < 34 && Math.abs(x) < 25) continue;
+    const y = campGroundY(x, z);
+    if (i % 3 === 0) {
+      world.ellipsoid(x, y + 0.16, z, 0.28 + random() * 0.34, 0.16 + random() * 0.13, 0.3 + random() * 0.32, hex(i % 2 ? "#64705e" : "#737568"), 8, 5);
+    } else {
+      world.cone(x, y, z, 0.16 + random() * 0.24, 0.36 + random() * 0.52, 4, hex(i % 2 ? "#4a6b42" : "#607b49"));
+    }
+  }
+
+  // Bosque de coihues, cipreses y coníferas escalonadas; se conserva un claro visual hacia el río.
+  for (let i = 0; i < 112; i++) {
+    const z = 16 - random() * 212;
+    const side = random() > 0.5 ? 1 : -1;
+    const x = campRoadX(z) + side * (11.5 + random() * 38);
+    const bridgeView = z < -126 && z > -185 && Math.abs(x) < 24;
+    const riverShore = Math.abs(z - CAMP_RIVER_Z) < 12 && Math.abs(x) < 37;
+    if (bridgeView || riverShore) continue;
+    const broadleaf = i % 4 === 0 || i % 7 === 0;
+    const height = broadleaf ? 10 + random() * 9 : 13 + random() * 15;
+    addCampingTree(world, x, z, height, Math.floor(random() * 9000), broadleaf);
+  }
+  // Segunda línea de bosque en la orilla opuesta, con copas que enmarcan la cordillera.
+  for (let i = 0; i < 27; i++) {
+    const x = -83 + random() * 166;
+    const z = -190 - random() * 24;
+    if (Math.abs(x) < 23) continue;
+    addCampingTree(world, x, z, 12 + random() * 12, Math.floor(random() * 8000), i % 5 === 0);
+  }
+
+  // Entrada rural: dos postes gruesos, piedras de apoyo y herrajes visibles.
+  for (const x of [-5.65, 5.65]) {
+    const y = campGroundY(x, CAMP_GATE_Z);
+    world.box([x, y + 1.82, CAMP_GATE_Z], [0.48, 3.64, 0.5], hex("#58412e"), hex("#73543a"));
+    world.box([x, y + 3.56, CAMP_GATE_Z], [0.72, 0.2, 0.7], hex("#8a6742"));
+    world.ellipsoid(x, y + 0.18, CAMP_GATE_Z, 0.9, 0.22, 0.74, hex("#66685a"), 7, 4);
+  }
+  // Pequeño dintel de madera sobre el acceso.
+  world.beam([-5.65, 3.42, CAMP_GATE_Z], [5.65, 3.42, CAMP_GATE_Z], 0.24, hex("#62482f"));
+
+  // Formaciones rocosas que contienen el río y conectan visualmente las dos orillas.
+  for (let i = 0; i < 44; i++) {
+    const side = i % 2 ? -1 : 1;
+    const x = side * (31 + random() * 16);
+    const z = CAMP_RIVER_Z - 16 + random() * 32;
+    const y = campGroundY(x, z) - 0.08;
+    world.ellipsoid(x, y + 0.2, z, 0.8 + random() * 1.7, 0.35 + random() * 0.7, 0.8 + random() * 1.4, hex(i % 3 ? "#777c70" : "#8d8979"), 8, 5);
+  }
+
+  // Montañas lejanas patagónicas, con planos facetados y sombras violetas de atardecer.
+  const peaks: Array<[number, number]> = [[-105, 4], [-82, 20], [-62, 9], [-39, 31], [-15, 12], [12, 35], [38, 16], [61, 29], [85, 8], [108, 3]];
+  for (let i = 0; i < peaks.length - 1; i++) {
+    const [x0, h0] = peaks[i]!, [x1, h1] = peaks[i + 1]!;
+    const middleX = (x0 + x1) * 0.5;
+    const peakY = Math.max(h0, h1) + 10 + random() * 7;
+    world.triangle([x0, -3, -226], [middleX, peakY, -231], [x1, -3, -226], hex(i % 2 ? "#51465b" : "#655064"));
+    world.triangle([x0, -3, -226.3], [middleX, peakY * 0.62, -230.7], [x1, -3, -226.3], hex("#79606a"));
+    if (i % 2 === 0) {
+      world.triangle([middleX - 4, peakY - 1, -230], [middleX, peakY, -231], [middleX + 4, peakY - 1, -230], hex("#c0b7b2"));
+    }
+  }
+
+  // Sol bajo, nubes de atardecer y luna visible, de escala contenida.
+  world.sphere(-48, 16, -214, 5.0, hex("#e9a06b"), 16, 9);
+  world.sphere(42, 29, -228, 2.45, hex("#e6dfd1"), 16, 9);
+  for (let i = 0; i < 10; i++) {
+    const x = -76 + i * 16;
+    const y = 25 + Math.sin(i * 1.8) * 4;
+    const z = -202 - (i % 3) * 2;
+    world.box([x, y, z], [14, 1.8 + (i % 2) * 1.2, 2.3], hex(i % 2 ? "#805968" : "#a46b62"), hex("#604c60"));
+  }
+
+  return world;
+}
+
+function buildCampingWater() {
+  const water = new MeshBuilder();
+  const xSteps = 30, zSteps = 12;
+  for (let zi = 0; zi < zSteps; zi++) {
+    const z0 = -132 - zi * 3.7;
+    const z1 = z0 - 3.7;
+    for (let xi = 0; xi < xSteps; xi++) {
+      const x0 = -58 + xi * 3.9;
+      const x1 = x0 + 3.9;
+      const shade = Math.sin((xi + zi) * 0.72) * 0.5 + 0.5;
+      const color = shade > 0.68 ? hex("#5aa89e") : shade > 0.36 ? hex("#397f82") : hex("#286276");
+      water.quad([x0, -0.86, z0], [x0, -0.86, z1], [x1, -0.86, z1], [x1, -0.86, z0], color);
+    }
+  }
+  return water;
+}
+
+function buildCampingBridge() {
+  const bridge = new MeshBuilder();
+  const green = hex("#315b47"), greenLight = hex("#547e61"), darkGreen = hex("#243f35");
+  const deckY = 2.05;
+  const bridgeZ = (x: number) => CAMP_RIVER_Z - x * 0.075;
+
+  // Anclajes de ambas márgenes y torres metálicas.
+  for (const side of [-1, 1]) {
+    const x = side * 36.5, z = bridgeZ(x);
+    bridge.ellipsoid(x, 0.45, z, 3.1, 0.85, 2.5, hex("#72766b"), 8, 5);
+    bridge.beam([x, 0.7, z], [x, 5.8, z], 0.34, darkGreen);
+    bridge.beam([x - 1.1, 0.7, z - 1.0], [x + 1.1, 5.8, z + 1.0], 0.23, green);
+    bridge.beam([x + 1.1, 0.7, z - 1.0], [x - 1.1, 5.8, z + 1.0], 0.23, green);
+    bridge.beam([x - 1.55, 5.8, z], [x + 1.55, 5.8, z], 0.25, greenLight);
+  }
+
+  // Vigas longitudinales, travesaños verdes y tablones de madera.
+  for (const side of [-1, 1]) {
+    bridge.beam([-36.5, deckY, bridgeZ(-36.5) + side * 0.92], [36.5, deckY, bridgeZ(36.5) + side * 0.92], 0.24, green);
+    bridge.beam([-36.5, deckY + 0.82, bridgeZ(-36.5) + side * 0.92], [36.5, deckY + 0.82, bridgeZ(36.5) + side * 0.92], 0.18, greenLight);
+  }
+  for (let x = -35; x <= 35; x += 2.4) {
+    const z = bridgeZ(x);
+    bridge.box([x, deckY - 0.1, z], [2.28, 0.18, 1.75], hex(Math.floor(x) % 2 ? "#886d4f" : "#9b805d"));
+    for (const side of [-1, 1]) {
+      bridge.beam([x, deckY + 0.08, z + side * 0.88], [x, deckY + 0.83, z + side * 0.88], 0.12, green);
+      bridge.beam([x - 0.14, deckY + 0.45, z + side * 0.88], [x + 0.14, deckY + 0.45, z + side * 0.88], 0.055, greenLight);
+    }
+    bridge.beam([x, deckY + 0.04, z - 0.88], [x, deckY + 0.04, z + 0.88], 0.09, darkGreen);
+  }
+
+  // Cables principales con una flecha suave y péndolas de suspensión.
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 24; i++) {
+      const x0 = -36.5 + i * (73 / 24), x1 = x0 + (73 / 24);
+      const cableY = (x: number) => 5.45 - Math.pow(Math.abs(x) / 36.5, 2) * 1.12;
+      const z0 = bridgeZ(x0) + side * 1.0, z1 = bridgeZ(x1) + side * 1.0;
+      bridge.beam([x0, cableY(x0), z0], [x1, cableY(x1), z1], 0.075, greenLight);
+    }
+    for (let x = -33; x <= 33; x += 3) {
+      const z = bridgeZ(x) + side * 1.0;
+      const cableY = 5.45 - Math.pow(Math.abs(x) / 36.5, 2) * 1.12;
+      bridge.beam([x, deckY + 0.85, z], [x, cableY, z], 0.045, green);
+    }
+  }
+  return bridge;
+}
+
+function buildCampingGateLeaf() {
+  const gate = new MeshBuilder();
+  const wood = hex("#704f31"), lightWood = hex("#9a7448");
+  gate.beam([0, 1.28, 0], [5.2, 1.28, 0], 0.24, wood);
+  gate.beam([0, 2.15, 0], [5.2, 2.15, 0], 0.22, lightWood);
+  gate.beam([0.22, 0.3, 0], [0.22, 2.35, 0], 0.19, wood);
+  gate.beam([1.85, 0.3, 0], [1.85, 2.35, 0], 0.17, lightWood);
+  gate.beam([3.45, 0.3, 0], [3.45, 2.35, 0], 0.17, wood);
+  gate.beam([5.0, 0.3, 0], [5.0, 2.35, 0], 0.19, lightWood);
+  gate.beam([0.18, 0.32, 0], [5.05, 2.3, 0], 0.15, wood);
+  gate.beam([0.18, 2.28, 0], [5.05, 0.32, 0], 0.11, lightWood);
+  return gate;
+}
+
+function buildCampingDoor() {
+  const door = new MeshBuilder();
+  door.box([0.035, 0.52, 1.03], [0.13, 0.94, 2.02], hex("#28343a"), hex("#465057"));
+  door.box([0.09, 1.17, 1.03], [0.08, 0.36, 1.91], hex("#455c62"), hex("#30454e"));
+  door.box([0.12, 0.88, 0.17], [0.035, 0.065, 0.18], hex("#a18a65"));
+  door.beam([0.1, 0.08, 0.22], [0.1, 0.08, 1.8], 0.045, hex("#161e24"));
+  return door;
+}
+
+function buildCampingTrunkLid() {
+  const lid = new MeshBuilder();
+  lid.box([0, -0.43, 0], [1.52, 0.9, 0.18], hex("#252e35"), hex("#48555d"));
+  lid.box([0, -0.28, -0.11], [1.28, 0.46, 0.035], hex("#36474d"));
+  lid.box([0, -0.73, -0.105], [0.34, 0.1, 0.035], hex("#9b8b72"));
+  return lid;
+}
+
+function buildCampingCharacter() {
+  const person = new MeshBuilder();
+  const jacket = hex("#343c36"), jacketLight = hex("#59644d"), pants = hex("#34373d");
+  const skin = hex("#bd896b"), hair = hex("#201e1b"), boots = hex("#171b1b");
+  // Proporción humana estilizada coherente con la escala del habitáculo.
+  person.box([-0.13, 0.52, 0], [0.22, 0.98, 0.25], pants);
+  person.box([0.13, 0.52, 0], [0.22, 0.98, 0.25], pants);
+  person.box([-0.13, 0.12, 0.15], [0.34, 0.2, 0.5], boots);
+  person.box([0.13, 0.12, 0.15], [0.34, 0.2, 0.5], boots);
+  person.box([0, 1.2, 0], [0.82, 0.86, 0.48], jacket, hex("#252e2b"));
+  person.box([-0.43, 1.18, 0.02], [0.22, 0.72, 0.24], jacket);
+  person.box([0.43, 1.18, 0.02], [0.22, 0.72, 0.24], jacket);
+  person.box([0, 1.83, 0.02], [0.44, 0.49, 0.43], skin, hex("#a8765b"));
+  person.box([0, 2.04, 0.01], [0.46, 0.19, 0.45], hair);
+  person.box([-0.23, 1.91, 0.23], [0.08, 0.18, 0.06], hair);
+  person.box([0.23, 1.91, 0.23], [0.08, 0.18, 0.06], hair);
+  person.beam([-0.12, 1.84, 0.25], [-0.06, 1.84, 0.27], 0.025, hex("#25211d"));
+  person.beam([0.06, 1.84, 0.27], [0.12, 1.84, 0.25], 0.025, hex("#25211d"));
+  return person;
+}
+
+function buildCampingGear() {
+  const gear = new MeshBuilder();
+  // Bolsa de carpa plegada, con extremos, correas y costuras.
+  gear.ellipsoid(-0.42, 0.73, 1.58, 0.62, 0.28, 0.42, hex("#526447"), 10, 6);
+  gear.beam([-0.78, 0.92, 1.35], [-0.78, 0.92, 1.82], 0.055, hex("#c3a66c"));
+  gear.beam([-0.06, 0.92, 1.35], [-0.06, 0.92, 1.82], 0.055, hex("#c3a66c"));
+  gear.box([-0.42, 0.81, 1.99], [0.52, 0.12, 0.12], hex("#293c30"));
+  // Caja de herramientas rígida, colocada junto a la bolsa dentro del baúl.
+  gear.box([0.48, 0.64, 1.58], [0.64, 0.46, 0.58], hex("#4a5250"), hex("#282f31"));
+  gear.box([0.48, 0.89, 1.58], [0.7, 0.09, 0.63], hex("#65736d"));
+  gear.box([0.48, 0.99, 1.58], [0.28, 0.08, 0.17], hex("#202729"));
+  gear.beam([0.23, 0.93, 1.58], [0.73, 0.93, 1.58], 0.055, hex("#262e2f"));
+  return gear;
+}
 function buildHeadlights() {
   const lights = new MeshBuilder();
   const warm = hex("#ad9872");
