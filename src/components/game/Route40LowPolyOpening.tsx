@@ -1059,6 +1059,8 @@ function buildWorld() {
     for (let i = 0; i < 38; i++) {
       const z = 7 - i * 14;
       if (side < 0 && z < -74 && z > -258) continue;
+      // Deja libre el césped alrededor del cartel para que los postes y cables no lo tapen.
+      if (side > 0 && (Math.abs(z - destinationSignZ) < 18 || Math.abs(z - 15 - destinationSignZ) < 18)) continue;
       const x = roadCenter(z) + poleOffset;
       const y = roadHeightAt(z) - 0.18;
       world.box([x, y + 4.3, z], [0.24, 8.6, 0.24], hex("#40372d"));
