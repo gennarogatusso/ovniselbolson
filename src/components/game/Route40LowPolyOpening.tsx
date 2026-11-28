@@ -1833,7 +1833,6 @@ export function Route40LowPolyOpening() {
         const uphillPenalty = clamp((roadHeightAt(roadZForPhysics - 3) - roadHeightAt(roadZForPhysics + 3)) * 0.09, 0, 0.6);
         if (throttle) {
           driveSpeed = Math.min(5.4, driveSpeed + dt * (2.25 - uphillPenalty));
-          climbElapsed += dt;
         } else if (braking) {
           driveSpeed = Math.max(0, driveSpeed - dt * 8.2);
         } else {
