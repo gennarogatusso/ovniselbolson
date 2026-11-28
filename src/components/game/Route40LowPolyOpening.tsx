@@ -362,22 +362,22 @@ function buildAttendantPose(time: number, stage: string, warningElapsed: number)
   }
 
   // Cuello, cabeza, facciones y gorra; el pequeño cambio de mirada enfatiza la advertencia.
-  npc.box([0, 1.9 + bob, 0], [0.31, 0.31, 0.3], skin);
-  npc.box([0, 2.3 + bob + pointing * 0.035, 0], [0.68, 0.77, 0.57], skin, hex("#a9765b"));
-  npc.box([-0.37, 2.3 + bob, 0], [0.13, 0.24, 0.18], skinLight);
-  npc.box([0.37, 2.3 + bob, 0], [0.13, 0.24, 0.18], skin);
+  npc.box([0, 1.9 + bob + pointing * 0.04, 0], [0.31, 0.31, 0.3], skin);
+  npc.box([0, 2.3 + bob + pointing * 0.11, 0], [0.68, 0.77, 0.57], skin, hex("#a9765b"));
+  npc.box([-0.37, 2.3 + bob + pointing * 0.11, 0], [0.13, 0.24, 0.18], skinLight);
+  npc.box([0.37, 2.3 + bob + pointing * 0.11, 0], [0.13, 0.24, 0.18], skin);
   npc.box([0, 2.61 + bob, -0.05], [0.64, 0.19, 0.52], hex("#42332e"));
   npc.box([0, 2.68 + bob, -0.06], [0.58, 0.13, 0.5], hex("#332a27"));
   const eyeTone = blink ? skin : hex("#242b30");
-  npc.box([-0.15, 2.34 + bob, faceZ + 0.025], [0.06, blink ? 0.018 : 0.07, 0.045], eyeTone);
-  npc.box([0.15, 2.34 + bob, faceZ + 0.025], [0.06, blink ? 0.018 : 0.07, 0.045], eyeTone);
-  npc.box([-0.15, 2.41 + bob, faceZ + 0.005], [0.12, 0.045, 0.045], hex("#64483d"));
-  npc.box([0.15, 2.41 + bob, faceZ + 0.005], [0.12, 0.045, 0.045], hex("#64483d"));
-  npc.box([0, 2.24 + bob, faceZ + 0.06], [0.1, 0.16, 0.12], skinLight);
-  npc.box([0, 2.08 + bob, faceZ + 0.055], [0.17, 0.035, 0.055], hex("#704b42"));
-  npc.box([0, 2.77 + bob, 0], [0.77, 0.2, 0.63], uniform);
-  npc.box([0, 2.69 + bob, faceZ + 0.18], [0.8, 0.07, 0.34], navy);
-  npc.box([0, 2.78 + bob, faceZ + 0.32], [0.36, 0.1, 0.035], white);
+  npc.box([-0.15, 2.34 + bob + pointing * 0.11, faceZ + 0.025], [0.06, blink ? 0.018 : 0.07, 0.045], eyeTone);
+  npc.box([0.15, 2.34 + bob + pointing * 0.11, faceZ + 0.025], [0.06, blink ? 0.018 : 0.07, 0.045], eyeTone);
+  npc.box([-0.15, 2.41 + bob + pointing * 0.11, faceZ + 0.005], [0.12, 0.045, 0.045], hex("#64483d"));
+  npc.box([0.15, 2.41 + bob + pointing * 0.11, faceZ + 0.005], [0.12, 0.045, 0.045], hex("#64483d"));
+  npc.box([0, 2.24 + bob + pointing * 0.11, faceZ + 0.06], [0.1, 0.16, 0.12], skinLight);
+  npc.box([0, 2.08 + bob + pointing * 0.11, faceZ + 0.055], [0.17, 0.035, 0.055], hex("#704b42"));
+  npc.box([0, 2.77 + bob + pointing * 0.11, 0], [0.77, 0.2, 0.63], uniform);
+  npc.box([0, 2.69 + bob + pointing * 0.11, faceZ + 0.18], [0.8, 0.07, 0.34], navy);
+  npc.box([0, 2.78 + bob + pointing * 0.11, faceZ + 0.32], [0.36, 0.1, 0.035], white);
   return npc;
 }
 
@@ -1122,7 +1122,9 @@ function bindMesh(
 type EngineAudio = {
   context: AudioContext; oscillator: OscillatorNode; secondOscillator: OscillatorNode;
   filter: BiquadFilterNode; gain: GainNode;
-  setThrottle: (value: number) => void; stop: () => void; destroy: () => void;
+  roadNoise: AudioBufferSourceNode; roadFilter: BiquadFilterNode; roadGain: GainNode;
+  setThrottle: (value: number) => void; setRoadSpeed: (value: number) => void;
+  stop: () => void; destroy: () => void;
 };
 function createEngineAudio(): EngineAudio {
   const context = new window.AudioContext();
@@ -1137,8 +1139,23 @@ function createEngineAudio(): EngineAudio {
   secondOscillator.type = "triangle"; secondOscillator.frequency.value = 34;
   const secondGain = context.createGain(); secondGain.gain.value = 0.24;
   secondOscillator.connect(secondGain); secondGain.connect(filter); secondOscillator.start();
+  const roadFilter = context.createBiquadFilter();
+  roadFilter.type = "lowpass";
+  roadFilter.frequency.value = 280;
+  const roadGain = context.createGain();
+  roadGain.gain.value = 0;
+  roadFilter.connect(roadGain);
+  roadGain.connect(context.destination);
+  const noiseBuffer = context.createBuffer(1, context.sampleRate, context.sampleRate);
+  const noiseData = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < noiseData.length; i++) noiseData[i] = (Math.random() * 2 - 1) * 0.22;
+  const roadNoise = context.createBufferSource();
+  roadNoise.buffer = noiseBuffer;
+  roadNoise.loop = true;
+  roadNoise.connect(roadFilter);
+  roadNoise.start();
   return {
-    context, oscillator, secondOscillator, filter, gain,
+    context, oscillator, secondOscillator, filter, gain, roadNoise, roadFilter, roadGain,
     setThrottle(value: number) {
       const amount = clamp(value, 0, 1), now = context.currentTime;
       oscillator.frequency.setTargetAtTime(48 + amount * 74, now, 0.09);
@@ -1146,10 +1163,20 @@ function createEngineAudio(): EngineAudio {
       filter.frequency.setTargetAtTime(150 + amount * 620, now, 0.14);
       gain.gain.setTargetAtTime(amount > 0 ? 0.035 + amount * 0.055 : 0, now, 0.18);
     },
-    stop() { gain.gain.setTargetAtTime(0, context.currentTime, 0.24); },
+    setRoadSpeed(value: number) {
+      const amount = clamp(value, 0, 1), now = context.currentTime;
+      roadFilter.frequency.setTargetAtTime(220 + amount * 680, now, 0.2);
+      roadGain.gain.setTargetAtTime(amount > 0.025 ? 0.003 + amount * 0.014 : 0, now, 0.24);
+    },
+    stop() {
+      const now = context.currentTime;
+      gain.gain.setTargetAtTime(0, now, 0.24);
+      roadGain.gain.setTargetAtTime(0, now, 0.24);
+    },
     destroy() {
       try { oscillator.stop(); } catch { /* Ya detenido */ }
       try { secondOscillator.stop(); } catch { /* Ya detenido */ }
+      try { roadNoise.stop(); } catch { /* Ya detenido */ }
       void context.close();
     },
   };
@@ -1165,6 +1192,8 @@ export function Route40LowPolyOpening() {
   const speedRef = useRef<HTMLSpanElement | null>(null);
   const fuelProgressRef = useRef<HTMLDivElement | null>(null);
   const payingProgressRef = useRef<HTMLDivElement | null>(null);
+  const mouseSensitivityRef = useRef(0.00235);
+  const [mouseSensitivity, setMouseSensitivity] = useState(0.00235);
   const keysRef = useRef<Set<string>>(new Set());
   const stageRef = useRef<"driving" | "stopped" | "exiting" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished">("driving");
   const fuelStartedAtRef = useRef(0);
@@ -1258,7 +1287,6 @@ export function Route40LowPolyOpening() {
     let pointerY = 0;
     let pointerLocked = false;
     let pointerLockFallback = false;
-    const mouseSensitivity = 0.00235;
     let lookYawTarget = 0;
     let lookPitchTarget = 0;
     const onPointerLockChange = () => {
@@ -1304,7 +1332,7 @@ export function Route40LowPolyOpening() {
       } else {
         return;
       }
-      lookYawTarget += dx * mouseSensitivity;
+      lookYawTarget += dx * mouseSensitivityRef.current;
       lookPitchTarget = clamp(lookPitchTarget - dy * 0.0021, -0.48, 0.48);
     };
     const onPointerUp = () => { dragging = false; };
@@ -1596,6 +1624,7 @@ export function Route40LowPolyOpening() {
             ? 0.24 + (driveSpeed / 5.4) * 0.76
             : keys.has("s") ? 0.1 : 0.14 + (driveSpeed / 5.4) * 0.24;
           engineAudioRef.current.setThrottle(throttle);
+          engineAudioRef.current.setRoadSpeed(driveSpeed / 5.4);
         } else {
           engineAudioRef.current.stop();
         }
@@ -1724,8 +1753,26 @@ export function Route40LowPolyOpening() {
           <span className="mx-2 text-amber-100/35">|</span>
           S · FRENAR
           <span className="mx-2 text-amber-100/35">|</span>
-          MOVÉ EL MOUSE PARA MIRAR
+          MOVÉ EL MOUSE PARA MIRAR · ESC PARA SOLTAR
           <span className="ml-3 border-l border-amber-100/20 pl-3 tabular-nums"><span ref={speedRef}>0</span> KM/H</span>
+        </div>
+        <div className="pointer-events-auto mx-auto hidden items-center gap-2 rounded-sm border border-amber-100/15 bg-[#101820]/65 px-3 py-1 font-mono text-[9px] tracking-[.12em] text-amber-50/80 md:flex">
+          <label htmlFor="route40-mouse-sensitivity">SENSIBILIDAD</label>
+          <input
+            id="route40-mouse-sensitivity"
+            type="range"
+            min="0.001"
+            max="0.006"
+            step="0.00025"
+            value={mouseSensitivity}
+            onChange={(event) => {
+              const value = Number(event.currentTarget.value);
+              mouseSensitivityRef.current = value;
+              setMouseSensitivity(value);
+            }}
+            className="w-24 accent-amber-200"
+            aria-label="Sensibilidad de la cámara"
+          />
         </div>
         <div className="h-1 w-44 overflow-hidden rounded-full bg-white/15">
           <div ref={progressRef} className="h-full w-0 bg-amber-200 shadow-[0_0_12px_rgba(255,206,137,.9)] transition-[width] duration-100" />
