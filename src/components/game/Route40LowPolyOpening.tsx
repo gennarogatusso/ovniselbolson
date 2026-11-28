@@ -5,6 +5,9 @@ type V3 = [number, number, number];
 type Mesh = { buffer: WebGLBuffer; count: number };
 
 const DURATION = 14.4;
+const SIGNAL_Z = -220;
+const SIGNAL_STOP_Z = SIGNAL_Z + 32;
+const THREAT_Z = SIGNAL_STOP_Z - 7;
 const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
 const smooth = (a: number, b: number, n: number) => {
   const t = clamp((n - a) / (b - a), 0, 1);
@@ -749,16 +752,50 @@ function buildFootballBall(){
   return m;
 }
 
-function buildRoadsideJuggler(){
-  const m=new MeshBuilder(),shirt=hex("#bd6d3c"),pants=hex("#343947"),skin=hex("#c99576"),dark=hex("#272d31");
-  m.box([0,1.12,0],[.48,.7,.32],shirt,dark);m.box([0,.76,0],[.4,.2,.29],pants);
-  m.box([0,1.67,0],[.29,.32,.29],skin);m.box([0,1.84,-.025],[.31,.1,.29],hex("#3e302b"));
-  m.beam([-.18,1.36,0],[-.48,1.72,-.02],.13,shirt);m.beam([-.48,1.72,-.02],[-.67,2.04,-.06],.085,skin);
-  m.beam([.18,1.36,0],[.48,1.72,-.02],.13,shirt);m.beam([.48,1.72,-.02],[.67,2.04,-.06],.085,skin);
-  m.beam([-.12,.68,0],[-.2,.2,-.08],.14,pants);m.beam([.12,.68,0],[.2,.2,.08],.14,pants);
-  m.box([-.2,.1,-.15],[.27,.13,.38],dark);m.box([.2,.1,.13],[.27,.13,.38],dark);return m;
+function buildArmedThreat(){
+  const m=new MeshBuilder();
+  const coat=hex("#34343a"),coatLight=hex("#55515a"),pants=hex("#252b34"),skin=hex("#c99576");
+  const hair=hex("#282329"),dark=hex("#171a20"),metal=hex("#444b53"),white=hex("#f1e8df");
+  // Figura adulta en el centro de la calzada, mirando al conductor (+Z).
+  m.box([0,1.13,0],[.58,.78,.34],coat,coatLight);
+  m.box([0,.73,0],[.43,.22,.32],pants);
+  m.beam([-.13,.66,0],[-.2,.19,-.02],.17,pants);
+  m.beam([.13,.66,0],[.2,.19,-.02],.17,pants);
+  m.box([-.2,.1,.05],[.3,.14,.48],dark);
+  m.box([.2,.1,.05],[.3,.14,.48],dark);
+  m.box([0,1.63,0],[.22,.19,.22],skin);
+  m.box([0,2.02,0],[.62,.69,.52],skin,hex("#ab785f"));
+  m.box([0,2.36,-.015],[.64,.19,.55],hair);
+  m.box([-.33,2.02,0],[.12,.22,.17],skin);
+  m.box([.33,2.02,0],[.12,.22,.17],skin);
+  // Ojos muy abiertos, cejas tensas y boca abierta: expresión de susto.
+  m.box([-.145,2.08,.271],[.145,.16,.035],white);
+  m.box([.145,2.08,.271],[.145,.16,.035],white);
+  m.box([-.145,2.075,.296],[.052,.095,.025],dark);
+  m.box([.145,2.075,.296],[.052,.095,.025],dark);
+  m.beam([-.235,2.235,.275],[-.075,2.29,.29],.065,hair);
+  m.beam([.075,2.29,.29],[.235,2.235,.275],.065,hair);
+  m.box([0,1.82,.278],[.15,.19,.045],dark);
+  m.box([0,1.82,.304],[.075,.11,.018],hex("#813f43"));
+  // Brazos extendidos hacia delante; las manos sostienen una pistola que apunta al parabrisas.
+  const leftShoulder:V3=[-.25,1.43,0],leftElbow:V3=[-.39,1.56,.32],leftHand:V3=[-.055,1.77,.68];
+  const rightShoulder:V3=[.25,1.43,0],rightElbow:V3=[.4,1.58,.34],rightHand:V3=[.075,1.78,.73];
+  m.beam(leftShoulder,leftElbow,.22,coat);
+  m.beam(leftElbow,leftHand,.135,skin);
+  m.box(leftHand,[.17,.13,.17],skin);
+  m.beam(rightShoulder,rightElbow,.22,coat);
+  m.beam(rightElbow,rightHand,.14,skin);
+  m.box(rightHand,[.18,.14,.18],skin);
+  // Pistola low-poly: corredera, cañón y empuñadura claramente visibles.
+  m.box([.035,1.86,.87],[.18,.16,.42],metal,dark);
+  m.box([.035,1.87,1.16],[.105,.105,.27],dark);
+  m.box([.035,1.69,.78],[.14,.25,.16],dark);
+  m.beam([-.035,1.77,.82],[.12,1.77,.82],.035,metal);
+  m.box([.035,1.955,.83],[.12,.035,.16],hex("#737b82"));
+  m.box([.035,1.86,1.31],[.07,.07,.035],dark);
+  return m;
 }
-function buildJugglingBall(color:string){const m=new MeshBuilder();m.sphere(0,0,0,.135,hex(color),14,9);return m;}
+function buildSignalLens(){const m=new MeshBuilder();m.sphere(0,0,0,.135,hex("#ff312b"),14,9);return m;}
 function buildStylizedBlood(){
   const m=new MeshBuilder(),red=hex("#8e2426"),bright=hex("#b83b36");
   m.sphere(0,.055,0,.23,red,12,6);m.sphere(.32,.045,.12,.105,bright,10,6);
@@ -999,7 +1036,7 @@ function buildWorld() {
   addPixelText(world, "2 KILÓMETROS", destinationX, destinationY - 0.55, destinationSignZ + 0.23, 0.11, hex("#fff3db"));
   addYPFStation(world);
 
-  const signalZ=-220,signalX=roadCenter(signalZ)+3.55,signalGround=roadHeightAt(signalZ)-.18;
+  const signalZ=SIGNAL_Z,signalX=roadCenter(signalZ)+3.55,signalGround=roadHeightAt(signalZ)-.18;
   world.box([signalX,signalGround+3.1,signalZ],[.2,6.2,.2],hex("#42484a"));
   world.beam([signalX,signalGround+6.2,signalZ],[signalX-1.3,signalGround+6.2,signalZ],.18,hex("#42484a"));
   world.box([signalX,signalGround+5.45,signalZ],[.92,2.35,.66],hex("#20272b"),hex("#394044"));
@@ -1598,11 +1635,11 @@ export function Route40LowPolyOpening() {
   const mouseSensitivityRef = useRef(0.00235);
   const [mouseSensitivity, setMouseSensitivity] = useState(0.00235);
   const keysRef = useRef<Set<string>>(new Set());
-  const stageRef = useRef<"driving" | "climbing" | "signalJuggle" | "signalWarning" | "escape" | "finished" | "crashed">("driving");
+  const stageRef = useRef<"driving" | "climbing" | "signalEncounter" | "escape" | "finished" | "crashed">("driving");
   const engineAudioRef = useRef<EngineAudio | null>(null);
-  const [interactionStage, setInteractionStage] = useState<"driving" | "climbing" | "signalJuggle" | "signalWarning" | "escape" | "finished" | "crashed">("driving");
+  const [interactionStage, setInteractionStage] = useState<"driving" | "climbing" | "signalEncounter" | "escape" | "finished" | "crashed">("driving");
   const [fallback, setFallback] = useState(false);
-  const setStage = (next: "driving" | "climbing" | "signalJuggle" | "signalWarning" | "escape" | "finished" | "crashed") => {
+  const setStage = (next: "driving" | "climbing" | "signalEncounter" | "escape" | "finished" | "crashed") => {
     stageRef.current = next;
     setInteractionStage(next);
   };
@@ -1638,8 +1675,8 @@ export function Route40LowPolyOpening() {
     let driveElapsed = 0;
     let climbElapsed = 0;
     let travelled = 0;
-    let signalJuggleStartedAt=0,signalWarningStartedAt=0,escapeStartedAt=0,npcImpactAt=0;
-    let escapeStartCarZ=-202,escapeStartCarX=0,npcImpactX=0,npcImpactZ=-207;
+    let signalEncounterStartedAt=0,escapeStartedAt=0,npcImpactAt=0;
+    let npcImpactX=0,npcImpactZ=THREAT_Z;
     // La cinemática entrega el vehículo ya rodando; no necesita que el jugador lo arranque desde cero.
     let driveSpeed = 4.15;
     let laneOffset = 0;
@@ -1741,8 +1778,7 @@ export function Route40LowPolyOpening() {
     let trafficActors: Array<{mesh:Mesh;baseZ:number;speed:number}> = [];
     let footballActors: Array<{mesh:Mesh;baseX:number;baseZ:number;phase:number;speed:number;radiusX:number;radiusZ:number}> = [];
     let footballBallMesh: Mesh | null = null;
-    let jugglerMesh: Mesh | null = null;
-    let jugglingBallMeshes: Mesh[] = [];
+    let armedThreatMesh: Mesh | null = null;
     let signalRedMesh: Mesh | null = null;
     let bloodMesh: Mesh | null = null;
     let program: WebGLProgram | null = null;
@@ -1806,13 +1842,8 @@ export function Route40LowPolyOpening() {
         baseX:p.x,baseZ:p.z,phase:p.phase,speed:p.speed,radiusX:p.rx,radiusZ:p.rz,
       }));
       footballBallMesh=createMesh(gl,buildFootballBall());
-      jugglerMesh=createMesh(gl,buildRoadsideJuggler());
-      jugglingBallMeshes=[
-        createMesh(gl,buildJugglingBall("#df5545")),
-        createMesh(gl,buildJugglingBall("#e7bd50")),
-        createMesh(gl,buildJugglingBall("#5c91b1")),
-      ];
-      signalRedMesh=createMesh(gl,buildJugglingBall("#ff312b"));
+      armedThreatMesh=createMesh(gl,buildArmedThreat());
+      signalRedMesh=createMesh(gl,buildSignalLens());
       bloodMesh=createMesh(gl,buildStylizedBlood());
       crashExplosionMesh=createMesh(gl,buildCrashExplosion());
     } catch (error) {
@@ -1893,24 +1924,29 @@ export function Route40LowPolyOpening() {
         lookYaw=mix(lookYaw,lookYawTarget,1-Math.exp(-dt*18));
         lookPitch=mix(lookPitch,lookPitchTarget,1-Math.exp(-dt*18));
         travelled+=driveSpeed*dt;
-        if(climbElapsed>=8.6){driveSpeed=0;signalJuggleStartedAt=now;keys.clear();engineAudioRef.current?.stop();setStage("signalJuggle");}
+        const approachingCarZ=-DURATION*4.1-travelled;
+        if(approachingCarZ<=SIGNAL_STOP_Z){
+          driveSpeed=0;laneOffset=0;signalEncounterStartedAt=now;keys.clear();
+          lookYawTarget=0;lookYaw=0;lookPitchTarget=0;lookPitch=0;
+          engineAudioRef.current?.stop();setStage("signalEncounter");
+        }
       }
-      if(stageRef.current==="signalJuggle"){
+      if(stageRef.current==="signalEncounter"){
         driveSpeed=0;
-        if(now-signalJuggleStartedAt>=3000){signalWarningStartedAt=now;setStage("signalWarning");}
-      }
-      if(stageRef.current==="signalWarning"){
-        driveSpeed=0;
-        if(now-signalWarningStartedAt>=3200){
-          escapeStartedAt=now;escapeStartCarZ=roadZForPhysics;escapeStartCarX=roadCenter(escapeStartCarZ)+laneOffset;
-          npcImpactZ=escapeStartCarZ-3.25;npcImpactX=roadCenter(npcImpactZ)+laneOffset+.5;
-          driveSpeed=8.8;keys.clear();startEngineAudio();engineAudioRef.current?.setThrottle(.98);setStage("escape");
+        if(now-signalEncounterStartedAt>=5200){
+          escapeStartedAt=now;
+          npcImpactZ=THREAT_Z;
+          npcImpactX=roadCenter(THREAT_Z);
+          driveSpeed=0;laneOffset=0;keys.clear();
+          startEngineAudio();engineAudioRef.current?.setThrottle(.98);setStage("escape");
         }
       }
       if(stageRef.current==="escape"){
         const escapeAge=(now-escapeStartedAt)/1000;
-        driveSpeed=Math.min(9.4,driveSpeed+dt*4.2);travelled+=driveSpeed*dt;
-        if(npcImpactAt===0&&escapeAge>=.34)npcImpactAt=now;
+        driveSpeed=Math.min(9.4,driveSpeed+dt*4.2);
+        travelled+=driveSpeed*dt;
+        const movingCarZ=-DURATION*4.1-travelled;
+        if(npcImpactAt===0&&movingCarZ<=npcImpactZ+2.35)npcImpactAt=now;
         if(escapeAge>=10){driveSpeed=0;keys.clear();if(document.pointerLockElement)document.exitPointerLock();engineAudioRef.current?.stop();setStage("finished");}
       }
       const rect = canvas.getBoundingClientRect();
@@ -1936,7 +1972,7 @@ export function Route40LowPolyOpening() {
 
       // Choque por volumen de ambos autos: invadir el carril contrario puede terminar en accidente.
       if (crashStartedAt === 0 && elapsed >= DURATION &&
-        (stageRef.current === "driving" || stageRef.current === "climbing" || stageRef.current === "escape")) {
+        (stageRef.current === "driving" || stageRef.current === "climbing")) {
         const collision = trafficActors.some((traffic) => {
           const span = 464;
           const raw = traffic.baseZ + elapsed * traffic.speed;
@@ -2035,46 +2071,32 @@ export function Route40LowPolyOpening() {
       const carRotation=multiply(rotationY(steeringAngle),rotationX(uphillPitch));
       const carModel=multiply(translation(carX,carY,carZ),carRotation);
       const aerialVisibility = 1 - smooth(5.1, 5.95, elapsed);
-      const signalZ=-220,signalX=roadCenter(signalZ)+3.55,signalGround=roadHeightAt(signalZ)-.18;
-      const signalActive=["climbing","signalJuggle","signalWarning","escape"].includes(stageRef.current);
+      const signalZ=SIGNAL_Z,signalX=roadCenter(signalZ)+3.55,signalGround=roadHeightAt(signalZ)-.18;
+      const signalActive=["climbing","signalEncounter","escape"].includes(stageRef.current);
       if(signalActive&&signalRedMesh){
         const redModel=multiply(translation(signalX,signalGround+6.12,signalZ+.39),scaling(2.05,2.05,2.05));
         bindMesh(gl,program,signalRedMesh,viewProjection,view,redModel);
       }
-      if(["signalJuggle","signalWarning","escape"].includes(stageRef.current)&&jugglerMesh){
-        const approach=stageRef.current==="signalWarning"?smooth(0,2.0,(now-signalWarningStartedAt)/1000):stageRef.current==="escape"?1:0;
-        let npcX=mix(signalX-.55,carX+1.45,approach),npcZ=mix(signalZ+7,carZ+.48,approach);
-        let npcY=roadHeightAt(npcZ)-.16,npcRotation=rotationY(Math.PI);
-        if(stageRef.current==="escape"){
-          const escapeAge=Math.max(0,(now-escapeStartedAt)/1000);
-          if(npcImpactAt===0){
-            const crossing=smooth(.04,.34,escapeAge);
-            npcX=mix(escapeStartCarX+1.45,npcImpactX,crossing);
-            npcZ=mix(escapeStartCarZ+.48,npcImpactZ,crossing);
-            npcY=roadHeightAt(npcZ)-.16;
-          }else{
-            const hitAge=(now-npcImpactAt)/1000,fall=smooth(0,.42,hitAge);
-            npcX=npcImpactX+2.3*fall;npcZ=npcImpactZ+fall;
-            npcY=roadHeightAt(npcZ)+.12+Math.sin(Math.min(hitAge,.58)/.58*Math.PI)*1.1*(1-smooth(.5,.95,hitAge));
-            npcRotation=multiply(rotationY(Math.PI),rotationZ(1.42*fall));
-          }
+      if((stageRef.current==="signalEncounter"||stageRef.current==="escape")&&armedThreatMesh){
+        let npcX=roadCenter(THREAT_Z),npcZ=THREAT_Z;
+        let npcY=roadHeightAt(npcZ)-.02,npcRotation=rotationY(0);
+        if(stageRef.current==="escape"&&npcImpactAt>0){
+          const hitAge=(now-npcImpactAt)/1000;
+          const fall=smooth(0,.48,hitAge);
+          npcX=npcImpactX+2.0*fall;
+          npcZ=npcImpactZ+.8*fall;
+          const airborne=1-smooth(.28,.9,hitAge);
+          npcY=roadHeightAt(npcZ)-.02+Math.sin(Math.min(hitAge,.62)/.62*Math.PI)*1.2*airborne;
+          npcRotation=rotationZ(1.48*fall);
         }
         const npcModel=multiply(translation(npcX,npcY,npcZ),npcRotation);
-        bindMesh(gl,program,jugglerMesh,viewProjection,view,npcModel);
-        if(stageRef.current==="signalJuggle"){
-          const routineAge=(now-signalJuggleStartedAt)/1000;
-          for(let i=0;i<jugglingBallMeshes.length;i++){
-            const phase=routineAge*5.8+i*Math.PI*2/3;
-            const bx=signalX+Math.sin(phase)*.48,by=signalGround+2.2+Math.max(0,Math.sin(phase))*.72,bz=signalZ+1.55+Math.cos(phase)*.16;
-            bindMesh(gl,program,jugglingBallMeshes[i]!,viewProjection,view,translation(bx,by,bz));
-          }
-        }
+        bindMesh(gl,program,armedThreatMesh,viewProjection,view,npcModel);
       }
       if(npcImpactAt>0&&bloodMesh){
         const bloodAge=(now-npcImpactAt)/1000,opacity=1-smooth(.7,2.1,bloodAge);
         if(opacity>.01){
-          const bloodX=npcImpactX+1.15,bloodZ=npcImpactZ+1;
-          const bloodModel=multiply(translation(bloodX,roadHeightAt(bloodZ)+.045,bloodZ),scaling(1.45,.7,1.45));
+          const bloodX=npcImpactX+1.0,bloodZ=npcImpactZ+.5;
+          const bloodModel=multiply(translation(bloodX,roadHeightAt(bloodZ)+.13,bloodZ),scaling(1.45,.7,1.45));
           bindMesh(gl,program,bloodMesh,viewProjection,view,bloodModel,opacity*.72);
         }
       }
@@ -2173,8 +2195,7 @@ export function Route40LowPolyOpening() {
       if (cockpitMesh) gl.deleteBuffer(cockpitMesh.buffer);
       if (windshieldMesh) gl.deleteBuffer(windshieldMesh.buffer);
       if (crashExplosionMesh) gl.deleteBuffer(crashExplosionMesh.buffer);
-      if(jugglerMesh)gl.deleteBuffer(jugglerMesh.buffer);
-      for(const ball of jugglingBallMeshes)gl.deleteBuffer(ball.buffer);
+      if(armedThreatMesh)gl.deleteBuffer(armedThreatMesh.buffer);
       if(signalRedMesh)gl.deleteBuffer(signalRedMesh.buffer);
       if(bloodMesh)gl.deleteBuffer(bloodMesh.buffer);
       for(const player of footballActors) gl.deleteBuffer(player.mesh.buffer);
@@ -2293,17 +2314,10 @@ export function Route40LowPolyOpening() {
           </div>
         </div>
       </div>
-      {interactionStage === "signalJuggle" && (
-        <div className="pointer-events-none absolute inset-x-4 bottom-[13%] z-40 flex justify-center">
-          <div className="border border-amber-100/25 bg-[#101820]/80 px-5 py-3 text-center font-mono text-[10px] tracking-[.22em] text-amber-50/90 shadow-[0_0_32px_rgba(0,0,0,.4)] backdrop-blur-md">
-            EL SEMÁFORO ESTÁ EN ROJO
-          </div>
-        </div>
-      )}
-      {interactionStage === "signalWarning" && (
+      {interactionStage === "signalEncounter" && (
         <div className="pointer-events-none absolute inset-x-4 bottom-[10%] z-40 flex justify-center">
-          <div className="w-full max-w-2xl border border-amber-100/35 bg-[#101820]/90 px-6 py-5 text-center shadow-[0_0_48px_rgba(0,0,0,.58)] backdrop-blur-md">
-            <p className="font-mono text-[9px] tracking-[.34em] text-amber-200/80">EL HOMBRE SE ACERCA A LA VENTANILLA</p>
+          <div className="w-full max-w-2xl border border-red-200/40 bg-[#101820]/92 px-6 py-5 text-center shadow-[0_0_48px_rgba(0,0,0,.62)] backdrop-blur-md">
+            <p className="font-mono text-[9px] tracking-[.34em] text-red-200/90">UN HOMBRE ARMADO BLOQUEA LA RUTA</p>
             <p className="mt-3 font-serif text-lg leading-relaxed text-[#fff0d8] sm:text-2xl">“TENE CUIDADO HOY A LA NOCHE VIENEN ELLOS, TIENES QUE ESCONDERTE”</p>
           </div>
         </div>
