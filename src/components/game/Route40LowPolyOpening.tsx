@@ -1314,7 +1314,7 @@ function buildCampingWater() {
       const x1 = x0 + 3.9;
       const shade = Math.sin((xi + zi) * 0.72) * 0.5 + 0.5;
       const color = shade > 0.68 ? hex("#5aa89e") : shade > 0.36 ? hex("#397f82") : hex("#286276");
-      water.quad([x0, -0.86, z0], [x0, -0.86, z1], [x1, -0.86, z1], [x1, -0.86, z0], color);
+      water.quad([x0, -0.86, z0], [x1, -0.86, z0], [x1, -0.86, z1], [x0, -0.86, z1], color);
     }
   }
   return water;
@@ -1805,17 +1805,26 @@ attribute vec3 aColor;
 uniform mat4 uViewProjection;
 uniform mat4 uView;
 uniform mat4 uModel;
+uniform float uWaterMode;
+uniform float uTime;
 varying vec3 vColor;
 varying vec3 vNormal;
 varying float vDepth;
+varying float vWater;
 varying vec3 vWorldPosition;
 void main() {
-  vec4 world = uModel * vec4(aPosition, 1.0);
+  vec3 animatedPosition = aPosition;
+  float wave = sin(aPosition.x * 0.19 + uTime * 1.15) * 0.045
+    + sin(aPosition.z * 0.15 - uTime * 0.82) * 0.035
+    + sin((aPosition.x + aPosition.z) * 0.095 + uTime * 0.62) * 0.022;
+  animatedPosition.y += wave * uWaterMode;
+  vec4 world = uModel * vec4(animatedPosition, 1.0);
   vec4 viewPosition = uView * world;
   vDepth = length(viewPosition.xyz);
   vNormal = mat3(uModel) * aNormal;
   vWorldPosition = world.xyz;
   vColor = aColor;
+  vWater = uWaterMode;
   gl_Position = uViewProjection * world;
 }
 `;
@@ -1830,6 +1839,7 @@ uniform float uOpacity;
 varying vec3 vColor;
 varying vec3 vNormal;
 varying float vDepth;
+varying float vWater;
 varying vec3 vWorldPosition;
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -1857,6 +1867,13 @@ void main() {
   color += vColor * emissive * 0.28;
   vec3 highlights = max(color - vec3(0.52, 0.56, 0.62), vec3(0.0));
   color += highlights * 0.18;
+  float waterRipple = sin(vWorldPosition.x * 0.31 + uTime * 1.25)
+    * sin(vWorldPosition.z * 0.27 - uTime * 0.9);
+  float waterGlint = pow(max(0.0, waterRipple), 8.0) * 0.24;
+  vec3 waterColor = color * vec3(0.78, 1.08, 1.18)
+    + vec3(0.018, 0.075, 0.092) * (0.55 + waterRipple * 0.45);
+  color = mix(color, waterColor, vWater);
+  color += vec3(0.34, 0.48, 0.48) * waterGlint * vWater;
   float fog = smoothstep(58.0, 238.0, vDepth);
   color = mix(color, uFogColor, fog);
   float scan = 1.0 - 0.022 * (0.5 + 0.5 * sin(gl_FragCoord.y * 3.14159));
@@ -1961,6 +1978,7 @@ function bindMesh(
   view: Float32Array,
   model: Float32Array,
   opacity = 1,
+  waterMode = false,
 ) {
   gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
   const stride = 9 * Float32Array.BYTES_PER_ELEMENT;
@@ -1977,6 +1995,7 @@ function bindMesh(
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "uView"), false, view);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "uModel"), false, model);
   gl.uniform1f(gl.getUniformLocation(program, "uOpacity"), opacity);
+  gl.uniform1f(gl.getUniformLocation(program, "uWaterMode"), waterMode ? 1 : 0);
   gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
 }
 
