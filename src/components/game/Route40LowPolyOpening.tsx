@@ -2698,8 +2698,10 @@ export function Route40LowPolyOpening() {
         const braking=keys.has("s"),accelerating=keys.has("w")&&!braking;
         if(keys.has("a"))campLaneOffset=clamp(campLaneOffset-dt*1.4,-1.6,1.6);
         if(keys.has("d"))campLaneOffset=clamp(campLaneOffset+dt*1.4,-1.6,1.6);
+        const remainingCampDistance=CAMP_STOP_DISTANCE-campDistance;
+        const automaticBrakingDistance=(campSpeed*campSpeed)/(2*2.6)+1.25;
         if(braking)campSpeed=Math.max(0,campSpeed-dt*8.0);
-        else if(CAMP_STOP_DISTANCE-campDistance<=13.5)campSpeed=Math.max(0,campSpeed-dt*1.8);
+        else if(remainingCampDistance<=automaticBrakingDistance)campSpeed=Math.max(0,campSpeed-dt*2.6);
         else if(accelerating)campSpeed=Math.min(8.4,campSpeed+dt*2.1);
         else campSpeed=Math.min(7.0,campSpeed+dt*.45);
         campDistance=Math.min(CAMP_STOP_DISTANCE,campDistance+campSpeed*dt);
