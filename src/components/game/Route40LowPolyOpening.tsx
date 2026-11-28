@@ -16,6 +16,8 @@ const NPC_NERVOUS_MS = 3000;
 const NPC_AIM_RAISE_MS = 720;
 const NPC_AIM_HOLD_MS = 1000;
 const NPC_WARNING_TEXT = "Tené cuidado... Esta noche vienen ellos.";
+const DESTINATION_SIGN_Z = -94;
+const DESTINATION_SIGN_TRIGGER_DISTANCE = 7.5;
 const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
 const smooth = (a: number, b: number, n: number) => {
   const t = clamp((n - a) / (b - a), 0, 1);
@@ -878,7 +880,7 @@ function buildCrashExplosion(){
 function buildWorld() {
   const world = new MeshBuilder();
   const random = randomSource(4081);
-  const destinationSignZ = -53;
+  const destinationSignZ = DESTINATION_SIGN_Z;
 
   // Terreno patagónico nocturno: relieve poligonal y valores oscuros para que destaque la luz del auto.
   const xSteps = 48, zSteps = 180;
@@ -1081,18 +1083,6 @@ function buildWorld() {
   world.box([signX, signY + 2.38, signZ], [1.25, 0.98, 0.16], hex("#9b8a6e"), hex("#5d5448"));
   world.cone(signX, signY + 2.1, signZ - 0.11, 0.31, 0.55, 3, hex("#a94f3f"));
 
-  const destinationX = roadCenter(destinationSignZ) + 12.6;
-  const destinationGround = terrainY(destinationX, destinationSignZ);
-  const destinationY = destinationGround + 4.0;
-  for (const dx of [-3.4, 3.4]) {
-    world.box([destinationX + dx, destinationGround + 1.65, destinationSignZ], [0.24, 3.3, 0.24], hex("#514638"));
-  }
-  world.box([destinationX, destinationY, destinationSignZ], [9.25, 2.75, 0.32], hex("#102f35"), hex("#1c5a4a"));
-  world.box([destinationX, destinationY + 1.18, destinationSignZ + 0.19], [8.95, 0.06, 0.04], hex("#d3c28f"));
-  world.box([destinationX, destinationY - 1.18, destinationSignZ + 0.19], [8.95, 0.06, 0.04], hex("#d3c28f"));
-  world.box([destinationX, destinationY + 1.4, destinationSignZ + 0.2], [1.0, 0.12, 0.08], hex("#f4d8a1"));
-  addPixelText(world, "EL BOLSÓN", destinationX, destinationY + 0.48, destinationSignZ + 0.23, 0.145, hex("#fff3db"));
-  addPixelText(world, "2 KILÓMETROS", destinationX, destinationY - 0.55, destinationSignZ + 0.23, 0.11, hex("#fff3db"));
   addYPFStation(world);
 
   const signalZ=SIGNAL_Z,signalX=roadCenter(signalZ)+3.55,signalGround=roadHeightAt(signalZ)-.18;
@@ -1106,6 +1096,26 @@ function buildWorld() {
   return world;
 }
 
+function buildDestinationSign() {
+  const sign = new MeshBuilder();
+  const signX = roadCenter(DESTINATION_SIGN_Z) + 13.6;
+  // Se apoya sobre la superficie real del césped, no sobre la altura de la calzada.
+  const groundY = terrainSurfaceY(signX, DESTINATION_SIGN_Z);
+  const boardY = groundY + 3.65;
+
+  for (const dx of [-4.5, 4.5]) {
+    sign.box([signX + dx, groundY + 1.85, DESTINATION_SIGN_Z], [0.28, 3.7, 0.3], hex("#514638"));
+    sign.box([signX + dx, groundY + 0.12, DESTINATION_SIGN_Z], [0.82, 0.2, 0.62], hex("#625642"), hex("#403a30"));
+  }
+
+  sign.box([signX, boardY, DESTINATION_SIGN_Z], [11.8, 2.9, 0.38], hex("#102f35"), hex("#1c5a4a"));
+  sign.box([signX, boardY + 1.28, DESTINATION_SIGN_Z + 0.22], [11.25, 0.075, 0.055], hex("#d3c28f"));
+  sign.box([signX, boardY - 1.28, DESTINATION_SIGN_Z + 0.22], [11.25, 0.075, 0.055], hex("#d3c28f"));
+  sign.box([signX, boardY + 1.42, DESTINATION_SIGN_Z + 0.22], [1.15, 0.11, 0.07], hex("#f4d8a1"));
+  addPixelText(sign, "EL BOLSÓN", signX, boardY + 0.52, DESTINATION_SIGN_Z + 0.24, 0.18, hex("#fff5dc"));
+  addPixelText(sign, "2 KILÓMETROS", signX, boardY - 0.52, DESTINATION_SIGN_Z + 0.24, 0.145, hex("#fff5dc"));
+  return sign;
+}
 
 function buildSkyDressing() {
   const sky=new MeshBuilder(),random=randomSource(9041);
@@ -2000,6 +2010,7 @@ export function Route40LowPolyOpening() {
     canvas.addEventListener("pointerup", onPointerUp);
     canvas.addEventListener("pointercancel", onPointerUp);
     let worldMesh: Mesh | null = null;
+    let destinationSignMesh: Mesh | null = null;
     let skyMesh: Mesh | null = null;
     let carMesh: Mesh | null = null;
     let lightMesh: Mesh | null = null;
@@ -2033,6 +2044,7 @@ export function Route40LowPolyOpening() {
       }
 
       worldMesh = createMesh(gl, buildWorld());
+      destinationSignMesh = createMesh(gl, buildDestinationSign());
       skyMesh = createMesh(gl, buildSkyDressing());
       carMesh = createMesh(gl, buildCar());
       lightMesh = createMesh(gl, buildHeadlights());
@@ -2308,6 +2320,19 @@ export function Route40LowPolyOpening() {
       const identity = translation(0, 0, 0);
       bindMesh(gl, program, worldMesh, viewProjection, view, identity);
       if (skyMesh) bindMesh(gl, program, skyMesh, viewProjection, view, identity);
+      const signReveal = smooth(
+        DESTINATION_SIGN_TRIGGER_DISTANCE,
+        DESTINATION_SIGN_TRIGGER_DISTANCE + 1.8,
+        travelled,
+      );
+      if (destinationSignMesh && signReveal > 0.001) {
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.depthMask(false);
+        bindMesh(gl, program, destinationSignMesh, viewProjection, view, identity, signReveal);
+        gl.depthMask(true);
+        gl.disable(gl.BLEND);
+      }
       // Ciclistas, peatones y corredores recorren la bicisenda en ambos sentidos.
       for(const actor of pathActors){
         const span=168,raw=actor.baseZ+elapsed*actor.speed,z=-252+(((raw+252)%span)+span)%span;
@@ -2553,6 +2578,7 @@ export function Route40LowPolyOpening() {
       if (document.pointerLockElement === canvas) document.exitPointerLock();
       window.cancelAnimationFrame(frame);
       if (worldMesh) gl.deleteBuffer(worldMesh.buffer);
+      if (destinationSignMesh) gl.deleteBuffer(destinationSignMesh.buffer);
       if (skyMesh) gl.deleteBuffer(skyMesh.buffer);
       if (carMesh) gl.deleteBuffer(carMesh.buffer);
       if (lightMesh) gl.deleteBuffer(lightMesh.buffer);
