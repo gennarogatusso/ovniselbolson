@@ -946,7 +946,9 @@ function buildWindshield() {
     [1.04, 2.01, -4.19],
     hex("#879b9d"),
   );
-  // Ventanillas laterales traseras y luneta: vidrio tenue para conservar la lectura del exterior.
+  // Ventanillas delanteras, traseras y luneta: vidrio tenue para conservar el exterior visible.
+  glass.quad([-1.76, 1.2, -2.18], [-1.76, 2.12, -2.18], [-1.76, 2.12, -0.08], [-1.76, 1.2, -0.08], hex("#81999e"));
+  glass.quad([1.76, 1.2, -2.18], [1.76, 1.2, -0.08], [1.76, 2.12, -0.08], [1.76, 2.12, -2.18], hex("#81999e"));
   glass.quad([-1.76, 1.2, -0.08], [-1.76, 2.12, -0.08], [-1.76, 2.12, 2.55], [-1.76, 1.2, 2.55], hex("#81999e"));
   glass.quad([1.76, 1.2, -0.08], [1.76, 1.2, 2.55], [1.76, 2.12, 2.55], [1.76, 2.12, -0.08], hex("#81999e"));
   glass.quad([-1.62, 1.15, 2.78], [1.62, 1.15, 2.78], [1.58, 2.12, 2.78], [-1.58, 2.12, 2.78], hex("#81999e"));
@@ -1216,6 +1218,8 @@ export function Route40LowPolyOpening() {
     let travelled = 0;
     let driveSpeed = 0;
     let laneOffset = 0;
+    let steeringAngle = 0;
+    let steeringTarget = 0;
     let lookYaw = 0;
     let lookPitch = 0;
     let fuelingComplete = false;
@@ -1377,11 +1381,15 @@ export function Route40LowPolyOpening() {
       const elapsed = Math.max(0, (now - startedAt) / 1000);
       const dt = clamp((now - previousFrame) / 1000, 0, 0.05);
       previousFrame = now;
+      const roadZForPhysics = elapsed < DURATION ? -elapsed * 4.1 : -DURATION * 4.1 - travelled;
+      const steeringInput = (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0);
+      steeringTarget = steeringInput * 0.13;
+      steeringAngle = mix(steeringAngle, steeringTarget, 1 - Math.exp(-dt * 7.5));
 
       if (elapsed >= DURATION && stageRef.current === "driving") {
         const braking = keys.has("s");
         const throttle = keys.has("w") && !braking;
-        const downhillAssist = clamp((roadHeightAt(carZ + 3) - roadHeightAt(carZ - 3)) * 0.12, 0, 0.5);
+        const downhillAssist = clamp((roadHeightAt(roadZForPhysics + 3) - roadHeightAt(roadZForPhysics - 3)) * 0.12, 0, 0.5);
         if (throttle) {
           driveSpeed = Math.min(5.4, driveSpeed + dt * (2.55 + downhillAssist));
           driveElapsed += dt;
@@ -1408,7 +1416,7 @@ export function Route40LowPolyOpening() {
       if (stageRef.current === "climbing") {
         const braking = keys.has("s");
         const throttle = keys.has("w") && !braking;
-        const uphillPenalty = clamp((roadHeightAt(carZ - 3) - roadHeightAt(carZ + 3)) * 0.09, 0, 0.6);
+        const uphillPenalty = clamp((roadHeightAt(roadZForPhysics - 3) - roadHeightAt(roadZForPhysics + 3)) * 0.09, 0, 0.6);
         if (throttle) {
           driveSpeed = Math.min(5.4, driveSpeed + dt * (2.25 - uphillPenalty));
           climbElapsed += dt;
@@ -1480,9 +1488,9 @@ export function Route40LowPolyOpening() {
       const driverTarget: V3 = elapsed < DURATION
         ? [roadCenter(carZ - 39) + shakeX * 0.7, roadHeightAt(carZ - 39) + 2.6 + shakeY, carZ - 39]
         : [
-            carX + Math.sin(lookYaw) * 39 + shakeX,
+            carX + Math.sin(lookYaw + steeringAngle) * 39 + shakeX,
             roadHeightAt(carZ - 39) + 2.6 + lookPitch * 18 + shakeY,
-            carZ + 0.56 - Math.cos(lookYaw) * 39,
+            carZ + 0.56 - Math.cos(lookYaw + steeringAngle) * 39,
           ];
       const cockpitEye: V3 = [
         mix(aerialEye[0], driverEye[0], transition),
@@ -1536,7 +1544,7 @@ export function Route40LowPolyOpening() {
       bindMesh(gl, program, worldMesh, viewProjection, view, identity);
       if (skyMesh) bindMesh(gl, program, skyMesh, viewProjection, view, identity);
 
-      const carModel = translation(carX, carY, carZ);
+      const carModel = multiply(translation(carX, carY, carZ), rotationY(steeringAngle));
       const aerialVisibility = 1 - smooth(5.1, 5.95, elapsed);
       const returningToCar = stageRef.current === "returning";
       if (aerialVisibility > 0.01 || (outsideStage && !returningToCar)) {
