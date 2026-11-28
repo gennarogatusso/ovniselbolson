@@ -189,7 +189,7 @@ function terrainSurfaceY(x: number, z: number) {
   const airportFieldZ = 1 - smooth(86, 103, Math.abs(z + 167));
   const airportField = airportFieldX * airportFieldZ;
   const pitchArea=(1-smooth(23,34,Math.abs(x+115)))*(1-smooth(39,52,Math.abs(z+166)));
-  const schoolArea=(1-smooth(15,25,Math.abs(x+154)))*(1-smooth(15,26,Math.abs(z+166)));
+  const schoolArea=(1-smooth(15,25,Math.abs(x+150)))*(1-smooth(15,26,Math.abs(z+166)));
   return mix(mix(roadsideGround,-0.16,airportField),-0.13,Math.max(pitchArea,schoolArea));
 }
 
@@ -678,7 +678,7 @@ function addSchoolAndFootballField(m:MeshBuilder){
   for(const x of [cx-3,cx+3])m.beam([x,0,ff],[x,2,ff],.06,hex("#d0d0c8"));
   for(const x of [l-4,r+4]){m.box([x,4,cz],[.16,8,.16],hex("#4a5053"));m.box([x,7.8,cz],[.42,.22,.32],hex("#f1d5a0"));}
   // Escuela barrial detrás de la cancha.
-  const sx=-154,sz=-166,gy=terrainSurfaceY(sx,sz);
+  const sx=-150,sz=-166,gy=terrainSurfaceY(sx,sz);
   m.box([sx,gy+2.45,sz],[24,4.9,28],hex("#d5c5a1"),hex("#b7aa8c"));
   m.box([sx,gy+4.98,sz],[24.8,.38,28.8],hex("#a5503d"),hex("#713f36"));
   m.box([sx+12.08,gy+.72,sz],[.16,1.44,27.2],hex("#78796c"));
@@ -686,7 +686,7 @@ function addSchoolAndFootballField(m:MeshBuilder){
   m.box([sx+12.22,gy+1.45,sz+1],[.28,2.9,3],hex("#72513c"));m.box([sx+12.95,gy+2.95,sz],[1.5,.18,4.8],hex("#36566a"));
   for(let i=0;i<3;i++)m.box([sx+13+i*.38,gy+.12+i*.13,sz],[.8,.24,3.4],hex("#afa58e"));
   m.box([sx+12.36,gy+4.35,sz],[.14,.72,7.6],hex("#244b60"));addPixelTextYZ(m,"ESCUELA",gy+4.25,sz,sx+12.44,.075,hex("#f2eddb"));
-  m.quad([sx+13.2,gy+.025,sz-13],[sx+13.2,gy+.025,sz+13],[sx+19,gy+.025,sz+13],[sx+19,gy+.025,sz-13],hex("#777466"));
+  m.quad([sx+12.1,gy+.025,sz-11],[sx+12.1,gy+.025,sz+11],[sx+14.2,gy+.025,sz+11],[sx+14.2,gy+.025,sz-11],hex("#777466"));
   m.box([sx+16,gy+3.5,sz-12],[.12,7,.12],hex("#6a6656"));m.beam([sx+16,gy+6.7,sz-12],[sx+18.8,gy+6,sz-12],.12,hex("#f1e6cf"));
 }
 function buildPathPedestrian(kind:"walk"|"run",jacket:string,skin:string){
@@ -710,6 +710,20 @@ function buildOncomingCar(body:string,cabin:string){
   m.box([0,.53,0],[1.88,.58,4.25],paint,hex("#26323a"));m.box([0,.85,-1.37],[1.72,.19,1.26],paint);m.box([0,1.13,-.18],[1.48,.63,2.12],glass,hex("#35434b"));m.box([0,1.47,-.18],[1.28,.12,1.93],paint);
   for(const x of [-.98,.98])for(const z of [-1.35,1.35])m.box([x,.43,z],[.22,.55,.73],hex("#12181d"));
   for(const x of [-.61,.61]){m.box([x,.67,-2.13],[.26,.17,.08],hex("#fff1c9"));m.box([x,.51,2.13],[.26,.13,.08],hex("#a94c42"));}m.box([0,.81,2.15],[1.15,.11,.12],hex("#20282e"));return m;
+}
+
+function buildCrashExplosion(){
+  const m=new MeshBuilder();
+  m.cone(0,0,0,1.15,2.3,9,hex("#c83e2d"),hex("#f45b32"));
+  m.cone(0,.18,-.08,.78,1.9,8,hex("#f07b32"),hex("#ffb34f"));
+  m.cone(0,.42,-.12,.42,1.2,7,hex("#ffd16c"),hex("#fff0ae"));
+  m.cone(-.55,.1,.18,.48,1.35,7,hex("#6f625a"),hex("#97877a"));
+  m.cone(.48,.06,-.16,.42,1.15,7,hex("#504d4c"),hex("#8b7766"));
+  for(let i=0;i<12;i++){
+    const a=i/12*Math.PI*2,dist=1+(i%3)*.24,x=Math.cos(a)*dist,z=Math.sin(a)*dist*.55,y=.45+(i%4)*.28;
+    m.box([x,y,z],[.16,.18,.16],i%2?hex("#f5a34c"):hex("#a94d36"));
+  }
+  return m;
 }
 
 function buildWorld() {
@@ -1397,6 +1411,11 @@ function rotationY(angle: number) {
   matrix[15] = 1;
   return matrix;
 }
+function scaling(x:number,y:number,z:number){
+  const matrix=new Float32Array(16);
+  matrix[0]=x;matrix[5]=y;matrix[10]=z;matrix[15]=1;
+  return matrix;
+}
 
 function createMesh(gl: WebGLRenderingContext, builder: MeshBuilder): Mesh {
   const data = builder.data();
@@ -1511,16 +1530,16 @@ export function Route40LowPolyOpening() {
   const mouseSensitivityRef = useRef(0.00235);
   const [mouseSensitivity, setMouseSensitivity] = useState(0.00235);
   const keysRef = useRef<Set<string>>(new Set());
-  const stageRef = useRef<"driving" | "stopped" | "exiting" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished">("driving");
+  const stageRef = useRef<"driving" | "stopped" | "exiting" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished" | "crashed">("driving");
   const fuelStartedAtRef = useRef(0);
   const exitStartedAtRef = useRef(0);
   const payingStartedAtRef = useRef(0);
   const warningStartedAtRef = useRef(0);
   const returnStartedAtRef = useRef(0);
   const engineAudioRef = useRef<EngineAudio | null>(null);
-  const [interactionStage, setInteractionStage] = useState<"driving" | "stopped" | "exiting" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished">("driving");
+  const [interactionStage, setInteractionStage] = useState<"driving" | "stopped" | "exiting" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished" | "crashed">("driving");
   const [fallback, setFallback] = useState(false);
-  const setStage = (next: "driving" | "stopped" | "exiting" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished") => {
+  const setStage = (next: "driving" | "stopped" | "exiting" | "onFoot" | "fueling" | "payment" | "paying" | "warning" | "returning" | "climbing" | "finished" | "crashed") => {
     stageRef.current = next;
     if (next === "fueling") fuelStartedAtRef.current = performance.now();
     if (next === "exiting" || next === "onFoot") exitStartedAtRef.current = performance.now();
@@ -1570,6 +1589,8 @@ export function Route40LowPolyOpening() {
     let lookPitch = 0;
     let fuelingComplete = false;
     let payingComplete = false;
+    let crashStartedAt = 0;
+    let crashExplosionMesh: Mesh | null = null;
     const keys = keysRef.current;
     keys.clear();
     stageRef.current = "driving";
@@ -1700,11 +1721,18 @@ export function Route40LowPolyOpening() {
       paymentMesh = createMesh(gl, buildMoneyHandover());
       attendantMesh = createMesh(gl, buildAttendantPose(0, "driving", 0, 0));
       const people=[
-        {kind:"bike" as const,baseZ:-118,speed:1.15,lateral:-.28,reverse:false,color:"#bb653f"},
-        {kind:"walk" as const,baseZ:-151,speed:-.48,lateral:.34,reverse:true,color:"#4e8491"},
-        {kind:"run" as const,baseZ:-205,speed:.82,lateral:-.24,reverse:false,color:"#d1a34f"},
-        {kind:"bike" as const,baseZ:-231,speed:-1.05,lateral:.3,reverse:true,color:"#6d8297"},
-        {kind:"walk" as const,baseZ:-94,speed:.58,lateral:.18,reverse:false,color:"#9271a4"},
+        // Bicicletas: circulación pausada, más lenta que la gente a pie.
+        {kind:"bike" as const,baseZ:-112,speed:.28,lateral:-.34,reverse:false,color:"#bb653f"},
+        {kind:"bike" as const,baseZ:-181,speed:-.32,lateral:.34,reverse:true,color:"#6d8297"},
+        {kind:"bike" as const,baseZ:-237,speed:.24,lateral:-.18,reverse:false,color:"#668a70"},
+        // Caminantes y corredores en más tramos de la bicisenda.
+        {kind:"walk" as const,baseZ:-91,speed:.62,lateral:.2,reverse:false,color:"#9271a4"},
+        {kind:"walk" as const,baseZ:-136,speed:-.58,lateral:-.3,reverse:true,color:"#4e8491"},
+        {kind:"walk" as const,baseZ:-169,speed:.55,lateral:.28,reverse:false,color:"#c17e55"},
+        {kind:"walk" as const,baseZ:-214,speed:-.64,lateral:-.22,reverse:true,color:"#788f9d"},
+        {kind:"walk" as const,baseZ:-247,speed:.57,lateral:.22,reverse:false,color:"#b8a16b"},
+        {kind:"run" as const,baseZ:-155,speed:.88,lateral:-.18,reverse:false,color:"#d1a34f"},
+        {kind:"run" as const,baseZ:-224,speed:-.82,lateral:.16,reverse:true,color:"#a85e54"},
       ];
       pathActors=people.map(p=>({mesh:createMesh(gl,p.kind==="bike"?buildPathCyclist(p.color):buildPathPedestrian(p.kind,p.color,"#c99576")),baseZ:p.baseZ,speed:p.speed,lateral:p.lateral,reverse:p.reverse}));
       const traffic=[
@@ -1714,6 +1742,7 @@ export function Route40LowPolyOpening() {
         {baseZ:-122,speed:5.4,body:"#b8a36f",cabin:"#42565e"},
       ];
       trafficActors=traffic.map(c=>({mesh:createMesh(gl,buildOncomingCar(c.body,c.cabin)),baseZ:c.baseZ,speed:c.speed}));
+      crashExplosionMesh=createMesh(gl,buildCrashExplosion());
     } catch (error) {
       console.error("No se pudo iniciar la escena low poly de Ruta 40", error);
       if (program) gl.deleteProgram(program);
@@ -1841,13 +1870,35 @@ export function Route40LowPolyOpening() {
       const carX = roadCenter(carZ) + laneOffset;
       const carY = roadHeightAt(carZ) - 0.18;
       gl.uniform3f(headlightLocation, carX, carY + 0.48, carZ - 2.08);
+
+      // Choque por volumen de ambos autos: invadir el carril contrario puede terminar en accidente.
+      if (crashStartedAt === 0 && elapsed >= DURATION &&
+        (stageRef.current === "driving" || stageRef.current === "climbing")) {
+        const collision = trafficActors.some((traffic) => {
+          const span = 308;
+          const raw = traffic.baseZ + elapsed * traffic.speed;
+          const trafficZ = -294 + (((raw + 294) % span) + span) % span;
+          const trafficX = roadCenter(trafficZ) - 2.15;
+          return Math.abs(trafficZ - carZ) < 4.15 && Math.abs(trafficX - carX) < 1.88;
+        });
+        if (collision) {
+          crashStartedAt = now;
+          driveSpeed = 0;
+          keys.clear();
+          if (document.pointerLockElement) document.exitPointerLock();
+          if (engineAudioRef.current) engineAudioRef.current.stop();
+          setStage("crashed");
+        }
+      }
       const transition = smooth(4.48, 5.95, elapsed);
       const aerialEye: V3 = [0, 38 + roadHeightAt(carZ), carZ + 13];
       const aerialTarget: V3 = [0, roadHeightAt(carZ), carZ - 1.5];
       const outsideStage = stageRef.current === "exiting" || stageRef.current === "onFoot" || stageRef.current === "fueling" ||
         stageRef.current === "payment" || stageRef.current === "paying" ||
         stageRef.current === "warning" || stageRef.current === "returning";
-      const shake = transition * (0.005 + driveSpeed * 0.0021) * (outsideStage ? 0 : 1);
+      const crashAge = stageRef.current === "crashed" ? (now - crashStartedAt) / 1000 : 0;
+      const crashShake = stageRef.current === "crashed" ? (1 - smooth(0, 0.72, crashAge)) * 0.055 : 0;
+      const shake = transition * (0.005 + driveSpeed * 0.0021) * (outsideStage ? 0 : 1) + crashShake;
       const shakeX = Math.sin(now * 0.024) * shake;
       const shakeY = Math.sin(now * 0.039) * shake * 0.62;
       const suspensionBounce = (Math.sin(elapsed * 13.5) + Math.sin(elapsed * 22.0) * 0.32) * (driveSpeed / 5.4) * 0.018;
@@ -1920,7 +1971,7 @@ export function Route40LowPolyOpening() {
       // Autos que vienen de frente por el carril opuesto.
       for(const traffic of trafficActors){
         const span=308,raw=traffic.baseZ+elapsed*traffic.speed,z=-294+(((raw+294)%span)+span)%span;
-        const x=roadCenter(z)+2.15,y=roadHeightAt(z)-.16;
+        const x=roadCenter(z)-2.15,y=roadHeightAt(z)-.16;
         const model=multiply(translation(x,y,z),rotationY(Math.PI));
         bindMesh(gl,program,traffic.mesh,viewProjection,view,model);
       }
@@ -1928,11 +1979,26 @@ export function Route40LowPolyOpening() {
       const carModel = multiply(translation(carX, carY, carZ), rotationY(steeringAngle));
       const aerialVisibility = 1 - smooth(5.1, 5.95, elapsed);
       const returningToCar = stageRef.current === "returning";
-      if (aerialVisibility > 0.01 || (outsideStage && !returningToCar)) {
+      if (stageRef.current === "crashed" && crashExplosionMesh) {
+        const age = Math.max(0, (now - crashStartedAt) / 1000);
+        const flare = smooth(0, 0.12, age) * (1 - smooth(1.25, 2.0, age));
+        const size = 0.8 + smooth(0, 0.25, age) * 1.55;
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.depthMask(false);
+        const explosionModel = multiply(
+          translation(carX, carY + 0.08, carZ - 1.9),
+          scaling(size, size * 1.28, size),
+        );
+        bindMesh(gl, program, crashExplosionMesh, viewProjection, view, explosionModel, flare);
+        gl.depthMask(true);
+        gl.disable(gl.BLEND);
+      }
+      if (stageRef.current !== "crashed" && (aerialVisibility > 0.01 || (outsideStage && !returningToCar))) {
         bindMesh(gl, program, carMesh, viewProjection, view, carModel);
       }
       const lightVisibility = smooth(4.8, 5.65, elapsed);
-      if (lightVisibility > 0.01 && (!outsideStage || returningToCar || (stageRef.current === "exiting" && exitBlend < 0.82))) {
+      if (stageRef.current !== "crashed" && lightVisibility > 0.01 && (!outsideStage || returningToCar || (stageRef.current === "exiting" && exitBlend < 0.82))) {
         bindMesh(gl, program, lightMesh, viewProjection, view, carModel, 0.10);
         bindMesh(gl, program, cockpitMesh, viewProjection, view, carModel);
         gl.enable(gl.BLEND);
@@ -2045,6 +2111,7 @@ export function Route40LowPolyOpening() {
       if (fuelHoseMesh) gl.deleteBuffer(fuelHoseMesh.buffer);
       if (paymentMesh) gl.deleteBuffer(paymentMesh.buffer);
       if (attendantMesh) gl.deleteBuffer(attendantMesh.buffer);
+      if (crashExplosionMesh) gl.deleteBuffer(crashExplosionMesh.buffer);
       for(const actor of pathActors) gl.deleteBuffer(actor.mesh.buffer);
       for(const car of trafficActors) gl.deleteBuffer(car.mesh.buffer);
       if (program) gl.deleteProgram(program);
@@ -2159,7 +2226,7 @@ export function Route40LowPolyOpening() {
           </div>
         </div>
       </div>
-      {interactionStage !== "driving" && interactionStage !== "climbing" && interactionStage !== "finished" && (
+      {interactionStage !== "driving" && interactionStage !== "climbing" && interactionStage !== "finished" && interactionStage !== "crashed" && (
         <div className="pointer-events-none absolute inset-0 z-40 flex items-end justify-center px-4 pb-[max(92px,env(safe-area-inset-bottom))] sm:items-center sm:pb-0">
           <div className="pointer-events-auto w-full max-w-lg border border-sky-200/25 bg-[#091b2b]/90 px-6 py-6 text-center shadow-[0_0_65px_rgba(24,117,185,.22)] backdrop-blur-xl">
             {interactionStage === "stopped" && (
@@ -2242,6 +2309,18 @@ export function Route40LowPolyOpening() {
                 <div className="mx-auto mt-5 h-px w-24 bg-sky-200/60" />
               </>
             )}
+          </div>
+        </div>
+      )}
+      {interactionStage === "crashed" && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#160b0b]/75 px-5 text-center backdrop-blur-sm">
+          <div className="w-full max-w-lg border border-orange-200/30 bg-[#170f10]/95 px-8 py-10 shadow-[0_0_80px_rgba(244,89,43,.32)]">
+            <p className="font-mono text-xs tracking-[.38em] text-orange-300">SINIESTRO VIAL</p>
+            <h2 className="mt-4 font-serif text-5xl tracking-[.12em] text-white sm:text-6xl">MORISTE</h2>
+            <p className="mt-4 text-sm leading-relaxed text-slate-300">Invadiste el carril contrario y chocaste de frente con otro vehículo.</p>
+            <button type="button" onClick={() => window.location.reload()} className="mt-8 min-h-12 w-full border border-orange-200/40 bg-[#a9432f] px-5 py-3 font-mono text-xs tracking-[.18em] text-white hover:bg-[#c45136]">
+              VOLVER A INTENTAR
+            </button>
           </div>
         </div>
       )}
