@@ -160,6 +160,16 @@ class MeshBuilder {
       }
     }
   }
+  ellipsoid(cx:number,cy:number,cz:number,rx:number,ry:number,rz:number,color:V3,segments=9,rings=6){
+    const point=(lat:number,lon:number):V3=>[cx+rx*Math.cos(lat)*Math.cos(lon),cy+ry*Math.sin(lat),cz+rz*Math.cos(lat)*Math.sin(lon)];
+    for(let r=0;r<rings;r++){
+      const lat0=-Math.PI/2+(r/rings)*Math.PI,lat1=-Math.PI/2+((r+1)/rings)*Math.PI;
+      for(let i=0;i<segments;i++){
+        const lon0=i/segments*Math.PI*2,lon1=(i+1)/segments*Math.PI*2;
+        this.quad(point(lat0,lon0),point(lat1,lon0),point(lat1,lon1),point(lat0,lon1),color);
+      }
+    }
+  }
   append(other: MeshBuilder, offset: V3 = [0, 0, 0]) {
     for (let i = 0; i < other.values.length; i += 9) {
       this.values.push(
@@ -1103,8 +1113,9 @@ function buildSkyDressing() {
   sky.disc(-45,52,-419.4,4.7,hex("#f5a15f"),48);sky.disc(-45,52,-419.1,2.9,hex("#ffe0a4"),48);
   const clouds=[[-59,31,-278,22,4,4.8],[-43,34,-279,18,4.4,4.8],[-26,32,-280,18,3.4,4.2],[-5,34,-282,23,4.2,5],[20,36,-282,19,4.3,5],[41,33,-280,20,3.4,4.6],[61,29,-278,18,3,4.4]];
   for(let i=0;i<clouds.length;i++){const [x,y,z,w,h,d]=clouds[i]!;sky.box([x,y,z],[w,h,d],hex("#65515a"),hex("#514957"));sky.box([x-w*.18,y+h*.22,z-.08],[w*.52,h*.58,d*.88],hex("#bd735d"));sky.box([x+w*.22,y+h*.18,z+.05],[w*.48,h*.48,d*.9],i%2?hex("#e08a5d"):hex("#ca795d"));}
+  // Silueta de montañas al fondo, detrás del extremo de la carretera: nunca cruza la calzada ni la cámara.
   const peaks=[[-154,-8],[-128,5],[-106,-4],[-82,23],[-61,-6],[-39,13],[-17,42],[8,5],[32,31],[56,-5],[77,20],[101,-5],[126,14],[154,-8]];
-  for(let i=0;i<peaks.length-1;i++){const [x0,y0]=peaks[i]!,[x1,y1]=peaks[i+1]!,px=(x0+x1)*.5,py=Math.max(y0,y1)+11+random()*8,shade=i%3===0?hex("#3b354b"):i%3===1?hex("#514052"):hex("#414057");sky.triangle([x0,-11,-286],[px,py,-292],[x1,-11,-286],shade);sky.triangle([x0,-11,-286.2],[px,Math.max(0,py*.5),-291.9],[x1,-11,-286.2],hex("#6d5360"));}
+  for(let i=0;i<peaks.length-1;i++){const [x0,y0]=peaks[i]!,[x1,y1]=peaks[i+1]!,px=(x0+x1)*.5,py=Math.max(y0,y1)+11+random()*8,shade=i%3===0?hex("#3b354b"):i%3===1?hex("#514052"):hex("#414057");sky.triangle([x0,-11,-560],[px,py,-566],[x1,-11,-560],shade);sky.triangle([x0,-11,-560.2],[px,Math.max(0,py*.5),-565.9],[x1,-11,-560.2],hex("#6d5360"));}
   return sky;
 }
 
@@ -1133,9 +1144,10 @@ function buildCar() {
 
 function buildHeadlights() {
   const lights = new MeshBuilder();
-  const warm = hex("#c4a77a");
-  lights.triangle([-0.45, 0.2, -2.1], [-5.3, 0.16, -39], [-0.2, 0.16, -39], warm);
-  lights.triangle([0.45, 0.2, -2.1], [0.2, 0.16, -39], [5.3, 0.16, -39], warm);
+  const warm = hex("#ad9872");
+  // Haces bajos y contenidos sobre el asfalto: no invaden la vista frontal del conductor.
+  lights.triangle([-0.43, 0.18, -2.1], [-2.85, 0.14, -34], [-0.12, 0.14, -34], warm);
+  lights.triangle([0.43, 0.18, -2.1], [0.12, 0.14, -34], [2.85, 0.14, -34], warm);
   return lights;
 }
 
@@ -1164,6 +1176,72 @@ function buildMoneyHandover() {
   money.beam([0.21, 0.13, -0.02], [0.34, 0.27, -0.02], 0.085, skin);
   money.beam([0.22, 0.09, 0.04], [0.46, 0.1, 0.04], 0.07, skin);
   return money;
+}
+
+function buildSteeringAssembly() {
+  const steering = new MeshBuilder();
+  const rim = hex("#090e12");
+  const rimSeam = hex("#51595a");
+  const spoke = hex("#151d22");
+  const hub = hex("#30383b");
+  const hubMetal = hex("#77756a");
+  const sleeve = hex("#202b35");
+  const sleeveLight = hex("#394753");
+  const cuff = hex("#626f78");
+  const skin = hex("#b78364");
+  const skinLight = hex("#c99575");
+  const skinMid = hex("#a87960");
+
+  // Aro y radios del volante, con un perfil menos voluminoso.
+  steering.torusXY(0, 1.03, -0.88, 0.48, 0.064, rim);
+  steering.torusXY(0, 1.03, -0.88, 0.48, 0.014, rimSeam);
+  steering.beam([0, 1.03, -0.87], [0, 0.67, -0.87], 0.085, spoke);
+  steering.beam([0, 1.03, -0.87], [-0.34, 1.21, -0.87], 0.075, spoke);
+  steering.beam([0, 1.03, -0.87], [0.34, 1.21, -0.87], 0.075, spoke);
+  steering.box([0, 1.03, -0.83], [0.27, 0.23, 0.11], hub, hex("#161e22"));
+  steering.box([0, 1.03, -0.755], [0.16, 0.13, 0.03], hubMetal);
+  steering.box([0, 1.03, -0.733], [0.105, 0.085, 0.018], hub);
+
+  for (const side of [-1, 1]) {
+    const shoulder: V3 = [side * 1.42, 0.66, -1.12];
+    const elbow: V3 = [side * 1.02, 0.86, -0.99];
+    const wrist: V3 = [side * 0.66, 1.01, -0.86];
+
+    steering.beam(shoulder, elbow, 0.35, sleeve);
+    steering.beam(elbow, wrist, 0.285, sleeve);
+    steering.ellipsoid(elbow[0], elbow[1], elbow[2], 0.17, 0.16, 0.15, sleeve, 8, 5);
+    steering.beam([side * 1.24, 0.75, -1.075], [side * 0.91, 0.91, -0.965], 0.025, sleeveLight);
+    steering.ellipsoid(side * 0.625, 1.005, -0.845, 0.145, 0.13, 0.12, cuff, 8, 5);
+    steering.beam([side * 0.62, 1.005, -0.84], [side * 0.505, 1.035, -0.79], 0.155, skinMid);
+    steering.ellipsoid(side * 0.405, 1.045, -0.79, 0.15, 0.12, 0.105, skin, 9, 6);
+    steering.ellipsoid(side * 0.415, 1.066, -0.815, 0.105, 0.075, 0.07, skinLight, 8, 5);
+
+    // Índice, medio, anular y meñique: tres falanges cortas y curvadas alrededor del aro.
+    for (let finger = 0; finger < 4; finger++) {
+      const baseY = 1.145 - finger * 0.06;
+      const tipY = baseY - (finger === 3 ? 0.05 : 0.038);
+      const base: V3 = [side * 0.475, baseY, -0.735];
+      const knuckle: V3 = [side * 0.525, baseY - 0.012, -0.795];
+      const joint: V3 = [side * 0.545, baseY - 0.022, -0.865];
+      const tip: V3 = [side * 0.49, tipY, -0.925];
+      steering.beam(base, knuckle, 0.052, skin);
+      steering.ellipsoid(knuckle[0], knuckle[1], knuckle[2], 0.032, 0.031, 0.032, skinLight, 7, 4);
+      steering.beam(knuckle, joint, 0.047, skinLight);
+      steering.ellipsoid(joint[0], joint[1], joint[2], 0.028, 0.027, 0.028, skin, 7, 4);
+      steering.beam(joint, tip, finger === 3 ? 0.038 : 0.041, skin);
+      steering.ellipsoid(tip[0], tip[1], tip[2], 0.025, 0.021, 0.025, skinLight, 7, 4);
+    }
+
+    // Pulgar enfrentado, apoyado en el borde interior del volante.
+    const thumbBase: V3 = [side * 0.32, 1.045, -0.755];
+    const thumbJoint: V3 = [side * 0.34, 1.105, -0.82];
+    const thumbTip: V3 = [side * 0.415, 1.085, -0.905];
+    steering.beam(thumbBase, thumbJoint, 0.072, skin);
+    steering.ellipsoid(thumbJoint[0], thumbJoint[1], thumbJoint[2], 0.039, 0.035, 0.034, skinLight, 7, 4);
+    steering.beam(thumbJoint, thumbTip, 0.061, skinLight);
+    steering.ellipsoid(thumbTip[0], thumbTip[1], thumbTip[2], 0.032, 0.027, 0.027, skin, 7, 4);
+  }
+  return steering;
 }
 
 function buildCockpit() {
@@ -1262,59 +1340,6 @@ function buildCockpit() {
   cockpit.box([0.12, 0.79, -1.08], [0.035, 0.035, 0.015], hex("#7b9b72"));
   addPixelText(cockpit, "064", 0, 1.0, -1.015, 0.027, hex("#dfc99b"));
   addPixelText(cockpit, "KM/H", 0, 0.81, -1.014, 0.014, hex("#a9b2a8"));
-
-  // Volante poligonal más grueso, con radios, centro acolchado y costuras.
-  cockpit.torusXY(0, 1.03, -0.88, 0.48, 0.075, hex("#080c10"));
-  cockpit.torusXY(0, 1.03, -0.88, 0.48, 0.018, hex("#555a58"));
-  cockpit.beam([0, 1.03, -0.87], [0, 0.66, -0.87], 0.095, hex("#11171b"));
-  cockpit.beam([0, 1.03, -0.87], [-0.34, 1.22, -0.87], 0.085, hex("#11171b"));
-  cockpit.beam([0, 1.03, -0.87], [0.34, 1.22, -0.87], 0.085, hex("#11171b"));
-  cockpit.box([0, 1.03, -0.83], [0.29, 0.25, 0.12], hex("#30383b"), hex("#161d21"));
-  cockpit.box([0, 1.03, -0.755], [0.17, 0.14, 0.035], hex("#77756a"));
-  cockpit.box([0, 1.03, -0.73], [0.11, 0.09, 0.018], hex("#30383b"));
-  for (let i = 0; i < 14; i++) {
-    const a = (i / 14) * Math.PI * 2;
-    const x1 = Math.cos(a) * 0.475;
-    const y1 = 1.03 + Math.sin(a) * 0.475;
-    const x2 = Math.cos(a + 0.055) * 0.475;
-    const y2 = 1.03 + Math.sin(a + 0.055) * 0.475;
-    cockpit.beam([x1, y1, -0.795], [x2, y2, -0.795], 0.012, hex("#8a8170"));
-  }
-
-  // Brazos más naturales: mangas, costuras, puños, palmas y dedos separados.
-  for (const side of [-1, 1]) {
-    const palmX = side * 0.37;
-    const sleeveColor = hex("#202b35");
-    const sleeveLight = hex("#394753");
-    const cuff = hex("#65727a");
-    const skin = hex("#b78364");
-    const fingerSkin = hex("#c99575");
-    cockpit.beam([side * 1.42, 0.68, -1.03], [side * 0.53, 1.11, -0.88], 0.37, sleeveColor);
-    cockpit.beam([side * 1.16, 0.82, -0.98], [side * 0.62, 1.09, -0.86], 0.105, sleeveLight);
-    cockpit.box([side * 0.54, 1.12, -0.84], [0.18, 0.25, 0.25], cuff, hex("#39434a"));
-    cockpit.beam([side * 0.52, 1.13, -0.84], [palmX, 1.17, -0.79], 0.15, hex("#a77a60"));
-    cockpit.box([palmX, 1.17, -0.79], [0.29, 0.19, 0.17], skin, hex("#855b49"));
-    // Cuatro dedos articulados: falange proximal, distal y punta, separados entre sí.
-    for (let finger = 0; finger < 4; finger++) {
-      const fingerX = palmX + side * ((finger - 1.5) * 0.061);
-      const length = 0.13 - Math.abs(finger - 1.5) * 0.012;
-      const knuckle: V3 = [fingerX, 1.13, -0.69];
-      const joint: V3 = [fingerX + side * 0.012, 1.07, -0.61];
-      const tip: V3 = [fingerX + side * 0.018, 1.025 - (0.13 - length) * 0.35, -0.565];
-      cockpit.beam(knuckle, joint, 0.052, fingerSkin);
-      cockpit.beam(joint, tip, 0.045, hex("#d4a080"));
-      cockpit.box([joint[0], joint[1], joint[2]], [0.052, 0.045, 0.045], fingerSkin);
-      cockpit.box([tip[0], tip[1], tip[2]], [0.042, 0.035, 0.035], hex("#e1b596"));
-    }
-    // Pulgar enfrentado a los dedos, con dos segmentos y una articulación visible.
-    const thumbBase: V3 = [palmX - side * 0.13, 1.16, -0.77];
-    const thumbJoint: V3 = [palmX - side * 0.19, 1.1, -0.68];
-    const thumbTip: V3 = [palmX - side * 0.16, 1.045, -0.62];
-    cockpit.beam(thumbBase, thumbJoint, 0.075, skin);
-    cockpit.beam(thumbJoint, thumbTip, 0.062, fingerSkin);
-    cockpit.box(thumbTip, [0.07, 0.055, 0.05], hex("#d09b7a"));
-    cockpit.beam([side * 0.48, 1.08, -0.7], [side * 0.61, 1.1, -0.7], 0.018, hex("#87959a"));
-  }
 
   // Puertas interiores anchas, apoyabrazos, manijas y controles de ventanilla.
   for (const side of [-1, 1]) {
@@ -1484,19 +1509,19 @@ void main() {
   // Haz cálido de los faros: ilumina el asfalto, la vegetación cercana y los bordes del camino.
   vec3 fromHeadlight = vWorldPosition - uHeadlightPosition;
   float ahead = max(0.0, -fromHeadlight.z);
-  float beamWidth = 0.72 + ahead * 0.19;
-  float beamSide = 1.0 - smoothstep(beamWidth * 0.68, beamWidth, abs(fromHeadlight.x));
-  float beamDistance = 1.0 - smoothstep(5.0, 48.0, ahead);
-  float beamHeight = 1.0 - smoothstep(0.8, 5.8, fromHeadlight.y);
+  float beamWidth = 0.58 + ahead * 0.12;
+  float beamSide = 1.0 - smoothstep(beamWidth * 0.64, beamWidth, abs(fromHeadlight.x));
+  float beamDistance = 1.0 - smoothstep(4.0, 41.0, ahead);
+  float beamHeight = 1.0 - smoothstep(0.65, 4.9, fromHeadlight.y);
   float headlight = beamSide * beamDistance * beamHeight * smoothstep(0.0, 3.0, ahead);
-  light += headlight * 1.12;
+  light += headlight * 0.92;
 
-  vec3 color = vColor * light * vec3(1.10, 0.94, 0.83);
-  color += vec3(1.0, 0.72, 0.43) * headlight * 0.46;
+  vec3 color = vColor * light * vec3(1.08, 0.95, 0.86);
+  color += vec3(1.0, 0.78, 0.52) * headlight * 0.30;
   float emissive = smoothstep(0.70, 0.96, max(max(vColor.r, vColor.g), vColor.b));
   color += vColor * emissive * 0.28;
   vec3 highlights = max(color - vec3(0.52, 0.56, 0.62), vec3(0.0));
-  color += highlights * 0.24;
+  color += highlights * 0.18;
   float fog = smoothstep(58.0, 238.0, vDepth);
   color = mix(color, uFogColor, fog);
   float scan = 1.0 - 0.022 * (0.5 + 0.5 * sin(gl_FragCoord.y * 3.14159));
@@ -1819,6 +1844,7 @@ export function Route40LowPolyOpening() {
     let carMesh: Mesh | null = null;
     let lightMesh: Mesh | null = null;
     let cockpitMesh: Mesh | null = null;
+    let steeringAssemblyMesh: Mesh | null = null;
     let windshieldMesh: Mesh | null = null;
     let pathActors: Array<{mesh:Mesh;baseZ:number;speed:number;lateral:number;reverse:boolean}> = [];
     let trafficActors: Array<{mesh:Mesh;baseZ:number;speed:number}> = [];
@@ -1850,6 +1876,7 @@ export function Route40LowPolyOpening() {
       carMesh = createMesh(gl, buildCar());
       lightMesh = createMesh(gl, buildHeadlights());
       cockpitMesh = createMesh(gl, buildCockpit());
+      steeringAssemblyMesh = createMesh(gl, buildSteeringAssembly());
       windshieldMesh = createMesh(gl, buildWindshield());
       const people=[
         // Bicicletas: circulación pausada, más lenta que la gente a pie.
@@ -1918,7 +1945,7 @@ export function Route40LowPolyOpening() {
     setFallback(false);
 
     const animate = (now: number) => {
-      if (!active || !program || !worldMesh || !carMesh || !lightMesh || !cockpitMesh || !windshieldMesh) return;
+      if (!active || !program || !worldMesh || !carMesh || !lightMesh || !cockpitMesh || !steeringAssemblyMesh || !windshieldMesh) return;
       if (!started) {
         startedAt = now;
         previousFrame = now;
@@ -2217,8 +2244,16 @@ export function Route40LowPolyOpening() {
       }
       const lightVisibility = smooth(4.8, 5.65, elapsed);
       if (stageRef.current !== "crashed" && lightVisibility > 0.01) {
-        bindMesh(gl, program, lightMesh, viewProjection, view, carModel, 0.10);
+        bindMesh(gl, program, lightMesh, viewProjection, view, carModel, 0.045);
         bindMesh(gl, program, cockpitMesh, viewProjection, view, carModel);
+        const steeringModel = multiply(
+          multiply(
+            multiply(carModel, translation(0, 1.03, -0.88)),
+            rotationZ(steeringAngle * 2.25),
+          ),
+          translation(0, -1.03, 0.88),
+        );
+        bindMesh(gl, program, steeringAssemblyMesh, viewProjection, view, steeringModel);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.depthMask(false);
@@ -2290,6 +2325,7 @@ export function Route40LowPolyOpening() {
       if (carMesh) gl.deleteBuffer(carMesh.buffer);
       if (lightMesh) gl.deleteBuffer(lightMesh.buffer);
       if (cockpitMesh) gl.deleteBuffer(cockpitMesh.buffer);
+      if (steeringAssemblyMesh) gl.deleteBuffer(steeringAssemblyMesh.buffer);
       if (windshieldMesh) gl.deleteBuffer(windshieldMesh.buffer);
       if (crashExplosionMesh) gl.deleteBuffer(crashExplosionMesh.buffer);
       if(armedThreatBodyMesh)gl.deleteBuffer(armedThreatBodyMesh.buffer);
