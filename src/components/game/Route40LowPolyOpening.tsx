@@ -1471,7 +1471,7 @@ function buildCampingTrunkLid() {
 
 function buildCampingCharacter() {
   const person = new MeshBuilder();
-  const jacket = hex("#343c36"), jacketLight = hex("#59644d"), pants = hex("#34373d");
+  const jacket = hex("#343c36"), pants = hex("#34373d");
   const skin = hex("#bd896b"), hair = hex("#201e1b"), boots = hex("#171b1b");
   // Proporción humana estilizada coherente con la escala del habitáculo.
   person.box([-0.13, 0.52, 0], [0.22, 0.98, 0.25], pants);
@@ -1493,15 +1493,15 @@ function buildCampingCharacter() {
 function buildCampingGear() {
   const gear = new MeshBuilder();
   // Bolsa de carpa plegada, con extremos, correas y costuras.
-  gear.ellipsoid(-0.42, 0.73, 1.58, 0.62, 0.28, 0.42, hex("#526447"), 10, 6);
-  gear.beam([-0.78, 0.92, 1.35], [-0.78, 0.92, 1.82], 0.055, hex("#c3a66c"));
-  gear.beam([-0.06, 0.92, 1.35], [-0.06, 0.92, 1.82], 0.055, hex("#c3a66c"));
-  gear.box([-0.42, 0.81, 1.99], [0.52, 0.12, 0.12], hex("#293c30"));
+  gear.ellipsoid(-0.34, 0.73, 1.58, 0.36, 0.28, 0.42, hex("#526447"), 10, 6);
+  gear.beam([-0.55, 0.92, 1.35], [-0.55, 0.92, 1.82], 0.055, hex("#c3a66c"));
+  gear.beam([-0.12, 0.92, 1.35], [-0.12, 0.92, 1.82], 0.055, hex("#c3a66c"));
+  gear.box([-0.34, 0.81, 1.99], [0.43, 0.12, 0.12], hex("#293c30"));
   // Caja de herramientas rígida, colocada junto a la bolsa dentro del baúl.
-  gear.box([0.48, 0.64, 1.58], [0.64, 0.46, 0.58], hex("#4a5250"), hex("#282f31"));
-  gear.box([0.48, 0.89, 1.58], [0.7, 0.09, 0.63], hex("#65736d"));
-  gear.box([0.48, 0.99, 1.58], [0.28, 0.08, 0.17], hex("#202729"));
-  gear.beam([0.23, 0.93, 1.58], [0.73, 0.93, 1.58], 0.055, hex("#262e2f"));
+  gear.box([0.4, 0.64, 1.58], [0.55, 0.46, 0.58], hex("#4a5250"), hex("#282f31"));
+  gear.box([0.4, 0.89, 1.58], [0.58, 0.09, 0.61], hex("#65736d"));
+  gear.box([0.4, 0.99, 1.58], [0.24, 0.08, 0.17], hex("#202729"));
+  gear.beam([0.18, 0.93, 1.58], [0.62, 0.93, 1.58], 0.055, hex("#262e2f"));
   return gear;
 }
 function buildHeadlights() {
@@ -2320,7 +2320,7 @@ export function Route40LowPolyOpening() {
     let climbElapsed = 0;
     let travelled = 0;
     let campDistance = 0, campSpeed = 6.8, campLaneOffset = 0;
-    let campStartedAt = 0, exitStartedAt = 0, walkStartedAt = 0, trunkStartedAt = 0, endingStartedAt = 0;
+    let exitStartedAt = 0, walkStartedAt = 0, trunkStartedAt = 0, endingStartedAt = 0;
     let campAmbientStop: (() => void) | null = null;
     let signalEncounterStartedAt=0,signalAimStartedAt=0,escapeStartedAt=0,npcImpactAt=0;
     let npcImpactX=0,npcImpactZ=THREAT_Z;
@@ -2675,7 +2675,7 @@ export function Route40LowPolyOpening() {
           driveSpeed=0;keys.clear();
           if(document.pointerLockElement)document.exitPointerLock();
           engineAudioRef.current?.stop();
-          campDistance=0;campSpeed=6.8;campLaneOffset=0;campStartedAt=now;
+          campDistance=0;campSpeed=6.8;campLaneOffset=0;
           startEngineAudio();engineAudioRef.current?.setThrottle(.58);
           try { campAmbientStop=createCampingAmbientAudio(); } catch (error) {
             console.warn("El ambiente natural del camping no está disponible", error);
@@ -2937,7 +2937,7 @@ export function Route40LowPolyOpening() {
           : stageRef.current === "trunkOpening"
             ? smooth(0.08, 1.65, (now - trunkStartedAt) / 1000)
             : 0;
-        if (campingTrunkClosedMesh && trunkProgress < 0.995 && outsideBlend > 0.005) {
+        if (campingTrunkClosedMesh && outsideBlend > 0.005 && trunkProgress < 0.995) {
           gl.enable(gl.BLEND);
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
           gl.depthMask(false);
