@@ -2170,16 +2170,19 @@ export function Route40LowPolyOpening() {
   const driverReactionRef = useRef<HTMLDivElement | null>(null);
   const timeJumpRef = useRef<HTMLDivElement | null>(null);
   const gameHudRef = useRef<HTMLDivElement | null>(null);
+  const starIndicatorRef = useRef<HTMLDivElement | null>(null);
+  const campEndingRef = useRef<HTMLDivElement | null>(null);
+  const interactionActionRef = useRef<(() => void) | null>(null);
   const progressRef = useRef<HTMLDivElement | null>(null);
   const speedRef = useRef<HTMLSpanElement | null>(null);
   const mouseSensitivityRef = useRef(0.00235);
   const [mouseSensitivity, setMouseSensitivity] = useState(0.00235);
   const keysRef = useRef<Set<string>>(new Set());
-  const stageRef = useRef<"driving" | "climbing" | "signalEncounter" | "signalAim" | "escape" | "finished" | "crashed">("driving");
+  const stageRef = useRef<"driving" | "climbing" | "signalEncounter" | "signalAim" | "escape" | "finished" | "crashed" | "campApproach" | "campStopped" | "exiting" | "walkingToTrunk" | "trunkPrompt" | "trunkOpening" | "ending">("driving");
   const engineAudioRef = useRef<EngineAudio | null>(null);
-  const [interactionStage, setInteractionStage] = useState<"driving" | "climbing" | "signalEncounter" | "signalAim" | "escape" | "finished" | "crashed">("driving");
+  const [interactionStage, setInteractionStage] = useState<"driving" | "climbing" | "signalEncounter" | "signalAim" | "escape" | "finished" | "crashed" | "campApproach" | "campStopped" | "exiting" | "walkingToTrunk" | "trunkPrompt" | "trunkOpening" | "ending">("driving");
   const [fallback, setFallback] = useState(false);
-  const setStage = (next: "driving" | "climbing" | "signalEncounter" | "signalAim" | "escape" | "finished" | "crashed") => {
+  const setStage = (next: "driving" | "climbing" | "signalEncounter" | "signalAim" | "escape" | "finished" | "crashed" | "campApproach" | "campStopped" | "exiting" | "walkingToTrunk" | "trunkPrompt" | "trunkOpening" | "ending") => {
     stageRef.current = next;
     setInteractionStage(next);
   };
@@ -2215,6 +2218,9 @@ export function Route40LowPolyOpening() {
     let driveElapsed = 0;
     let climbElapsed = 0;
     let travelled = 0;
+    let campDistance = 0, campSpeed = 6.8, campLaneOffset = 0;
+    let campStartedAt = 0, exitStartedAt = 0, walkStartedAt = 0, trunkStartedAt = 0;
+    let campAmbientStop: (() => void) | null = null;
     let signalEncounterStartedAt=0,signalAimStartedAt=0,escapeStartedAt=0,npcImpactAt=0;
     let npcImpactX=0,npcImpactZ=THREAT_Z;
     let impactEffectsPlayed=false;
@@ -2227,18 +2233,42 @@ export function Route40LowPolyOpening() {
     let lookPitch = 0;
     let crashStartedAt = 0;
     let crashExplosionMesh: Mesh | null = null;
+    let campingWorldMesh: Mesh | null = null;
+    let campingWaterMesh: Mesh | null = null;
+    let campingBridgeMesh: Mesh | null = null;
+    let campingGateLeafMesh: Mesh | null = null;
+    let campingDoorMesh: Mesh | null = null;
+    let campingTrunkLidMesh: Mesh | null = null;
+    let campingCharacterMesh: Mesh | null = null;
+    let campingGearMesh: Mesh | null = null;
     const keys = keysRef.current;
     keys.clear();
     stageRef.current = "driving";
     setInteractionStage("driving");
+    interactionActionRef.current = () => {
+      if (stageRef.current === "campStopped") {
+        if (document.pointerLockElement === canvas) document.exitPointerLock();
+        keys.clear();
+        exitStartedAt = performance.now();
+        setStage("exiting");
+      } else if (stageRef.current === "trunkPrompt") {
+        keys.clear();
+        trunkStartedAt = performance.now();
+        setStage("trunkOpening");
+      }
+    };
     const onKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
+      if (key === "e" || key === "enter") {
+        interactionActionRef.current?.();
+        return;
+      }
       if (["w", "a", "s", "d", "arrowleft", "arrowright", "arrowup", "arrowdown", "q"].includes(key)) {
         if (key.startsWith("arrow")) event.preventDefault();
         keys.add(key);
       }
-      if (key === "w" && (stageRef.current === "driving" || stageRef.current === "climbing") &&
-        (stageRef.current === "climbing" || performance.now() - startedAt >= DURATION * 1000)) startEngineAudio();
+      if (key === "w" && (stageRef.current === "driving" || stageRef.current === "climbing" || stageRef.current === "campApproach") &&
+        (stageRef.current !== "driving" || performance.now() - startedAt >= DURATION * 1000)) startEngineAudio();
     };
     const onKeyUp = (event: KeyboardEvent) => keys.delete(event.key.toLowerCase());
     const onBlur = () => keys.clear();
@@ -2310,6 +2340,14 @@ export function Route40LowPolyOpening() {
     canvas.addEventListener("pointerup", onPointerUp);
     canvas.addEventListener("pointercancel", onPointerUp);
     let worldMesh: Mesh | null = null;
+    let campingWorldMesh: Mesh | null = null;
+    let campingWaterMesh: Mesh | null = null;
+    let campingBridgeMesh: Mesh | null = null;
+    let campingGateLeafMesh: Mesh | null = null;
+    let campingDoorMesh: Mesh | null = null;
+    let campingTrunkLidMesh: Mesh | null = null;
+    let campingCharacterMesh: Mesh | null = null;
+    let campingGearMesh: Mesh | null = null;
     let destinationSignMesh: Mesh | null = null;
     let skyMesh: Mesh | null = null;
     let carMesh: Mesh | null = null;
@@ -2344,6 +2382,14 @@ export function Route40LowPolyOpening() {
       }
 
       worldMesh = createMesh(gl, buildWorld());
+      campingWorldMesh = createMesh(gl, buildCampingWorld());
+      campingWaterMesh = createMesh(gl, buildCampingWater());
+      campingBridgeMesh = createMesh(gl, buildCampingBridge());
+      campingGateLeafMesh = createMesh(gl, buildCampingGateLeaf());
+      campingDoorMesh = createMesh(gl, buildCampingDoor());
+      campingTrunkLidMesh = createMesh(gl, buildCampingTrunkLid());
+      campingCharacterMesh = createMesh(gl, buildCampingCharacter());
+      campingGearMesh = createMesh(gl, buildCampingGear());
       destinationSignMesh = createMesh(gl, buildDestinationSign());
       skyMesh = createMesh(gl, buildSkyDressing());
       carMesh = createMesh(gl, buildCar());
