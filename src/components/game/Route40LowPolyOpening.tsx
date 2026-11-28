@@ -2025,7 +2025,7 @@ export function Route40LowPolyOpening() {
       const signalZ=-208,signalX=roadCenter(signalZ)+4.65,signalGround=roadHeightAt(signalZ)-.18;
       const signalActive=["signalJuggle","signalWarning","escape"].includes(stageRef.current);
       if(signalActive&&signalRedMesh){
-        const redModel=multiply(translation(signalX,signalGround+6.12,signalZ+.39),scaling(1.18,1.18,1.18));
+        const redModel=multiply(translation(signalX,signalGround+6.12,signalZ+.39),scaling(1.75,1.75,1.75));
         bindMesh(gl,program,signalRedMesh,viewProjection,view,redModel);
       }
       if(["signalJuggle","signalWarning","escape"].includes(stageRef.current)&&jugglerMesh){
