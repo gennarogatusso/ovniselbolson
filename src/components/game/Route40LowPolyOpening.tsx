@@ -5,9 +5,13 @@ type V3 = [number, number, number];
 type Mesh = { buffer: WebGLBuffer; count: number };
 
 const DURATION = 14.4;
-const SIGNAL_Z = -220;
-const SIGNAL_STOP_Z = SIGNAL_Z + 32;
+const SIGNAL_Z = -418;
+const SIGNAL_STOP_Z = SIGNAL_Z + 70;
 const THREAT_Z = SIGNAL_STOP_Z - 22;
+const AIRPORT_Z_OFFSET = 36;
+const STATION_Z_OFFSET = -85;
+const FIELD_X_OFFSET = 77;
+const FIELD_Z_OFFSET = -149;
 const NPC_NERVOUS_MS = 3000;
 const NPC_AIM_RAISE_MS = 720;
 const NPC_AIM_HOLD_MS = 1000;
@@ -187,7 +191,10 @@ function roadCenter(z: number) {
   // Curva amplia inicial: la ruta cae hacia la derecha y luego recupera su eje.
   const turnIn = smooth(4, 46, -z);
   const turnOut = smooth(58, 112, -z);
-  return natural + 8.2 * (turnIn - turnOut);
+  const initialPath = natural + 8.2 * (turnIn - turnOut);
+  // Desde el tramo posterior al aeródromo, la ruta se alinea de forma suave y queda recta.
+  const straightening = smooth(130, 170, -z);
+  return initialPath * (1 - straightening);
 }
 
 function roadDipAt(z: number) {
@@ -197,10 +204,8 @@ function roadDipAt(z: number) {
 }
 
 function roadHeightAt(z: number) {
-  const downhillDip = roadDipAt(z);
-  const progress = clamp((-z - 174) / 105, 0, 1);
-  const eased = progress * progress * (3 - 2 * progress);
-  return 0.18 + downhillDip + eased * 15.5;
+  // Se conserva la bajada inicial; desde el valle la calzada queda a una altura constante.
+  return 0.18 + roadDipAt(z);
 }
 
 function terrainSurfaceY(x: number, z: number) {
@@ -209,14 +214,13 @@ function terrainSurfaceY(x: number, z: number) {
   // El paisaje acompaña la bajada a escala amplia; una holgura local evita que el terreno atraviese el asfalto.
   const downhillEnvelope = 1 - smooth(20, 68, distanceFromRoad);
   const roadClearance = 1 - smooth(6.2, 19, distanceFromRoad);
-  const uphillLift = (roadHeightAt(z) - (0.18 + roadDipAt(z))) * (1 - smooth(5, 38, distanceFromRoad));
-  const roadsideGround = naturalGround + roadDipAt(z) * downhillEnvelope + uphillLift - 0.78 * roadClearance;
+  const roadsideGround = naturalGround + roadDipAt(z) * downhillEnvelope - 0.78 * roadClearance;
   // Explanada suave del aeródromo al este de la ruta, separada del asfalto por el sendero de bicicletas.
   const airportFieldX = 1 - smooth(27, 43, Math.abs(x + 53.5));
-  const airportFieldZ = 1 - smooth(86, 103, Math.abs(z + 167));
+  const airportFieldZ = 1 - smooth(86, 103, Math.abs(z + 131));
   const airportField = airportFieldX * airportFieldZ;
-  const pitchArea=(1-smooth(23,34,Math.abs(x+43)))*(1-smooth(39,52,Math.abs(z+40)));
-  const schoolArea=(1-smooth(15,25,Math.abs(x+77)))*(1-smooth(15,26,Math.abs(z+40)));
+  const pitchArea=(1-smooth(23,34,Math.abs(x+30)))*(1-smooth(39,52,Math.abs(z+315)));
+  const schoolArea=(1-smooth(15,25,Math.abs(x+64)))*(1-smooth(15,26,Math.abs(z+315)));
   return mix(mix(roadsideGround,-0.16,airportField),-0.13,Math.max(pitchArea,schoolArea));
 }
 
@@ -288,9 +292,10 @@ function addPine(mesh: MeshBuilder, x: number, z: number, _base: number, height:
   if (z <= -76 && z >= -258 && Math.abs(treeX - pathX) < 8.0) {
     treeX = pathX - 10.0;
   }
-  const insideMovedPitch = Math.abs(treeX + 43) < 27 && Math.abs(z + 40) < 42;
-  const insideMovedSchool = Math.abs(treeX + 77) < 16 && Math.abs(z + 40) < 18;
-  if (insideMovedPitch || insideMovedSchool) return;
+  const insideMovedPitch = Math.abs(treeX + 30) < 27 && Math.abs(z + 315) < 42;
+  const insideMovedSchool = Math.abs(treeX + 64) < 16 && Math.abs(z + 315) < 18;
+  const insideYPF = treeX > 5.5 && treeX < 34.5 && z > -274 && z < -231;
+  if (insideMovedPitch || insideMovedSchool || insideYPF) return;
   const base = terrainSurfaceY(treeX, z);
   const trunk = hex(seed % 2 < 1 ? "#332b25" : "#292922");
   mesh.box([treeX, base + height * 0.13, z], [height * 0.075, height * 0.27, height * 0.075], trunk);
@@ -314,11 +319,11 @@ function addRoadsideMountainRange(
   heightBase: number,
 ) {
   const random = randomSource(seed);
-  const sections = 46;
+  const sections = 55;
   const startZ = 14;
-  const endZ = -448;
+  const endZ = -520;
   const section = (z: number) => {
-    const fade = z < -420 ? Math.max(0.12, (z + 448) / 28) : 1;
+    const fade = z < -492 ? Math.max(0.12, (z + 520) / 28) : 1;
     const sway = Math.sin(z * 0.043 + seed) * 3.8 + Math.sin(z * 0.091 + seed * 0.3) * 1.9;
     const peakX = side * (innerDistance + 7.5 + Math.sin(z * 0.067 + seed) * 2.2);
     const roadLift = roadHeightAt(z) - 0.18;
@@ -438,9 +443,10 @@ function buildAttendantPose(time: number, stage: string, warningElapsed: number,
 function addYPFStation(world: MeshBuilder) {
   const mesh = new MeshBuilder();
   const stationOffset = 6.5;
+  const stationOffsetZ = STATION_Z_OFFSET;
   const stationX = 11.2;
   const stationZ = -166;
-  const ground = terrainY(stationX + stationOffset, stationZ);
+  const ground = terrainY(stationX + stationOffset, stationZ + stationOffsetZ);
   const blue = hex("#0875b9");
   const deepBlue = hex("#07548b");
   const white = hex("#e6edf0");
@@ -502,7 +508,7 @@ function addYPFStation(world: MeshBuilder) {
   for (const x of [4.0, 18.8]) {
     mesh.box([x, ground + 5.1, stationZ], [0.08, 0.08, 0.9], hex("#f6dba8"));
   }
-  world.append(mesh, [stationOffset, 0, 0]);
+  world.append(mesh, [stationOffset, 0, stationOffsetZ]);
 }
 
 
@@ -559,8 +565,8 @@ function addBikePathAndAerodrome(mesh: MeshBuilder) {
   // Aeródromo El Bolsón: pista asfaltada 18/36, alargada norte-sur y separada del sendero.
   // No se agrega surtidor, marquesina ni edificio comercial: es infraestructura aeronáutica.
   const runwayX = -53.5;
-  const runwayStart = -76;
-  const runwayEnd = -258;
+  const runwayStart = -76 + AIRPORT_Z_OFFSET;
+  const runwayEnd = -258 + AIRPORT_Z_OFFSET;
   const halfWidth = 7.2;
   const runwayY = (z: number) => terrainSurfaceY(runwayX, z) + 0.055;
 
@@ -612,30 +618,31 @@ function addBikePathAndAerodrome(mesh: MeshBuilder) {
   }
 
   // Calle de rodaje y plataforma de hormigón junto al hangar.
-  const apronY = terrainSurfaceY(-68, -165) + 0.04;
+  const apronY = terrainSurfaceY(-68, -165 + AIRPORT_Z_OFFSET) + 0.04;
   mesh.quad(
-    [-74, apronY, -181], [-59, apronY, -181],
-    [-59, apronY, -148], [-74, apronY, -148],
+    [-74, apronY, -181 + AIRPORT_Z_OFFSET], [-59, apronY, -181 + AIRPORT_Z_OFFSET],
+    [-59, apronY, -148 + AIRPORT_Z_OFFSET], [-74, apronY, -148 + AIRPORT_Z_OFFSET],
     hex("#51595d"),
   );
   mesh.quad(
-    [-69, apronY + 0.012, -181], [-61, apronY + 0.012, -181],
-    [-61, apronY + 0.012, -148], [-69, apronY + 0.012, -148],
+    [-69, apronY + 0.012, -181 + AIRPORT_Z_OFFSET], [-61, apronY + 0.012, -181 + AIRPORT_Z_OFFSET],
+    [-61, apronY + 0.012, -148 + AIRPORT_Z_OFFSET], [-69, apronY + 0.012, -148 + AIRPORT_Z_OFFSET],
     hex("#424c52"),
   );
 
   // Hangar bajo de chapa gris, con portón ancho orientado hacia la pista.
-  const hangarGround = terrainSurfaceY(-78, -165);
-  mesh.box([-78, hangarGround + 2.0, -165], [11.2, 4.0, 13.0], hex("#737b7c"), hex("#4b565c"));
-  mesh.box([-78, hangarGround + 4.12, -165], [11.8, 0.34, 13.6], hex("#343f48"), hex("#202a31"));
-  mesh.box([-72.34, hangarGround + 1.72, -165], [0.08, 3.2, 7.4], hex("#26343b"));
-  mesh.box([-72.28, hangarGround + 3.25, -165], [0.12, 0.12, 7.8], hex("#a94f42"));
+  const hangarGround = terrainSurfaceY(-78, -165 + AIRPORT_Z_OFFSET);
+  const hangarZ = -165 + AIRPORT_Z_OFFSET;
+  mesh.box([-78, hangarGround + 2.0, hangarZ], [11.2, 4.0, 13.0], hex("#737b7c"), hex("#4b565c"));
+  mesh.box([-78, hangarGround + 4.12, hangarZ], [11.8, 0.34, 13.6], hex("#343f48"), hex("#202a31"));
+  mesh.box([-72.34, hangarGround + 1.72, hangarZ], [0.08, 3.2, 7.4], hex("#26343b"));
+  mesh.box([-72.28, hangarGround + 3.25, hangarZ], [0.12, 0.12, 7.8], hex("#a94f42"));
   for (const z of [-170.4, -159.6]) {
-    mesh.box([-72.18, hangarGround + 1.75, z], [0.15, 3.3, 0.16], hex("#a6ada9"));
+    mesh.box([-72.18, hangarGround + 1.75, z + AIRPORT_Z_OFFSET], [0.15, 3.3, 0.16], hex("#a6ada9"));
   }
 
   // Avioneta liviana estacionada en la plataforma; fuselaje, alas, cola y tren de aterrizaje.
-  const planeX = -65.4, planeZ = -164.5;
+  const planeX = -65.4, planeZ = -164.5 + AIRPORT_Z_OFFSET;
   const planeY = terrainSurfaceY(planeX, planeZ) + 1.0;
   const fuselage = hex("#c5c8bd");
   const wing = hex("#d8d9cf");
@@ -707,18 +714,18 @@ function addSchoolAndFootballField(world:MeshBuilder){
   // Alambrado completamente cerrado, con postes, diagonales y travesaños.
   const fl=l-2.2,fr=r+2.2,fn=n+2.2,ff=f-2.2,fh=2.15;
   for(const x of [fl,fr]){
-    for(let z=ff;z<=fn;z+=6.5)m.box([x,terrainSurfaceY(x+64,z+126)+fh/2,z],[.1,fh,.1],hex("#4c5555"));
+    for(let z=ff;z<=fn;z+=6.5)m.box([x,terrainSurfaceY(x+FIELD_X_OFFSET,z+FIELD_Z_OFFSET)+fh/2,z],[.1,fh,.1],hex("#4c5555"));
     for(const h of [.42,1.18,fh])m.beam([x,h,ff],[x,h,fn],.03,hex("#7c8580"));
     for(let z=ff;z<fn;z+=3.3){m.beam([x,.4,z],[x,fh,z+1.65],.018,hex("#9aa09a"));m.beam([x,fh,z],[x,.4,z+1.65],.018,hex("#9aa09a"));}
   }
   for(const z of [ff,fn]){
-    for(let x=fl;x<=fr;x+=6)m.box([x,terrainSurfaceY(x+64,z+126)+fh/2,z],[.1,fh,.1],hex("#4c5555"));
+    for(let x=fl;x<=fr;x+=6)m.box([x,terrainSurfaceY(x+FIELD_X_OFFSET,z+FIELD_Z_OFFSET)+fh/2,z],[.1,fh,.1],hex("#4c5555"));
     for(const h of [.42,1.18,fh])m.beam([fl,h,z],[fr,h,z],.03,hex("#7c8580"));
   }
   for(const x of [cx-3,cx+3])m.beam([x,0,ff],[x,2,ff],.06,hex("#d0d0c8"));
   for(const x of [l-4,r+4]){m.box([x,4,cz],[.16,8,.16],hex("#4a5053"));m.box([x,7.8,cz],[.42,.22,.32],hex("#f1d5a0"));}
   // Escuela barrial detrás de la cancha.
-  const sx=-141,sz=-166,gy=terrainSurfaceY(sx+64,sz+126);
+  const sx=-141,sz=-166,gy=terrainSurfaceY(sx+FIELD_X_OFFSET,sz+FIELD_Z_OFFSET);
   m.box([sx,gy+2.45,sz],[24,4.9,28],hex("#d5c5a1"),hex("#b7aa8c"));
   m.box([sx,gy+4.98,sz],[24.8,.38,28.8],hex("#a5503d"),hex("#713f36"));
   m.box([sx+12.08,gy+.72,sz],[.16,1.44,27.2],hex("#78796c"));
@@ -728,8 +735,8 @@ function addSchoolAndFootballField(world:MeshBuilder){
   m.box([sx+12.36,gy+4.35,sz],[.14,.72,7.6],hex("#244b60"));addPixelTextYZ(m,"ESCUELA",gy+4.25,sz,sx+12.44,.075,hex("#f2eddb"));
   m.quad([sx+12.1,gy+.025,sz-11],[sx+12.1,gy+.025,sz+11],[sx+14.2,gy+.025,sz+11],[sx+14.2,gy+.025,sz-11],hex("#777466"));
   m.box([sx+16,gy+3.5,sz-12],[.12,7,.12],hex("#6a6656"));m.beam([sx+16,gy+6.7,sz-12],[sx+18.8,gy+6,sz-12],.12,hex("#f1e6cf"));
-  // Traslado conjunto: misma cancha, alambrado, arcos y escuela; queda antes del aeródromo y más cerca de la ruta.
-  world.append(m,[64,0,126]);
+  // Traslado conjunto: misma cancha, alambrado, arcos y escuela; queda después del aeropuerto y la YPF, junto a la ruta.
+  world.append(m,[FIELD_X_OFFSET,0,FIELD_Z_OFFSET]);
 }
 function buildPathPedestrian(kind:"walk"|"run",jacket:string,skin:string){
   const m=new MeshBuilder(),cloth=hex(jacket),flesh=hex(skin),dark=hex("#29343a"),stride=kind==="run"?.3:.15,swing=kind==="run"?.25:.12;
@@ -863,10 +870,10 @@ function buildWorld() {
   const destinationSignZ = -53;
 
   // Terreno patagónico nocturno: relieve poligonal y valores oscuros para que destaque la luz del auto.
-  const xSteps = 48, zSteps = 152;
+  const xSteps = 48, zSteps = 180;
   for (let zi = 0; zi < zSteps; zi++) {
-    const z0 = -452 + (zi / zSteps) * 470;
-    const z1 = -452 + ((zi + 1) / zSteps) * 470;
+    const z0 = -540 + (zi / zSteps) * 558;
+    const z1 = -540 + ((zi + 1) / zSteps) * 558;
     for (let xi = 0; xi < xSteps; xi++) {
       const x0 = -176 + (xi / xSteps) * 260;
       const x1 = -176 + ((xi + 1) / xSteps) * 260;
@@ -889,7 +896,7 @@ function buildWorld() {
   addRoadsideMountainRange(world, 1, 89, 112, 160, 21);
 
   // Banquinas, asfalto, marcas viales y pequeños parches de pavimento.
-  for (let z = -448; z < 17; z += 2.5) {
+  for (let z = -520; z < 17; z += 2.5) {
     const next = z + 2.5;
     const c0 = roadCenter(z), c1 = roadCenter(next);
     const left0 = c0 - 4.15, right0 = c0 + 4.15;
@@ -921,11 +928,11 @@ function buildWorld() {
 
   // Guardarraíles metálicos con postes separados y sombras propias.
   for (const side of [-1, 1]) {
-    for (let z = -445; z < 15; z += 4.2) {
+    for (let z = -517; z < 15; z += 4.2) {
       const x = roadCenter(z) + side * 4.72;
       world.box([x, roadHeightAt(z) + 0.49, z], [0.14, 0.98, 0.14], hex("#555d5e"));
     }
-    for (let z = -445; z < 14; z += 4.2) {
+    for (let z = -517; z < 14; z += 4.2) {
       const mid = z + 2.1, x = roadCenter(mid) + side * 4.72;
       world.box([x, roadHeightAt(mid) + 0.92, mid], [0.19, 0.18, 4.3], hex("#727a79"), hex("#424c50"));
     }
@@ -975,7 +982,7 @@ function buildWorld() {
 
   // Taludes rocosos que acompañan la pendiente y árboles pegados al camino.
   for (const side of [-1, 1]) {
-    for (let z = -178; z >= -442; z -= 5.2) {
+    for (let z = -178; z >= -512; z -= 5.2) {
       if (side < 0 && z < -74 && z > -258) continue;
       const next = z - 5.2;
       const c0 = roadCenter(z), c1 = roadCenter(next);
@@ -990,14 +997,14 @@ function buildWorld() {
         hex(side < 0 ? "#3f494b" : "#485152"),
       );
     }
-    for (let z = -180; z >= -438; z -= 8.4) {
+    for (let z = -180; z >= -508; z -= 8.4) {
       if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + side * (8.2 + random() * 2.6);
       const y = roadHeightAt(z) - 1.4 - random() * 0.8;
       const height = 5.2 + random() * 5.5;
       addPine(world, x, z, y, height, Math.floor(random() * 1000));
     }
-    for (let z = -184; z >= -438; z -= 13.5) {
+    for (let z = -184; z >= -508; z -= 13.5) {
       if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + side * (18 + random() * 6.2);
       const y = roadHeightAt(z) - 6.2 - random() * 0.7;
@@ -1008,7 +1015,7 @@ function buildWorld() {
   // Bosque de la última subida: acompaña la ruta hasta después de la secuencia final.
   const uphillForest = randomSource(6182);
   for (const side of [-1, 1]) {
-    for (let i = 0; i < 34; i++) {
+    for (let i = 0; i < 43; i++) {
       const z = -164 - i * 8.4 - uphillForest() * 2.1;
       const x = roadCenter(z) + side * (9.2 + uphillForest() * 8.8);
       const base = terrainSurfaceY(x, z) - 0.1;
@@ -1036,7 +1043,7 @@ function buildWorld() {
   // Postes de madera y cables en la margen de la ruta, sin atravesar la bicisenda ni la pista.
   for (const side of [-1, 1]) {
     const poleOffset = side < 0 ? -20.5 : 15.8;
-    for (let i = 0; i < 35; i++) {
+    for (let i = 0; i < 38; i++) {
       const z = 7 - i * 14;
       if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + poleOffset;
@@ -1045,7 +1052,7 @@ function buildWorld() {
       world.box([x, y + 7.7, z], [2.7, 0.16, 0.16], hex("#4a4035"));
       world.box([x - 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
       world.box([x + 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
-      if (i < 34) {
+      if (i < 37) {
         const nextZ = z - 15, nextX = roadCenter(nextZ) + poleOffset;
         world.beam([x - 0.8, y + 7.75, z], [nextX - 0.8, roadHeightAt(nextZ) - 0.18 + 7.75, nextZ], 0.045, hex("#232c31"));
         world.beam([x + 0.8, y + 7.75, z], [nextX + 0.8, roadHeightAt(nextZ) - 0.18 + 7.75, nextZ], 0.045, hex("#30373a"));
@@ -1084,7 +1091,7 @@ function buildWorld() {
   world.sphere(signalX,signalGround+6.12,signalZ+.36,.235,hex("#4b2020"),16,9);
   world.sphere(signalX,signalGround+5.45,signalZ+.36,.235,hex("#514425"),16,9);
   world.sphere(signalX,signalGround+4.78,signalZ+.36,.235,hex("#1d432c"),16,9);
-  world.box([roadCenter(-210),roadHeightAt(-210)-.1,-210],[8.6,.055,.18],hex("#e7dfce"));
+  world.box([roadCenter(SIGNAL_STOP_Z-2),roadHeightAt(SIGNAL_STOP_Z-2)-.1,SIGNAL_STOP_Z-2],[8.6,.055,.18],hex("#e7dfce"));
   return world;
 }
 
@@ -1880,7 +1887,7 @@ export function Route40LowPolyOpening() {
       ];
       footballActors=players.map((p,i)=>({
         mesh:createMesh(gl,buildFootballPlayer(p.team===0?"#b94e3f":"#e4dfce",p.team===0?"#263a58":"#4b3431",i)),
-        baseX:p.x+64,baseZ:p.z+126,phase:p.phase,speed:p.speed,radiusX:p.rx,radiusZ:p.rz,
+        baseX:p.x+FIELD_X_OFFSET,baseZ:p.z+FIELD_Z_OFFSET,phase:p.phase,speed:p.speed,radiusX:p.rx,radiusZ:p.rz,
       }));
       footballBallMesh=createMesh(gl,buildFootballBall());
       armedThreatBodyMesh=createMesh(gl,buildArmedThreatBody());
@@ -2028,9 +2035,9 @@ export function Route40LowPolyOpening() {
       if (crashStartedAt === 0 && elapsed >= DURATION &&
         (stageRef.current === "driving" || stageRef.current === "climbing")) {
         const collision = trafficActors.some((traffic) => {
-          const span = 464;
+          const span = 534;
           const raw = traffic.baseZ + elapsed * traffic.speed;
-          const trafficZ = -450 + (((raw + 450) % span) + span) % span;
+          const trafficZ = -520 + (((raw + 520) % span) + span) % span;
           // La separación lateral se mide contra el eje local de la ruta para no generar falsos choques en curvas.
           const laneOverlap = Math.abs(laneOffset + 2.15) < 1.88;
           return Math.abs(trafficZ - carZ) < 4.15 && laneOverlap;
@@ -2098,7 +2105,7 @@ export function Route40LowPolyOpening() {
       }
       // Autos que vienen de frente por el carril opuesto.
       for(const traffic of trafficActors){
-        const span=464,raw=traffic.baseZ+elapsed*traffic.speed,z=-450+(((raw+450)%span)+span)%span;
+        const span=534,raw=traffic.baseZ+elapsed*traffic.speed,z=-520+(((raw+520)%span)+span)%span;
         const x=roadCenter(z)-2.15,y=roadHeightAt(z)-.16;
         const model=multiply(translation(x,y,z),rotationY(Math.PI));
         bindMesh(gl,program,traffic.mesh,viewProjection,view,model);
@@ -2115,8 +2122,8 @@ export function Route40LowPolyOpening() {
       }
       // Pelota que rueda y da pequeños saltos durante el partido.
       if(footballBallMesh){
-        const ballX=-43+Math.sin(elapsed*1.08)*5.5;
-        const ballZ=-40+Math.cos(elapsed*1.42)*8.5;
+        const ballX=-30+Math.sin(elapsed*1.08)*5.5;
+        const ballZ=-315+Math.cos(elapsed*1.42)*8.5;
         const ballY=terrainSurfaceY(ballX,ballZ)+.24+Math.abs(Math.sin(elapsed*4.8))*.12;
         const ballModel=multiply(translation(ballX,ballY,ballZ),rotationY(elapsed*3.1));
         bindMesh(gl,program,footballBallMesh,viewProjection,view,ballModel);
@@ -2128,7 +2135,7 @@ export function Route40LowPolyOpening() {
       const signalZ=SIGNAL_Z,signalX=roadCenter(signalZ)+3.55,signalGround=roadHeightAt(signalZ)-.18;
       const signalActive=["climbing","signalEncounter","signalAim","escape"].includes(stageRef.current);
       if(signalActive&&signalRedMesh){
-        const redModel=multiply(translation(signalX,signalGround+6.12,signalZ+.39),scaling(2.05,2.05,2.05));
+        const redModel=multiply(translation(signalX,signalGround+6.12,signalZ+.39),scaling(2.55,2.55,2.55));
         bindMesh(gl,program,signalRedMesh,viewProjection,view,redModel);
       }
       if((stageRef.current==="signalEncounter"||stageRef.current==="signalAim"||stageRef.current==="escape")&&armedThreatBodyMesh){
