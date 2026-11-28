@@ -1323,46 +1323,74 @@ function buildCampingWater() {
 function buildCampingBridge() {
   const bridge = new MeshBuilder();
   const green = hex("#315b47"), greenLight = hex("#547e61"), darkGreen = hex("#243f35");
-  const deckY = 2.05;
+  const meshWire = hex("#8ba18b");
+  const halfSpan = 40;
+  const deckY = 1.12;
+  const deckHalfWidth = 0.82;
   const bridgeZ = (x: number) => CAMP_RIVER_Z - x * 0.075;
+  const bankY = (x: number, z: number) => {
+    const riverBasin = (1 - smooth(30, 47, Math.abs(x))) * (1 - smooth(18, 31, Math.abs(z - CAMP_RIVER_Z)));
+    return campGroundY(x, z) - riverBasin * 2.65;
+  };
 
-  // Anclajes de ambas márgenes y torres metálicas.
+  // Torres y anclajes asentados en la altura real de cada margen.
   for (const side of [-1, 1]) {
-    const x = side * 36.5, z = bridgeZ(x);
-    bridge.ellipsoid(x, 0.45, z, 3.1, 0.85, 2.5, hex("#72766b"), 8, 5);
-    bridge.beam([x, 0.7, z], [x, 5.8, z], 0.34, darkGreen);
-    bridge.beam([x - 1.1, 0.7, z - 1.0], [x + 1.1, 5.8, z + 1.0], 0.23, green);
-    bridge.beam([x + 1.1, 0.7, z - 1.0], [x - 1.1, 5.8, z + 1.0], 0.23, green);
-    bridge.beam([x - 1.55, 5.8, z], [x + 1.55, 5.8, z], 0.25, greenLight);
+    const x = side * halfSpan, z = bridgeZ(x), ground = bankY(x, z);
+    bridge.ellipsoid(x, ground + 0.26, z, 2.8, 0.55, 2.25, hex("#72766b"), 8, 5);
+    bridge.beam([x, ground + 0.15, z], [x, 5.35, z], 0.3, darkGreen);
+    bridge.beam([x - 1.0, ground + 0.15, z - 0.9], [x + 1.0, 5.35, z + 0.9], 0.2, green);
+    bridge.beam([x + 1.0, ground + 0.15, z - 0.9], [x - 1.0, 5.35, z + 0.9], 0.2, green);
+    bridge.beam([x - 1.35, 5.35, z], [x + 1.35, 5.35, z], 0.22, greenLight);
   }
 
-  // Vigas longitudinales, travesaños verdes y tablones de madera.
+  // Dos largueros metálicos sostienen un tablero angosto, de tablones independientes.
   for (const side of [-1, 1]) {
-    bridge.beam([-36.5, deckY, bridgeZ(-36.5) + side * 0.92], [36.5, deckY, bridgeZ(36.5) + side * 0.92], 0.24, green);
-    bridge.beam([-36.5, deckY + 0.82, bridgeZ(-36.5) + side * 0.92], [36.5, deckY + 0.82, bridgeZ(36.5) + side * 0.92], 0.18, greenLight);
+    const offset = side * deckHalfWidth;
+    bridge.beam([-halfSpan, deckY, bridgeZ(-halfSpan) + offset], [halfSpan, deckY, bridgeZ(halfSpan) + offset], 0.19, green);
+    bridge.beam([-halfSpan, deckY + 0.76, bridgeZ(-halfSpan) + offset], [halfSpan, deckY + 0.76, bridgeZ(halfSpan) + offset], 0.115, greenLight);
   }
-  for (let x = -35; x <= 35; x += 2.4) {
+  for (let x = -halfSpan + 0.9; x < halfSpan; x += 1.8) {
     const z = bridgeZ(x);
-    bridge.box([x, deckY - 0.1, z], [2.28, 0.18, 1.75], hex(Math.floor(x) % 2 ? "#886d4f" : "#9b805d"));
-    for (const side of [-1, 1]) {
-      bridge.beam([x, deckY + 0.08, z + side * 0.88], [x, deckY + 0.83, z + side * 0.88], 0.12, green);
-      bridge.beam([x - 0.14, deckY + 0.45, z + side * 0.88], [x + 0.14, deckY + 0.45, z + side * 0.88], 0.055, greenLight);
-    }
-    bridge.beam([x, deckY + 0.04, z - 0.88], [x, deckY + 0.04, z + 0.88], 0.09, darkGreen);
+    bridge.box([x, deckY - 0.09, z], [1.72, 0.16, deckHalfWidth * 2], hex(Math.floor(x) % 2 ? "#886d4f" : "#9b805d"));
+    bridge.beam([x, deckY - 0.04, z - deckHalfWidth], [x, deckY - 0.04, z + deckHalfWidth], 0.075, darkGreen);
   }
 
-  // Cables principales con una flecha suave y péndolas de suspensión.
+  // Malla metálica lateral en rombos, como las pasarelas colgantes de la zona del Río Azul.
   for (const side of [-1, 1]) {
-    for (let i = 0; i < 24; i++) {
-      const x0 = -36.5 + i * (73 / 24), x1 = x0 + (73 / 24);
-      const cableY = (x: number) => 5.45 - Math.pow(Math.abs(x) / 36.5, 2) * 1.12;
-      const z0 = bridgeZ(x0) + side * 1.0, z1 = bridgeZ(x1) + side * 1.0;
-      bridge.beam([x0, cableY(x0), z0], [x1, cableY(x1), z1], 0.075, greenLight);
+    const railZ = (x: number) => bridgeZ(x) + side * deckHalfWidth;
+    for (let x = -halfSpan + 0.2; x < halfSpan - 0.2; x += 1.25) {
+      const x1 = Math.min(halfSpan - 0.05, x + 1.25);
+      bridge.beam([x, deckY + 0.12, railZ(x)], [x1, deckY + 0.7, railZ(x1)], 0.018, meshWire);
+      bridge.beam([x, deckY + 0.7, railZ(x)], [x1, deckY + 0.12, railZ(x1)], 0.018, meshWire);
     }
-    for (let x = -33; x <= 33; x += 3) {
-      const z = bridgeZ(x) + side * 1.0;
-      const cableY = 5.45 - Math.pow(Math.abs(x) / 36.5, 2) * 1.12;
-      bridge.beam([x, deckY + 0.85, z], [x, cableY, z], 0.045, green);
+    for (let x = -halfSpan + 1.6; x <= halfSpan - 1.6; x += 3.2) {
+      bridge.beam([x, deckY + 0.1, railZ(x)], [x, 5.35 - Math.pow(Math.abs(x) / halfSpan, 2) * 0.88, railZ(x)], 0.035, green);
+    }
+  }
+
+  // Cables principales con la curva de suspensión descendiendo suavemente en el centro.
+  const cableY = (x: number) => 5.35 - (1 - Math.pow(Math.abs(x) / halfSpan, 2)) * 0.88;
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 32; i++) {
+      const x0 = -halfSpan + i * (halfSpan * 2 / 32), x1 = x0 + (halfSpan * 2 / 32);
+      const z0 = bridgeZ(x0) + side * (deckHalfWidth + 0.12), z1 = bridgeZ(x1) + side * (deckHalfWidth + 0.12);
+      bridge.beam([x0, cableY(x0), z0], [x1, cableY(x1), z1], 0.07, greenLight);
+    }
+    for (let x = -halfSpan + 2; x <= halfSpan - 2; x += 2.5) {
+      const z = bridgeZ(x) + side * (deckHalfWidth + 0.12);
+      bridge.beam([x, deckY + 0.75, z], [x, cableY(x), z], 0.035, green);
+    }
+  }
+
+  // Accesos de tablas en ambas orillas para que la pasarela no termine suspendida sobre el terreno.
+  for (const side of [-1, 1]) {
+    for (let step = 0; step < 5; step++) {
+      const x = side * (halfSpan + 1.2 + step * 1.25);
+      const z = bridgeZ(side * halfSpan);
+      const ground = bankY(x, z);
+      const t = (step + 1) / 5;
+      const y = mix(deckY, ground + 0.13, t);
+      bridge.box([x, y, z], [1.2, 0.14, 1.55], step % 2 ? hex("#886d4f") : hex("#9b805d"));
     }
   }
   return bridge;
