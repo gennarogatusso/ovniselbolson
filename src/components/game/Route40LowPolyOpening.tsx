@@ -2055,6 +2055,11 @@ function createMesh(gl: WebGLRenderingContext, builder: MeshBuilder): Mesh {
   if (!buffer) throw new Error("No se pudo reservar la geometría 3D");
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+  const uploadError = gl.getError();
+  if (uploadError !== gl.NO_ERROR) {
+    gl.deleteBuffer(buffer);
+    throw new Error(`No se pudo cargar una geometría 3D (WebGL ${uploadError.toString(16)})`);
+  }
   return { buffer, count: data.length / 9 };
 }
 
@@ -2479,6 +2484,66 @@ export function Route40LowPolyOpening() {
     let signalRedMesh: Mesh | null = null;
     let bloodMesh: Mesh | null = null;
     let program: WebGLProgram | null = null;
+    let campingAssetsReady = false;
+
+    const releaseMesh = (mesh: Mesh | null) => {
+      if (mesh) gl.deleteBuffer(mesh.buffer);
+    };
+
+    const releaseDrivingSceneMeshes = () => {
+      releaseMesh(worldMesh); worldMesh = null;
+      releaseMesh(skyMesh); skyMesh = null;
+      releaseMesh(destinationSignMesh); destinationSignMesh = null;
+      releaseMesh(footballBallMesh); footballBallMesh = null;
+      releaseMesh(armedThreatBodyMesh); armedThreatBodyMesh = null;
+      releaseMesh(armedThreatArmsMesh); armedThreatArmsMesh = null;
+      releaseMesh(threatAngryBrowsMesh); threatAngryBrowsMesh = null;
+      releaseMesh(signalRedMesh); signalRedMesh = null;
+      releaseMesh(bloodMesh); bloodMesh = null;
+      releaseMesh(crashExplosionMesh); crashExplosionMesh = null;
+      for (const actor of pathActors) releaseMesh(actor.mesh);
+      for (const car of trafficActors) releaseMesh(car.mesh);
+      for (const player of footballActors) releaseMesh(player.mesh);
+      pathActors = [];
+      trafficActors = [];
+      footballActors = [];
+    };
+
+    const ensureCampingAssets = () => {
+      if (campingAssetsReady) return true;
+      try {
+        const campingGeometry = [
+          buildCampingWorld(), buildCampingWater(), buildCampingBridge(), buildCampingGateLeaf(),
+          buildCampingCarExterior(), buildCampingDoor(), buildCampingTrunkClosed(), buildCampingTrunkLid(),
+          buildCampingCharacter(), buildCampingGear(),
+        ];
+        releaseDrivingSceneMeshes();
+        campingWorldMesh = createMesh(gl, campingGeometry[0]!);
+        campingWaterMesh = createMesh(gl, campingGeometry[1]!);
+        campingBridgeMesh = createMesh(gl, campingGeometry[2]!);
+        campingGateLeafMesh = createMesh(gl, campingGeometry[3]!);
+        campingCarExteriorMesh = createMesh(gl, campingGeometry[4]!);
+        campingDoorMesh = createMesh(gl, campingGeometry[5]!);
+        campingTrunkClosedMesh = createMesh(gl, campingGeometry[6]!);
+        campingTrunkLidMesh = createMesh(gl, campingGeometry[7]!);
+        campingCharacterMesh = createMesh(gl, campingGeometry[8]!);
+        campingGearMesh = createMesh(gl, campingGeometry[9]!);
+        campingAssetsReady = true;
+        return true;
+      } catch (error) {
+        for (const mesh of [
+          campingWorldMesh, campingWaterMesh, campingBridgeMesh, campingGateLeafMesh,
+          campingCarExteriorMesh, campingDoorMesh, campingTrunkClosedMesh, campingTrunkLidMesh,
+          campingCharacterMesh, campingGearMesh,
+        ]) releaseMesh(mesh);
+        campingWorldMesh = campingWaterMesh = campingBridgeMesh = campingGateLeafMesh = null;
+        campingCarExteriorMesh = campingDoorMesh = campingTrunkClosedMesh = campingTrunkLidMesh = null;
+        campingCharacterMesh = campingGearMesh = null;
+        console.error("No se pudo cargar la geometría del camping", error);
+        setFallback(true);
+        return false;
+      }
+    };
 
     try {
       const vertex = makeShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
@@ -2495,16 +2560,6 @@ export function Route40LowPolyOpening() {
       }
 
       worldMesh = createMesh(gl, buildWorld());
-      campingWorldMesh = createMesh(gl, buildCampingWorld());
-      campingWaterMesh = createMesh(gl, buildCampingWater());
-      campingBridgeMesh = createMesh(gl, buildCampingBridge());
-      campingGateLeafMesh = createMesh(gl, buildCampingGateLeaf());
-      campingCarExteriorMesh = createMesh(gl, buildCampingCarExterior());
-      campingDoorMesh = createMesh(gl, buildCampingDoor());
-      campingTrunkClosedMesh = createMesh(gl, buildCampingTrunkClosed());
-      campingTrunkLidMesh = createMesh(gl, buildCampingTrunkLid());
-      campingCharacterMesh = createMesh(gl, buildCampingCharacter());
-      campingGearMesh = createMesh(gl, buildCampingGear());
       destinationSignMesh = createMesh(gl, buildDestinationSign());
       skyMesh = createMesh(gl, buildSkyDressing());
       carMesh = createMesh(gl, buildCar());
@@ -2560,6 +2615,29 @@ export function Route40LowPolyOpening() {
       crashExplosionMesh=createMesh(gl,buildCrashExplosion());
     } catch (error) {
       console.error("No se pudo iniciar la escena low poly de Ruta 40", error);
+      for (const mesh of [
+        worldMesh, campingWorldMesh, campingWaterMesh, campingBridgeMesh, campingGateLeafMesh,
+        campingCarExteriorMesh, campingDoorMesh, campingTrunkClosedMesh, campingTrunkLidMesh,
+        campingCharacterMesh, campingGearMesh, destinationSignMesh, skyMesh, carMesh, lightMesh,
+        cockpitMesh, steeringAssemblyMesh, windshieldMesh, windshieldCracksMesh, crashExplosionMesh,
+        armedThreatBodyMesh, armedThreatArmsMesh, threatAngryBrowsMesh, signalRedMesh, bloodMesh,
+        footballBallMesh,
+      ]) releaseMesh(mesh);
+      for (const actor of footballActors) releaseMesh(actor.mesh);
+      for (const actor of pathActors) releaseMesh(actor.mesh);
+      for (const car of trafficActors) releaseMesh(car.mesh);
+      keys.clear();
+      interactionActionRef.current = null;
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointercancel", onPointerUp);
+      document.removeEventListener("pointerlockchange", onPointerLockChange);
+      document.removeEventListener("pointerlockerror", onPointerLockError);
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keyup", onKeyUp);
+      document.removeEventListener("blur", onBlur);
+      if (document.pointerLockElement === canvas) document.exitPointerLock();
       if (program) gl.deleteProgram(program);
       setFallback(true);
       return;
@@ -2580,7 +2658,7 @@ export function Route40LowPolyOpening() {
     setFallback(false);
 
     const animate = (now: number) => {
-      if (!active || !program || !worldMesh || !carMesh || !lightMesh || !cockpitMesh || !steeringAssemblyMesh || !windshieldMesh) return;
+      if (!active || !program || !carMesh || !lightMesh || !cockpitMesh || !steeringAssemblyMesh || !windshieldMesh) return;
       if (!started) {
         startedAt = now;
         previousFrame = now;
@@ -2698,6 +2776,7 @@ export function Route40LowPolyOpening() {
           try { campAmbientStop=createCampingAmbientAudio(); } catch (error) {
             console.warn("El ambiente natural del camping no está disponible", error);
           }
+          if (!ensureCampingAssets()) return;
           setStage("campApproach");
         }
       }
@@ -2982,7 +3061,7 @@ export function Route40LowPolyOpening() {
           gl.disable(gl.BLEND);
         }
       } else {
-      bindMesh(gl, program, worldMesh, viewProjection, view, identity);
+      if (worldMesh) bindMesh(gl, program, worldMesh, viewProjection, view, identity);
       if (skyMesh) bindMesh(gl, program, skyMesh, viewProjection, view, identity);
       const signReveal = smooth(
         DESTINATION_SIGN_TRIGGER_DISTANCE,
