@@ -1878,8 +1878,9 @@ export function Route40LowPolyOpening() {
           const span = 308;
           const raw = traffic.baseZ + elapsed * traffic.speed;
           const trafficZ = -294 + (((raw + 294) % span) + span) % span;
-          const trafficX = roadCenter(trafficZ) - 2.15;
-          return Math.abs(trafficZ - carZ) < 4.15 && Math.abs(trafficX - carX) < 1.88;
+          // La separación lateral se mide contra el eje local de la ruta para no generar falsos choques en curvas.
+          const laneOverlap = Math.abs(laneOffset + 2.15) < 1.88;
+          return Math.abs(trafficZ - carZ) < 4.15 && laneOverlap;
         });
         if (collision) {
           crashStartedAt = now;
