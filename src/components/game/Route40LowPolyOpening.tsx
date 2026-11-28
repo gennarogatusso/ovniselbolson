@@ -175,7 +175,12 @@ function terrainSurfaceY(x: number, z: number) {
   // El paisaje acompaña la bajada a escala amplia; una holgura local evita que el terreno atraviese el asfalto.
   const downhillEnvelope = 1 - smooth(20, 68, distanceFromRoad);
   const roadClearance = 1 - smooth(6.2, 19, distanceFromRoad);
-  return naturalGround + roadDipAt(z) * downhillEnvelope - 0.78 * roadClearance;
+  const roadsideGround = naturalGround + roadDipAt(z) * downhillEnvelope - 0.78 * roadClearance;
+  // Explanada suave del aeródromo al este de la ruta, separada del asfalto por el sendero de bicicletas.
+  const airportFieldX = 1 - smooth(27, 43, Math.abs(x + 53.5));
+  const airportFieldZ = 1 - smooth(86, 103, Math.abs(z + 167));
+  const airportField = airportFieldX * airportFieldZ;
+  return mix(roadsideGround, -0.16, airportField);
 }
 
 const PIXEL_GLYPHS: Record<string, string[]> = {
@@ -448,6 +453,182 @@ function addYPFStation(mesh: MeshBuilder) {
 }
 
 
+
+function addBikePathAndAerodrome(mesh: MeshBuilder) {
+  const pathStart = -258;
+  const pathEnd = -76;
+  const pathCenter = (z: number) => roadCenter(z) - 12.1;
+  const pathSurface = (z: number) => terrainSurfaceY(pathCenter(z), z) + 0.055;
+
+  // Sendero/bicisenda paralelo a la Ruta 40, en el lado izquierdo del conductor.
+  // Su pavimento es angosto y continuo: no es otra calzada ni una playa de servicio.
+  for (let z = pathStart; z < pathEnd; z += 2.6) {
+    const nextZ = Math.min(pathEnd, z + 2.6);
+    const x0 = pathCenter(z), x1 = pathCenter(nextZ);
+    const y0 = pathSurface(z), y1 = pathSurface(nextZ);
+    mesh.quad(
+      [x0 - 1.42, y0 - 0.055, z], [x1 - 1.42, y1 - 0.055, nextZ],
+      [x1 + 1.42, y1 - 0.055, nextZ], [x0 + 1.42, y0 - 0.055, z],
+      hex("#555e60"),
+    );
+    mesh.quad(
+      [x0 - 1.02, y0, z], [x1 - 1.02, y1, nextZ],
+      [x1 + 1.02, y1, nextZ], [x0 + 1.02, y0, z],
+      hex("#737b79"),
+    );
+    for (const edge of [-0.91, 0.91]) {
+      mesh.quad(
+        [x0 + edge - 0.025, y0 + 0.025, z], [x1 + edge - 0.025, y1 + 0.025, nextZ],
+        [x1 + edge + 0.025, y1 + 0.025, nextZ], [x0 + edge + 0.025, y0 + 0.025, z],
+        hex("#c2c5bd"),
+      );
+    }
+    if (Math.floor((z - pathStart) / 13) % 2 === 0) {
+      mesh.box([(x0 + x1) * 0.5, (y0 + y1) * 0.5 + 0.035, (z + nextZ) * 0.5], [0.055, 0.025, 1.4], hex("#d0d1c9"));
+    }
+  }
+
+  // Cartel bajo de BICISENDA, orientado hacia quienes llegan por la ruta.
+  const signZ = -128;
+  const signX = pathCenter(signZ);
+  const signY = terrainSurfaceY(signX, signZ);
+  mesh.box([signX, signY + 1.05, signZ], [0.13, 2.1, 0.13], hex("#403a30"));
+  mesh.box([signX, signY + 2.12, signZ], [2.9, 0.88, 0.18], hex("#254d59"), hex("#183944"));
+  addPixelText(mesh, "BICISENDA", signX, signY + 2.0, signZ + 0.105, 0.045, hex("#edf0e8"));
+  // Símbolo simple de bicicleta debajo del nombre.
+  mesh.torusXY(signX - 0.48, signY + 1.43, signZ + 0.11, 0.19, 0.027, hex("#e1e6dd"));
+  mesh.torusXY(signX + 0.48, signY + 1.43, signZ + 0.11, 0.19, 0.027, hex("#e1e6dd"));
+  mesh.beam([signX - 0.48, signY + 1.43, signZ + 0.12], [signX - 0.08, signY + 1.72, signZ + 0.12], 0.035, hex("#e1e6dd"));
+  mesh.beam([signX - 0.08, signY + 1.72, signZ + 0.12], [signX + 0.48, signY + 1.43, signZ + 0.12], 0.035, hex("#e1e6dd"));
+  mesh.beam([signX - 0.48, signY + 1.43, signZ + 0.12], [signX + 0.08, signY + 1.43, signZ + 0.12], 0.035, hex("#e1e6dd"));
+  mesh.beam([signX + 0.08, signY + 1.43, signZ + 0.12], [signX + 0.32, signY + 1.74, signZ + 0.12], 0.035, hex("#e1e6dd"));
+
+  // Aeródromo El Bolsón: pista asfaltada 18/36, alargada norte-sur y separada del sendero.
+  // No se agrega surtidor, marquesina ni edificio comercial: es infraestructura aeronáutica.
+  const runwayX = -53.5;
+  const runwayStart = -76;
+  const runwayEnd = -258;
+  const halfWidth = 7.2;
+  const runwayY = (z: number) => terrainSurfaceY(runwayX, z) + 0.055;
+
+  // Banquinas de ripio compactado alrededor de la franja de asfalto.
+  for (let z = runwayStart; z > runwayEnd; z -= 4) {
+    const nextZ = Math.max(runwayEnd, z - 4);
+    const y0 = runwayY(z) - 0.035, y1 = runwayY(nextZ) - 0.035;
+    mesh.quad(
+      [runwayX - 10.2, y0, z], [runwayX - 10.2, y1, nextZ],
+      [runwayX + 10.2, y1, nextZ], [runwayX + 10.2, y0, z],
+      hex("#53595b"),
+    );
+    mesh.quad(
+      [runwayX - halfWidth, y0 + 0.035, z], [runwayX - halfWidth, y1 + 0.035, nextZ],
+      [runwayX + halfWidth, y1 + 0.035, nextZ], [runwayX + halfWidth, y0 + 0.035, z],
+      hex("#343d43"),
+    );
+  }
+
+  // Líneas blancas laterales y eje discontinuo, marcas inequívocas de pista de aterrizaje.
+  for (let z = runwayStart; z > runwayEnd; z -= 4) {
+    const nextZ = Math.max(runwayEnd, z - 4);
+    const mid = (z + nextZ) * 0.5;
+    const y = runwayY(mid) + 0.055;
+    for (const side of [-1, 1]) {
+      mesh.box([runwayX + side * (halfWidth - 0.32), y, mid], [0.13, 0.035, z - nextZ + 0.04], hex("#d7d8d1"));
+    }
+    if (Math.floor((runwayStart - mid) / 10) % 2 === 0) {
+      mesh.box([runwayX, y + 0.008, mid], [0.22, 0.035, 3.2], hex("#e2e2db"));
+    }
+  }
+
+  // Franjas de umbral en ambos extremos de la pista.
+  for (const thresholdZ of [runwayStart + 5, runwayEnd - 5]) {
+    const y = runwayY(thresholdZ) + 0.075;
+    for (let i = 0; i < 8; i++) {
+      const x = runwayX - 6.1 + i * 1.74;
+      mesh.box([x, y, thresholdZ], [0.82, 0.035, 2.6], hex("#e4e4dc"));
+    }
+  }
+
+  // Luces bajas de borde: blancas y ámbar, nunca postes de estación de servicio.
+  for (let z = runwayStart + 8, index = 0; z > runwayEnd - 8; z -= 10, index++) {
+    for (const side of [-1, 1]) {
+      const x = runwayX + side * (halfWidth + 0.55);
+      const y = runwayY(z) + 0.045;
+      mesh.box([x, y, z], [0.18, 0.12, 0.18], index % 4 === 0 ? hex("#d6b985") : hex("#c5d8dc"));
+    }
+  }
+
+  // Calle de rodaje y plataforma de hormigón junto al hangar.
+  const apronY = terrainSurfaceY(-68, -165) + 0.04;
+  mesh.quad(
+    [-74, apronY, -181], [-59, apronY, -181],
+    [-59, apronY, -148], [-74, apronY, -148],
+    hex("#51595d"),
+  );
+  mesh.quad(
+    [-69, apronY + 0.012, -181], [-61, apronY + 0.012, -181],
+    [-61, apronY + 0.012, -148], [-69, apronY + 0.012, -148],
+    hex("#424c52"),
+  );
+
+  // Hangar bajo de chapa gris, con portón ancho orientado hacia la pista.
+  const hangarGround = terrainSurfaceY(-78, -165);
+  mesh.box([-78, hangarGround + 2.0, -165], [11.2, 4.0, 13.0], hex("#737b7c"), hex("#4b565c"));
+  mesh.box([-78, hangarGround + 4.12, -165], [11.8, 0.34, 13.6], hex("#343f48"), hex("#202a31"));
+  mesh.box([-72.34, hangarGround + 1.72, -165], [0.08, 3.2, 7.4], hex("#26343b"));
+  mesh.box([-72.28, hangarGround + 3.25, -165], [0.12, 0.12, 7.8], hex("#a94f42"));
+  for (const z of [-170.4, -159.6]) {
+    mesh.box([-72.18, hangarGround + 1.75, z], [0.15, 3.3, 0.16], hex("#a6ada9"));
+  }
+
+  // Avioneta liviana estacionada en la plataforma; fuselaje, alas, cola y tren de aterrizaje.
+  const planeX = -65.4, planeZ = -164.5;
+  const planeY = terrainSurfaceY(planeX, planeZ) + 1.0;
+  const fuselage = hex("#c5c8bd");
+  const wing = hex("#d8d9cf");
+  mesh.box([planeX, planeY, planeZ], [0.58, 0.5, 5.4], fuselage, hex("#8d999a"));
+  mesh.beam([planeX - 4.25, planeY + 0.08, planeZ - 0.3], [planeX + 4.25, planeY + 0.08, planeZ - 0.3], 0.24, wing);
+  mesh.beam([planeX - 1.55, planeY + 0.11, planeZ + 2.05], [planeX + 1.55, planeY + 0.11, planeZ + 2.05], 0.16, wing);
+  mesh.box([planeX, planeY + 0.12, planeZ + 2.3], [0.2, 0.75, 0.32], hex("#a54c43"));
+  mesh.box([planeX, planeY - 0.34, planeZ - 0.1], [0.08, 0.52, 0.09], hex("#1d2529"));
+  mesh.box([planeX - 0.54, planeY - 0.32, planeZ + 0.65], [0.08, 0.5, 0.09], hex("#1d2529"));
+  mesh.box([planeX + 0.54, planeY - 0.32, planeZ + 0.65], [0.08, 0.5, 0.09], hex("#1d2529"));
+  mesh.beam([planeX - 0.72, planeY + 0.02, planeZ - 2.78], [planeX + 0.72, planeY + 0.02, planeZ - 2.78], 0.08, hex("#515b60"));
+
+  // Cerco perimetral bajo de malla metálica, para separar la zona operativa del espacio público.
+  const fenceX = runwayX + 11.6;
+  for (let z = runwayStart - 1; z > runwayEnd + 1; z -= 10) {
+    const y = terrainSurfaceY(fenceX, z);
+    mesh.box([fenceX, y + 0.86, z], [0.09, 1.72, 0.09], hex("#454f53"));
+    mesh.beam([fenceX, y + 0.48, z], [fenceX, y + 1.55, z], 0.025, hex("#7b8585"));
+    mesh.beam([fenceX - 0.05, y + 0.55, z], [fenceX + 0.05, y + 1.45, z], 0.018, hex("#9aa3a0"));
+  }
+  for (const height of [0.45, 1.15, 1.58]) {
+    mesh.beam(
+      [fenceX, terrainSurfaceY(fenceX, runwayStart) + height, runwayStart],
+      [fenceX, terrainSurfaceY(fenceX, runwayEnd) + height, runwayEnd],
+      0.025,
+      hex("#707a7d"),
+    );
+  }
+
+  // Mangas de viento: mástil y cono rojo/blanco cerca del extremo norte.
+  const sockX = runwayX + 9.4, sockZ = runwayStart + 17;
+  const sockY = terrainSurfaceY(sockX, sockZ);
+  mesh.box([sockX, sockY + 2.7, sockZ], [0.09, 5.4, 0.09], hex("#626d73"));
+  mesh.beam([sockX, sockY + 5.25, sockZ], [sockX + 0.85, sockY + 4.9, sockZ - 1.9], 0.35, hex("#bf5d4d"));
+  mesh.beam([sockX + 0.85, sockY + 4.9, sockZ - 1.9], [sockX + 1.55, sockY + 4.68, sockZ - 3.35], 0.27, hex("#e5e0d2"));
+
+  // Línea baja de árboles nativos más allá del cerco, sin tapar el rectángulo de la pista.
+  const treeLine = randomSource(7441);
+  for (let i = 0; i < 20; i++) {
+    const z = runwayStart - 4 - i * 9.0;
+    const x = -82.0 + treeLine() * 3.5;
+    const height = 7.0 + treeLine() * 5.0;
+    addPine(mesh, x, z, terrainSurfaceY(x, z), height, Math.floor(treeLine() * 1000));
+  }
+}
+
 function buildWorld() {
   const world = new MeshBuilder();
   const random = randomSource(4081);
@@ -473,9 +654,10 @@ function buildWorld() {
   }
 
   // Cordilleras lejanas a ambos lados, sin cruzarse visualmente con la estación YPF.
-  addRoadsideMountainRange(world, -1, 31, 62, 104, 15);
+  // Del lado del aeródromo, las lomas quedan bastante más lejos para abrir el campo visual.
+  addRoadsideMountainRange(world, -1, 31, 82, 126, 15);
   addRoadsideMountainRange(world, 1, 47, 62, 104, 15);
-  addRoadsideMountainRange(world, -1, 71, 112, 160, 21);
+  addRoadsideMountainRange(world, -1, 71, 140, 186, 21);
   addRoadsideMountainRange(world, 1, 89, 112, 160, 21);
 
   // Banquinas, asfalto, marcas viales y pequeños parches de pavimento.
@@ -526,6 +708,7 @@ function buildWorld() {
     for (let i = 0; i < 30; i++) {
       const z = 10 - i * 5.25 - random() * 2.7;
       if (side === 1 && Math.abs(z - destinationSignZ) < 22) continue;
+      if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + side * (8.5 + random() * 8.5);
       const height = 4.2 + random() * 6.4;
       addPine(world, x, z, terrainY(x, z), height, Math.floor(random() * 1000));
@@ -533,6 +716,7 @@ function buildWorld() {
     for (let i = 0; i < 21; i++) {
       const z = 7 - i * 6.9 - random() * 3;
       if (side === 1 && Math.abs(z - destinationSignZ) < 22) continue;
+      if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + side * (16 + random() * 23);
       const height = 5.5 + random() * 8;
       addPine(world, x, z, terrainY(x, z), height, Math.floor(random() * 1000));
@@ -545,6 +729,7 @@ function buildWorld() {
     const z = -45 - i * 7.25 - distantForest() * 2.2;
     for (const side of [-1, 1]) {
       if (side === 1 && Math.abs(z + 166) < 24) continue;
+      if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + side * (13 + distantForest() * 37);
       const depthScale = 0.68 + (i / 34) * 0.32;
       const height = (5.1 + distantForest() * 6.8) * depthScale;
@@ -555,7 +740,7 @@ function buildWorld() {
   // Pequeñas luces cálidas del valle, muy alejadas y suavizadas por la niebla.
   for (let i = 0; i < 9; i++) {
     const z = -188 - i * 9.2;
-    const x = roadCenter(z) + (i % 2 === 0 ? -1 : 1) * (35 + distantForest() * 30);
+    const x = roadCenter(z) + (35 + distantForest() * 30);
     const y = terrainY(x, z) + 2.6 + distantForest() * 1.8;
     world.box([x, y, z], [0.32, 0.24, 0.16], i % 3 === 0 ? hex("#e8b978") : hex("#d79d6d"));
   }
@@ -563,6 +748,7 @@ function buildWorld() {
   // Taludes rocosos que acompañan la pendiente y árboles pegados al camino.
   for (const side of [-1, 1]) {
     for (let z = -178; z >= -288; z -= 5.2) {
+      if (side < 0 && z < -74 && z > -258) continue;
       const next = z - 5.2;
       const c0 = roadCenter(z), c1 = roadCenter(next);
       const y0 = roadHeightAt(z), y1 = roadHeightAt(next);
@@ -577,12 +763,14 @@ function buildWorld() {
       );
     }
     for (let z = -180; z >= -287; z -= 8.4) {
+      if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + side * (8.2 + random() * 2.6);
       const y = roadHeightAt(z) - 1.4 - random() * 0.8;
       const height = 5.2 + random() * 5.5;
       addPine(world, x, z, y, height, Math.floor(random() * 1000));
     }
     for (let z = -184; z >= -286; z -= 13.5) {
+      if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + side * (18 + random() * 6.2);
       const y = roadHeightAt(z) - 6.2 - random() * 0.7;
       addPine(world, x, z, y, 6.5 + random() * 5.5, Math.floor(random() * 1000));
@@ -594,6 +782,7 @@ function buildWorld() {
     const side = random() > 0.5 ? 1 : -1;
     const z = 12 - random() * 135;
     if (side === 1 && Math.abs(z - destinationSignZ) < 24) continue;
+    if (side < 0 && z < -74 && z > -258) continue;
     const x = roadCenter(z) + side * (6.4 + random() * 8.4);
     const y = terrainY(x, z);
     if (i % 3 === 0) {
@@ -604,11 +793,12 @@ function buildWorld() {
     }
   }
 
-  // Postes de madera y cables a ambos lados de la Ruta 40.
+  // Postes de madera y cables en la margen de la ruta, sin atravesar la bicisenda ni la pista.
   for (const side of [-1, 1]) {
-    const poleOffset = side < 0 ? -11.5 : 15.8;
+    const poleOffset = side < 0 ? -20.5 : 15.8;
     for (let i = 0; i < 22; i++) {
       const z = 7 - i * 14;
+      if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + poleOffset;
       const y = roadHeightAt(z) - 0.18;
       world.box([x, y + 4.3, z], [0.24, 8.6, 0.24], hex("#40372d"));
@@ -622,6 +812,9 @@ function buildWorld() {
       }
     }
   }
+
+  // El predio abierto, la bicisenda y la pista quedan en el margen izquierdo; la YPF permanece a la derecha.
+  addBikePathAndAerodrome(world);
 
   // Cartel de advertencia existente y un cartel verde de distancia a El Bolsón.
   const signX = roadCenter(-29) + 7.8, signZ = -29, signY = terrainY(signX, signZ);
