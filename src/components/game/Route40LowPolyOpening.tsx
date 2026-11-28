@@ -2336,6 +2336,8 @@ export function Route40LowPolyOpening() {
 
     let active = true;
     let frame = 0;
+    let disposeScene: (() => void) | null = null;
+    let sceneDisposed = false;
     let startedAt = 0;
     let started = false;
     let previousFrame = 0;
@@ -2540,6 +2542,7 @@ export function Route40LowPolyOpening() {
         campingCarExteriorMesh = campingDoorMesh = campingTrunkClosedMesh = campingTrunkLidMesh = null;
         campingCharacterMesh = campingGearMesh = null;
         console.error("No se pudo cargar la geometría del camping", error);
+        disposeScene?.();
         setFallback(true);
         return false;
       }
@@ -3324,7 +3327,9 @@ export function Route40LowPolyOpening() {
     };
 
     frame = window.requestAnimationFrame(animate);
-    return () => {
+    disposeScene = () => {
+      if (sceneDisposed) return;
+      sceneDisposed = true;
       active = false;
       keys.clear();
       interactionActionRef.current = null;
@@ -3373,6 +3378,7 @@ export function Route40LowPolyOpening() {
       for(const car of trafficActors) gl.deleteBuffer(car.mesh.buffer);
       if (program) gl.deleteProgram(program);
     };
+    return () => disposeScene?.();
   }, []);
 
   if (fallback) return <CanvasFallback />;
