@@ -2659,9 +2659,10 @@ export function Route40LowPolyOpening() {
       gl.uniform1f(timeLocation, elapsed);
       gl.useProgram(program);
 
-      const carZ = elapsed < DURATION ? -elapsed * 4.1 : -DURATION * 4.1 - travelled;
-      const carX = roadCenter(carZ) + laneOffset;
-      const carY = roadHeightAt(carZ) - 0.18;
+      const campingMode = ["campApproach", "campStopped", "exiting", "walkingToTrunk", "trunkPrompt", "trunkOpening", "ending"].includes(stageRef.current);
+      const carZ = campingMode ? -campDistance : elapsed < DURATION ? -elapsed * 4.1 : -DURATION * 4.1 - travelled;
+      const carX = campingMode ? campRoadX(carZ) + campLaneOffset : roadCenter(carZ) + laneOffset;
+      const carY = campingMode ? -0.145 : roadHeightAt(carZ) - 0.18;
       gl.uniform3f(headlightLocation, carX, carY + 0.48, carZ - 2.08);
 
       // Choque por volumen de ambos autos: invadir el carril contrario puede terminar en accidente.
@@ -2715,9 +2716,36 @@ export function Route40LowPolyOpening() {
         mix(aerialTarget[1], driverTarget[1], transition),
         mix(aerialTarget[2], driverTarget[2], transition),
       ];
-      const eye = cockpitEye;
-      const target = cockpitTarget;
-      const fov = mix(49, 66, transition) * Math.PI / 180;
+      const blendPoint = (from: V3, to: V3, amount: number): V3 => [
+        mix(from[0], to[0], amount), mix(from[1], to[1], amount), mix(from[2], to[2], amount),
+      ];
+      const campDriverEye: V3 = [carX + shakeX, 1.43 + shakeY + suspensionBounce, carZ + 0.56];
+      const campDriverTarget: V3 = [
+        carX + Math.sin(lookYaw + steeringAngle) * 37 + shakeX,
+        2.45 + lookPitch * 18 + shakeY,
+        carZ + 0.56 - Math.cos(lookYaw + steeringAngle) * 37,
+      ];
+      const campOutsideEye: V3 = [carX - 10.8, 6.7, carZ + 15.2];
+      const campOutsideTarget: V3 = [carX - 0.7, 1.0, carZ + 1.9];
+      const campTrunkEye: V3 = [carX + 7.2, 4.7, carZ + 13.5];
+      const campTrunkTarget: V3 = [carX, 1.45, carZ + 3.35];
+      let campEye = campDriverEye;
+      let campTarget = campDriverTarget;
+      if (stageRef.current === "exiting") {
+        const exitProgress = smooth(0.18, 4.15, (now - exitStartedAt) / 1000);
+        campEye = blendPoint(campDriverEye, campOutsideEye, exitProgress);
+        campTarget = blendPoint(campDriverTarget, campOutsideTarget, exitProgress);
+      } else if (["walkingToTrunk", "trunkPrompt"].includes(stageRef.current)) {
+        campEye = campOutsideEye;
+        campTarget = campOutsideTarget;
+      } else if (stageRef.current === "trunkOpening" || stageRef.current === "ending") {
+        const trunkProgress = stageRef.current === "ending" ? 1 : smooth(0.25, 2.2, (now - trunkStartedAt) / 1000);
+        campEye = blendPoint(campOutsideEye, campTrunkEye, trunkProgress);
+        campTarget = blendPoint(campOutsideTarget, campTrunkTarget, trunkProgress);
+      }
+      const eye = campingMode ? campEye : cockpitEye;
+      const target = campingMode ? campTarget : cockpitTarget;
+      const fov = (campingMode ? 64 : mix(49, 66, transition)) * Math.PI / 180;
       const projection = perspective(fov, width / height, 0.1, 520);
       const cameraUp: V3 = [
         Math.sin(now * 0.021) * shake * 0.16,
