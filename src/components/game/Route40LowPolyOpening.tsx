@@ -2200,6 +2200,8 @@ export function Route40LowPolyOpening() {
   const gameHudRef = useRef<HTMLDivElement | null>(null);
   const starIndicatorRef = useRef<HTMLDivElement | null>(null);
   const campEndingRef = useRef<HTMLDivElement | null>(null);
+  const campEndingShadeRef = useRef<HTMLDivElement | null>(null);
+  const campEndingTextRef = useRef<HTMLParagraphElement | null>(null);
   const interactionActionRef = useRef<(() => void) | null>(null);
   const progressRef = useRef<HTMLDivElement | null>(null);
   const speedRef = useRef<HTMLSpanElement | null>(null);
@@ -2247,7 +2249,7 @@ export function Route40LowPolyOpening() {
     let climbElapsed = 0;
     let travelled = 0;
     let campDistance = 0, campSpeed = 6.8, campLaneOffset = 0;
-    let campStartedAt = 0, exitStartedAt = 0, walkStartedAt = 0, trunkStartedAt = 0;
+    let campStartedAt = 0, exitStartedAt = 0, walkStartedAt = 0, trunkStartedAt = 0, endingStartedAt = 0;
     let campAmbientStop: (() => void) | null = null;
     let signalEncounterStartedAt=0,signalAimStartedAt=0,escapeStartedAt=0,npcImpactAt=0;
     let npcImpactX=0,npcImpactZ=THREAT_Z;
@@ -2640,6 +2642,7 @@ export function Route40LowPolyOpening() {
         setStage("trunkPrompt");
       }
       if(stageRef.current==="trunkOpening"&&now-trunkStartedAt>=4200){
+        endingStartedAt=now;
         setStage("ending");
       }
       const rect = canvas.getBoundingClientRect();
@@ -3114,6 +3117,12 @@ export function Route40LowPolyOpening() {
         starIndicatorRef.current.style.opacity = String(starOpacity);
         starIndicatorRef.current.style.transform = `translate3d(0,${-12 * starSlide}px,0) scale(${0.92 + 0.08 * smooth(0.12, 0.55, impactElapsed)})`;
       }
+      if (campEndingShadeRef.current && campEndingTextRef.current) {
+        const endingElapsed = endingStartedAt > 0 ? (now - endingStartedAt) / 1000 : -1;
+        campEndingShadeRef.current.style.opacity = String(smooth(0.1, 2.0, endingElapsed) * 0.88);
+        campEndingTextRef.current.style.opacity = String(smooth(0.72, 1.9, endingElapsed));
+        campEndingTextRef.current.style.transform = `translateY(${(1 - smooth(0.72, 1.9, endingElapsed)) * 14}px)`;
+      }
       if (timeJumpRef.current) {
         const timeJumpOpacity = impactElapsed >= 0
           ? smooth(10, 10.65, impactElapsed) * (1 - smooth(13.75, 14.45, impactElapsed))
@@ -3311,6 +3320,35 @@ export function Route40LowPolyOpening() {
           </div>
         </div>
       </div>
+      {interactionStage === "campStopped" && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-[13%] z-50 flex justify-center px-4">
+          <div className="pointer-events-auto flex w-full max-w-sm flex-col items-center gap-2 border border-amber-100/30 bg-[#111b1e]/88 px-5 py-4 text-center shadow-[0_10px_40px_rgba(0,0,0,.5)] backdrop-blur-md">
+            <p className="font-mono text-[9px] tracking-[.28em] text-amber-100/65">EL MOTOR SE APAGA</p>
+            <button type="button" onClick={() => interactionActionRef.current?.()} className="min-h-12 w-full border border-amber-100/45 bg-[#344c3a] px-5 py-3 font-mono text-xs tracking-[.16em] text-[#fff2dc] shadow-[0_0_22px_rgba(211,177,120,.15)] transition hover:bg-[#456149] active:scale-[.98]">
+              <span className="mr-2 text-amber-200">E</span> BAJARTE DEL AUTO
+            </button>
+            <p className="font-mono text-[9px] tracking-[.12em] text-white/55">TAMBIÉN PODÉS TOCAR EL BOTÓN</p>
+          </div>
+        </div>
+      )}
+      {interactionStage === "trunkPrompt" && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-[13%] z-50 flex justify-center px-4">
+          <div className="pointer-events-auto flex w-full max-w-sm flex-col items-center gap-2 border border-amber-100/30 bg-[#111b1e]/88 px-5 py-4 text-center shadow-[0_10px_40px_rgba(0,0,0,.5)] backdrop-blur-md">
+            <p className="font-mono text-[9px] tracking-[.28em] text-amber-100/65">EQUIPAMIENTO EN EL BAÚL</p>
+            <button type="button" onClick={() => interactionActionRef.current?.()} className="min-h-12 w-full border border-amber-100/45 bg-[#344c3a] px-5 py-3 font-mono text-xs tracking-[.16em] text-[#fff2dc] shadow-[0_0_22px_rgba(211,177,120,.15)] transition hover:bg-[#456149] active:scale-[.98]">
+              <span className="mr-2 text-amber-200">E</span> ABRIR BAÚL
+            </button>
+          </div>
+        </div>
+      )}
+      {interactionStage === "ending" && (
+        <div ref={campEndingRef} className="pointer-events-none absolute inset-0 z-[60] flex items-center justify-center px-5 text-center">
+          <div ref={campEndingShadeRef} className="absolute inset-0 bg-[#070b12]" style={{ opacity: 0 }} />
+          <p ref={campEndingTextRef} className="relative font-serif text-4xl tracking-[.18em] text-[#f1e3cf] drop-shadow-[0_3px_24px_rgba(0,0,0,.9)] sm:text-6xl" style={{ opacity: 0, transform: "translateY(14px)" }}>
+            CONTINUARÁ...
+          </p>
+        </div>
+      )}
       <div
         ref={npcDialogueRef}
         className="pointer-events-none absolute left-0 top-0 z-50 w-[min(320px,calc(100vw-24px))]"
