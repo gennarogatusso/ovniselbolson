@@ -132,6 +132,14 @@ class MeshBuilder {
     }
   }
 
+  torusYZ(cx:number,cy:number,cz:number,radius:number,tube:number,color:V3){
+    const around=28,ring=6;
+    for(let i=0;i<around;i++)for(let j=0;j<ring;j++){
+      const a0=i/around*Math.PI*2,a1=(i+1)/around*Math.PI*2,b0=j/ring*Math.PI*2,b1=(j+1)/ring*Math.PI*2;
+      const p=(a:number,b:number):V3=>[cx+Math.sin(b)*tube,cy+(radius+Math.cos(b)*tube)*Math.cos(a),cz+(radius+Math.cos(b)*tube)*Math.sin(a)];
+      this.quad(p(a0,b0),p(a1,b0),p(a1,b1),p(a0,b1),color);
+    }
+  }
   data() {
     return new Float32Array(this.values);
   }
@@ -180,7 +188,9 @@ function terrainSurfaceY(x: number, z: number) {
   const airportFieldX = 1 - smooth(27, 43, Math.abs(x + 53.5));
   const airportFieldZ = 1 - smooth(86, 103, Math.abs(z + 167));
   const airportField = airportFieldX * airportFieldZ;
-  return mix(roadsideGround, -0.16, airportField);
+  const pitchArea=(1-smooth(23,34,Math.abs(x+115)))*(1-smooth(39,52,Math.abs(z+166)));
+  const schoolArea=(1-smooth(15,25,Math.abs(x+154)))*(1-smooth(15,26,Math.abs(z+166)));
+  return mix(mix(roadsideGround,-0.16,airportField),-0.13,Math.max(pitchArea,schoolArea));
 }
 
 const PIXEL_GLYPHS: Record<string, string[]> = {
@@ -241,6 +251,10 @@ function addPixelText(mesh: MeshBuilder, text: string, centerX: number, centerY:
   }
 }
 
+function addPixelTextYZ(mesh:MeshBuilder,text:string,centerY:number,centerZ:number,x:number,cell:number,color:V3){
+  const chars=Array.from(text),width=chars.length*6*cell-cell;let cursor=centerZ-width/2;
+  for(const ch of chars){const glyph=PIXEL_GLYPHS[ch]??PIXEL_GLYPHS[" "]!;for(let row=0;row<7;row++){const pixels=glyph[row]??"00000";for(let col=0;col<5;col++)if(pixels[col]==="1")mesh.box([x,centerY+(3-row)*cell,cursor+col*cell+cell/2],[Math.max(.018,cell*.24),cell*.82,cell*.82],color);}cursor+=6*cell;}
+}
 function addPine(mesh: MeshBuilder, x: number, z: number, base: number, height: number, seed: number) {
   const trunk = hex(seed % 2 < 1 ? "#332b25" : "#292922");
   mesh.box([x, base + height * 0.13, z], [height * 0.075, height * 0.27, height * 0.075], trunk);
@@ -623,10 +637,79 @@ function addBikePathAndAerodrome(mesh: MeshBuilder) {
   const treeLine = randomSource(7441);
   for (let i = 0; i < 20; i++) {
     const z = runwayStart - 4 - i * 9.0;
-    const x = -82.0 + treeLine() * 3.5;
+    const x = -171.0 + treeLine() * 3.5;
     const height = 7.0 + treeLine() * 5.0;
     addPine(mesh, x, z, terrainSurfaceY(x, z), height, Math.floor(treeLine() * 1000));
   }
+}
+
+
+function addSchoolAndFootballField(m:MeshBuilder){
+  const cx=-115,cz=-166,hw=19,hl=33,y=-.075,ly=y+.055,l=cx-hw,r=cx+hw,n=cz+hl,f=cz-hl,white=hex("#eee9dc");
+  // Cancha de tierra apisonada, no de césped.
+  m.quad([l,y,n],[l,y,f],[r,y,f],[r,y,n],hex("#a17a4d"));
+  const soil=["#aa8052","#967047","#b28a5c","#8f6948","#ad8050"];
+  for(let i=0;i<24;i++){const x=l+1+(i*13%34),z=n-2-i*2.65;m.quad([x,y+.012,z],[x+5,y+.012,z-.6],[x+5,y+.012,z-1.5],[x,y+.012,z-.9],hex(soil[i%soil.length]!));}
+  // Perímetro, mitad, círculo central y áreas.
+  m.box([l,ly,cz],[.12,.045,hl*2],white);m.box([r,ly,cz],[.12,.045,hl*2],white);
+  m.box([cx,ly,n],[hw*2,.045,.12],white);m.box([cx,ly,f],[hw*2,.045,.12],white);
+  m.box([cx,ly+.006,cz],[hw*2,.045,.11],white);
+  for(let i=0;i<32;i++){const a=i/32*Math.PI*2,b=(i+1)/32*Math.PI*2;m.beam([cx+Math.cos(a)*7.1,ly+.02,cz+Math.sin(a)*7.1],[cx+Math.cos(b)*7.1,ly+.02,cz+Math.sin(b)*7.1],.065,white);}
+  for(const end of [n,f]){
+    const dir=end===n?-1:1,pz=end+dir*9,sz=end+dir*3.8;
+    m.box([cx,ly,pz],[25,.04,.09],white);m.box([cx,ly,sz],[10,.04,.08],white);
+    for(const side of [-1,1]){m.box([cx+side*12.5,ly,(end+pz)/2],[.08,.04,Math.abs(end-pz)],white);m.box([cx+side*5,ly,(end+sz)/2],[.08,.04,Math.abs(end-sz)],white);}
+    const gw=7.1,gh=2.3,back=end+dir*2;
+    for(const side of [-1,1]){const x=cx+side*gw/2;m.beam([x,ly,end],[x,ly+gh,end],.15,hex("#f1eee5"));m.beam([x,ly+.02,end],[x,ly+.02,back],.06,hex("#d0d3cc"));}
+    m.beam([cx-gw/2,ly+gh,end],[cx+gw/2,ly+gh,end],.15,hex("#f1eee5"));m.beam([cx-gw/2,ly,back],[cx+gw/2,ly,back],.045,hex("#c8ceca"));
+    for(let i=0;i<=4;i++){const x=cx-gw/2+i*gw/4;m.beam([x,ly,end],[x,ly+gh,back],.02,hex("#cbd0ca"));}
+  }
+  // Alambrado completamente cerrado, con postes, diagonales y travesaños.
+  const fl=l-2.2,fr=r+2.2,fn=n+2.2,ff=f-2.2,fh=2.15;
+  for(const x of [fl,fr]){
+    for(let z=ff;z<=fn;z+=6.5)m.box([x,terrainSurfaceY(x,z)+fh/2,z],[.1,fh,.1],hex("#4c5555"));
+    for(const h of [.42,1.18,fh])m.beam([x,h,ff],[x,h,fn],.03,hex("#7c8580"));
+    for(let z=ff;z<fn;z+=3.3){m.beam([x,.4,z],[x,fh,z+1.65],.018,hex("#9aa09a"));m.beam([x,fh,z],[x,.4,z+1.65],.018,hex("#9aa09a"));}
+  }
+  for(const z of [ff,fn]){
+    for(let x=fl;x<=fr;x+=6)m.box([x,terrainSurfaceY(x,z)+fh/2,z],[.1,fh,.1],hex("#4c5555"));
+    for(const h of [.42,1.18,fh])m.beam([fl,h,z],[fr,h,z],.03,hex("#7c8580"));
+  }
+  for(const x of [cx-3,cx+3])m.beam([x,0,ff],[x,2,ff],.06,hex("#d0d0c8"));
+  for(const x of [l-4,r+4]){m.box([x,4,cz],[.16,8,.16],hex("#4a5053"));m.box([x,7.8,cz],[.42,.22,.32],hex("#f1d5a0"));}
+  // Escuela barrial detrás de la cancha.
+  const sx=-154,sz=-166,gy=terrainSurfaceY(sx,sz);
+  m.box([sx,gy+2.45,sz],[24,4.9,28],hex("#d5c5a1"),hex("#b7aa8c"));
+  m.box([sx,gy+4.98,sz],[24.8,.38,28.8],hex("#a5503d"),hex("#713f36"));
+  m.box([sx+12.08,gy+.72,sz],[.16,1.44,27.2],hex("#78796c"));
+  for(const z of [-176,-169,-161,-154]){m.box([sx+12.18,gy+2.85,z],[.11,1.42,2.15],hex("#344f60"));m.box([sx+12.25,gy+2.85,z],[.035,1.14,1.8],hex("#9bb6b9"));}
+  m.box([sx+12.22,gy+1.45,sz+1],[.28,2.9,3],hex("#72513c"));m.box([sx+12.95,gy+2.95,sz],[1.5,.18,4.8],hex("#36566a"));
+  for(let i=0;i<3;i++)m.box([sx+13+i*.38,gy+.12+i*.13,sz],[.8,.24,3.4],hex("#afa58e"));
+  m.box([sx+12.36,gy+4.35,sz],[.14,.72,7.6],hex("#244b60"));addPixelTextYZ(m,"ESCUELA",gy+4.25,sz,sx+12.44,.075,hex("#f2eddb"));
+  m.quad([sx+13.2,gy+.025,sz-13],[sx+13.2,gy+.025,sz+13],[sx+19,gy+.025,sz+13],[sx+19,gy+.025,sz-13],hex("#777466"));
+  m.box([sx+16,gy+3.5,sz-12],[.12,7,.12],hex("#6a6656"));m.beam([sx+16,gy+6.7,sz-12],[sx+18.8,gy+6,sz-12],.12,hex("#f1e6cf"));
+}
+function buildPathPedestrian(kind:"walk"|"run",jacket:string,skin:string){
+  const m=new MeshBuilder(),cloth=hex(jacket),flesh=hex(skin),dark=hex("#29343a"),stride=kind==="run"?.3:.15,swing=kind==="run"?.25:.12;
+  m.box([0,1.02,0],[.39,.64,.26],cloth,dark);m.box([0,1.72,0],[.27,.31,.27],flesh);m.box([0,1.9,-.035],[.29,.09,.27],hex("#49392e"));
+  m.beam([-.12,.76,0],[-stride,.15,-.16],.12,dark);m.beam([.12,.76,0],[stride,.15,.16],.12,dark);
+  m.box([-stride,.08,-.2],[.22,.12,.34],hex("#d4d0c5"));m.box([stride,.08,.12],[.22,.12,.34],hex("#d4d0c5"));
+  m.beam([-.23,1.3,0],[-.36-swing,.93,-.11],.105,cloth);m.beam([-.36-swing,.93,-.11],[-.42-swing,.73,-.16],.07,flesh);
+  m.beam([.23,1.3,0],[.36+swing,.94,.11],.105,cloth);m.beam([.36+swing,.94,.11],[.42+swing,.74,.16],.07,flesh);return m;
+}
+function buildPathCyclist(jacket:string){
+  const m=new MeshBuilder(),frame=hex("#202b31"),rubber=hex("#171d21"),skin=hex("#c99473"),cloth=hex(jacket);
+  m.torusYZ(0,.43,-.64,.37,.035,rubber);m.torusYZ(0,.43,.64,.37,.035,rubber);
+  const rear:V3=[0,.43,-.64],crank:V3=[0,.48,-.04],front:V3=[0,.43,.64],seat:V3=[0,.91,-.31],handle:V3=[0,.91,.55];
+  m.beam(rear,crank,.055,frame);m.beam(crank,front,.055,frame);m.beam(front,seat,.055,frame);m.beam(seat,rear,.055,frame);m.beam(seat,crank,.055,frame);m.beam(seat,handle,.055,frame);
+  m.beam(handle,[0,1.02,.68],.055,hex("#aeb7b4"));m.beam([0,.99,-.31],[0,1.35,.11],.2,cloth);m.box([0,1.55,.19],[.25,.26,.25],skin);m.box([0,1.68,.2],[.29,.12,.28],hex("#d6a34f"));
+  m.beam([0,1.32,.1],[0,.97,.62],.08,cloth);m.beam([0,.97,.62],[0,.92,.68],.055,skin);return m;
+}
+function buildOncomingCar(body:string,cabin:string){
+  const m=new MeshBuilder(),paint=hex(body),glass=hex(cabin);
+  m.box([0,.53,0],[1.88,.58,4.25],paint,hex("#26323a"));m.box([0,.85,-1.37],[1.72,.19,1.26],paint);m.box([0,1.13,-.18],[1.48,.63,2.12],glass,hex("#35434b"));m.box([0,1.47,-.18],[1.28,.12,1.93],paint);
+  for(const x of [-.98,.98])for(const z of [-1.35,1.35])m.box([x,.43,z],[.22,.55,.73],hex("#12181d"));
+  for(const x of [-.61,.61]){m.box([x,.67,-2.13],[.26,.17,.08],hex("#fff1c9"));m.box([x,.51,2.13],[.26,.13,.08],hex("#a94c42"));}m.box([0,.81,2.15],[1.15,.11,.12],hex("#20282e"));return m;
 }
 
 function buildWorld() {
@@ -635,13 +718,13 @@ function buildWorld() {
   const destinationSignZ = -53;
 
   // Terreno patagónico nocturno: relieve poligonal y valores oscuros para que destaque la luz del auto.
-  const xSteps = 36, zSteps = 106;
+  const xSteps = 48, zSteps = 106;
   for (let zi = 0; zi < zSteps; zi++) {
     const z0 = -304 + (zi / zSteps) * 322;
     const z1 = -304 + ((zi + 1) / zSteps) * 322;
     for (let xi = 0; xi < xSteps; xi++) {
-      const x0 = -84 + (xi / xSteps) * 168;
-      const x1 = -84 + ((xi + 1) / xSteps) * 168;
+      const x0 = -176 + (xi / xSteps) * 260;
+      const x1 = -176 + ((xi + 1) / xSteps) * 260;
       // Hunde el terreno solo bajo la bajada para que la malla verde no atraviese el asfalto.
       const a: V3 = [x0, terrainSurfaceY(x0, z0), z0];
       const b: V3 = [x0, terrainSurfaceY(x0, z1), z1];
@@ -655,9 +738,9 @@ function buildWorld() {
 
   // Cordilleras lejanas a ambos lados, sin cruzarse visualmente con la estación YPF.
   // Del lado del aeródromo, las lomas quedan bastante más lejos para abrir el campo visual.
-  addRoadsideMountainRange(world, -1, 31, 82, 126, 15);
+  addRoadsideMountainRange(world, -1, 31, 188, 236, 15);
   addRoadsideMountainRange(world, 1, 47, 62, 104, 15);
-  addRoadsideMountainRange(world, -1, 71, 140, 186, 21);
+  addRoadsideMountainRange(world, -1, 71, 246, 302, 21);
   addRoadsideMountainRange(world, 1, 89, 112, 160, 21);
 
   // Banquinas, asfalto, marcas viales y pequeños parches de pavimento.
@@ -815,6 +898,7 @@ function buildWorld() {
 
   // El predio abierto, la bicisenda y la pista quedan en el margen izquierdo; la YPF permanece a la derecha.
   addBikePathAndAerodrome(world);
+  addSchoolAndFootballField(world);
 
   // Cartel de advertencia existente y un cartel verde de distancia a El Bolsón.
   const signX = roadCenter(-29) + 7.8, signZ = -29, signY = terrainY(signX, signZ);
@@ -841,37 +925,14 @@ function buildWorld() {
 
 
 function buildSkyDressing() {
-  const sky = new MeshBuilder();
-  const random = randomSource(9041);
-
-  // Luna fría y halo tenue sobre la cordillera patagónica.
-  sky.disc(-43, 39, -296, 6.2, hex("#566477"), 40);
-  sky.disc(-43, 39, -295.7, 3.9, hex("#c3cbd1"), 40);
-  sky.disc(-43, 39, -295.4, 2.8, hex("#dbe0df"), 40);
-
-  // Cordillera de siluetas lejanas; los picos quedan detrás del bosque y se funden con la niebla.
-  const peaks = [
-    [-154, -8], [-128, 5], [-106, -4], [-82, 23], [-61, -6],
-    [-39, 13], [-17, 42], [8, 5], [32, 31], [56, -5],
-    [77, 20], [101, -5], [126, 14], [154, -8],
-  ];
-  for (let i = 0; i < peaks.length - 1; i++) {
-    const [x0, y0] = peaks[i]!;
-    const [x1, y1] = peaks[i + 1]!;
-    const peakX = (x0 + x1) * 0.5;
-    const peakY = Math.max(y0, y1) + 11 + random() * 8;
-    const shade = i % 3 === 0 ? hex("#293449") : i % 3 === 1 ? hex("#354054") : hex("#30394d");
-    sky.triangle([x0, -11, -286], [peakX, peakY, -292], [x1, -11, -286], shade);
-    sky.triangle([x0, -11, -286.2], [peakX, Math.max(0, peakY * 0.5), -291.9], [x1, -11, -286.2], hex("#41495b"));
-  }
-
-  // Estrellas pequeñas; el ruido VHS sigue siendo visible, pero el cielo ya es nocturno.
-  for (let i = 0; i < 48; i++) {
-    const x = -112 + random() * 224;
-    const y = 24 + random() * 54;
-    const radius = 0.09 + random() * 0.16;
-    sky.disc(x, y, -300 + random() * 1.5, radius, i % 5 === 0 ? hex("#d8d7cf") : hex("#8e9fb4"), 5);
-  }
+  const sky=new MeshBuilder(),random=randomSource(9041);
+  // Atardecer naranja con sol bajo y halo cálido.
+  sky.disc(-17,28,-284,12.5,hex("#b94f3b"),48);sky.disc(-17,28,-283.7,9.2,hex("#e36f49"),48);
+  sky.disc(-17,28,-283.4,6.2,hex("#f5a15f"),48);sky.disc(-17,28,-283.1,4,hex("#ffe0a4"),48);
+  const clouds=[[-59,31,-278,22,4,4.8],[-43,34,-279,18,4.4,4.8],[-26,32,-280,18,3.4,4.2],[-5,34,-282,23,4.2,5],[20,36,-282,19,4.3,5],[41,33,-280,20,3.4,4.6],[61,29,-278,18,3,4.4]];
+  for(let i=0;i<clouds.length;i++){const [x,y,z,w,h,d]=clouds[i]!;sky.box([x,y,z],[w,h,d],hex("#65515a"),hex("#514957"));sky.box([x-w*.18,y+h*.22,z-.08],[w*.52,h*.58,d*.88],hex("#bd735d"));sky.box([x+w*.22,y+h*.18,z+.05],[w*.48,h*.48,d*.9],i%2?hex("#e08a5d"):hex("#ca795d"));}
+  const peaks=[[-154,-8],[-128,5],[-106,-4],[-82,23],[-61,-6],[-39,13],[-17,42],[8,5],[32,31],[56,-5],[77,20],[101,-5],[126,14],[154,-8]];
+  for(let i=0;i<peaks.length-1;i++){const [x0,y0]=peaks[i]!,[x1,y1]=peaks[i+1]!,px=(x0+x1)*.5,py=Math.max(y0,y1)+11+random()*8,shade=i%3===0?hex("#3b354b"):i%3===1?hex("#514052"):hex("#414057");sky.triangle([x0,-11,-286],[px,py,-292],[x1,-11,-286],shade);sky.triangle([x0,-11,-286.2],[px,Math.max(0,py*.5),-291.9],[x1,-11,-286.2],hex("#6d5360"));}
   return sky;
 }
 
@@ -1245,10 +1306,10 @@ float hash(vec2 p) {
 }
 void main() {
   vec3 n = normalize(vNormal);
-  vec3 moon = normalize(vec3(-0.42, 0.84, 0.28));
-  float diffuse = max(dot(n, moon), 0.0);
-  float ambient = 0.37 + max(n.y, 0.0) * 0.10;
-  float light = ambient + diffuse * 0.20 + floor(diffuse * 4.0) * 0.018;
+  vec3 sunsetSun = normalize(vec3(-0.38, 0.52, 0.74));
+  float diffuse = max(dot(n, sunsetSun), 0.0);
+  float ambient = 0.49 + max(n.y, 0.0) * 0.13;
+  float light = ambient + diffuse * 0.31 + floor(diffuse * 4.0) * 0.025;
 
   // Haz cálido de los faros: ilumina el asfalto, la vegetación cercana y los bordes del camino.
   vec3 fromHeadlight = vWorldPosition - uHeadlightPosition;
@@ -1260,13 +1321,13 @@ void main() {
   float headlight = beamSide * beamDistance * beamHeight * smoothstep(0.0, 3.0, ahead);
   light += headlight * 1.12;
 
-  vec3 color = vColor * light * vec3(0.78, 0.88, 1.08);
+  vec3 color = vColor * light * vec3(1.10, 0.94, 0.83);
   color += vec3(1.0, 0.72, 0.43) * headlight * 0.46;
   float emissive = smoothstep(0.70, 0.96, max(max(vColor.r, vColor.g), vColor.b));
   color += vColor * emissive * 0.28;
   vec3 highlights = max(color - vec3(0.52, 0.56, 0.62), vec3(0.0));
   color += highlights * 0.24;
-  float fog = smoothstep(34.0, 255.0, vDepth);
+  float fog = smoothstep(58.0, 238.0, vDepth);
   color = mix(color, uFogColor, fog);
   float scan = 1.0 - 0.022 * (0.5 + 0.5 * sin(gl_FragCoord.y * 3.14159));
   float grain = (hash(floor(gl_FragCoord.xy * 0.72) + floor(uTime * 8.0)) - 0.5) * 0.022;
@@ -1610,6 +1671,8 @@ export function Route40LowPolyOpening() {
     let fuelHoseMesh: Mesh | null = null;
     let paymentMesh: Mesh | null = null;
     let attendantMesh: Mesh | null = null;
+    let pathActors: Array<{mesh:Mesh;baseZ:number;speed:number;lateral:number;reverse:boolean}> = [];
+    let trafficActors: Array<{mesh:Mesh;baseZ:number;speed:number}> = [];
     let lastAttendantUpdate = 0;
     let program: WebGLProgram | null = null;
 
@@ -1636,6 +1699,21 @@ export function Route40LowPolyOpening() {
       fuelHoseMesh = createMesh(gl, buildRefuelHose());
       paymentMesh = createMesh(gl, buildMoneyHandover());
       attendantMesh = createMesh(gl, buildAttendantPose(0, "driving", 0, 0));
+      const people=[
+        {kind:"bike" as const,baseZ:-118,speed:1.15,lateral:-.28,reverse:false,color:"#bb653f"},
+        {kind:"walk" as const,baseZ:-151,speed:-.48,lateral:.34,reverse:true,color:"#4e8491"},
+        {kind:"run" as const,baseZ:-205,speed:.82,lateral:-.24,reverse:false,color:"#d1a34f"},
+        {kind:"bike" as const,baseZ:-231,speed:-1.05,lateral:.3,reverse:true,color:"#6d8297"},
+        {kind:"walk" as const,baseZ:-94,speed:.58,lateral:.18,reverse:false,color:"#9271a4"},
+      ];
+      pathActors=people.map(p=>({mesh:createMesh(gl,p.kind==="bike"?buildPathCyclist(p.color):buildPathPedestrian(p.kind,p.color,"#c99576")),baseZ:p.baseZ,speed:p.speed,lateral:p.lateral,reverse:p.reverse}));
+      const traffic=[
+        {baseZ:-165,speed:6,body:"#b85d45",cabin:"#596e75"},
+        {baseZ:-232,speed:5.6,body:"#d5d1bf",cabin:"#526b78"},
+        {baseZ:-292,speed:6.5,body:"#4d7181",cabin:"#374c5a"},
+        {baseZ:-122,speed:5.4,body:"#b8a36f",cabin:"#42565e"},
+      ];
+      trafficActors=traffic.map(c=>({mesh:createMesh(gl,buildOncomingCar(c.body,c.cabin)),baseZ:c.baseZ,speed:c.speed}));
     } catch (error) {
       console.error("No se pudo iniciar la escena low poly de Ruta 40", error);
       if (program) gl.deleteProgram(program);
@@ -1650,7 +1728,7 @@ export function Route40LowPolyOpening() {
     gl.clearColor(0, 0, 0, 0);
 
     const fogLocation = gl.getUniformLocation(program, "uFogColor");
-    gl.uniform3fv(fogLocation, new Float32Array([0.25, 0.31, 0.41]));
+    gl.uniform3fv(fogLocation, new Float32Array([0.57, 0.36, 0.32]));
     const resolutionLocation = gl.getUniformLocation(program, "uResolution");
     const timeLocation = gl.getUniformLocation(program, "uTime");
     const headlightLocation = gl.getUniformLocation(program, "uHeadlightPosition");
@@ -1832,6 +1910,20 @@ export function Route40LowPolyOpening() {
       const identity = translation(0, 0, 0);
       bindMesh(gl, program, worldMesh, viewProjection, view, identity);
       if (skyMesh) bindMesh(gl, program, skyMesh, viewProjection, view, identity);
+      // Ciclistas, peatones y corredores recorren la bicisenda en ambos sentidos.
+      for(const actor of pathActors){
+        const span=168,raw=actor.baseZ+elapsed*actor.speed,z=-252+(((raw+252)%span)+span)%span;
+        const x=roadCenter(z)-12.1+actor.lateral,y=terrainSurfaceY(x,z)+.035;
+        const model=multiply(translation(x,y,z),rotationY(actor.reverse?Math.PI:0));
+        bindMesh(gl,program,actor.mesh,viewProjection,view,model);
+      }
+      // Autos que vienen de frente por el carril opuesto.
+      for(const traffic of trafficActors){
+        const span=308,raw=traffic.baseZ+elapsed*traffic.speed,z=-294+(((raw+294)%span)+span)%span;
+        const x=roadCenter(z)+2.15,y=roadHeightAt(z)-.16;
+        const model=multiply(translation(x,y,z),rotationY(Math.PI));
+        bindMesh(gl,program,traffic.mesh,viewProjection,view,model);
+      }
 
       const carModel = multiply(translation(carX, carY, carZ), rotationY(steeringAngle));
       const aerialVisibility = 1 - smooth(5.1, 5.95, elapsed);
@@ -1953,6 +2045,8 @@ export function Route40LowPolyOpening() {
       if (fuelHoseMesh) gl.deleteBuffer(fuelHoseMesh.buffer);
       if (paymentMesh) gl.deleteBuffer(paymentMesh.buffer);
       if (attendantMesh) gl.deleteBuffer(attendantMesh.buffer);
+      for(const actor of pathActors) gl.deleteBuffer(actor.mesh.buffer);
+      for(const car of trafficActors) gl.deleteBuffer(car.mesh.buffer);
       if (program) gl.deleteProgram(program);
     };
   }, []);
@@ -1965,7 +2059,7 @@ export function Route40LowPolyOpening() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 52% 58%, rgba(133,145,172,.22), transparent 42%), linear-gradient(180deg, #070d18 0%, #121c2c 39%, #303448 72%, #514b5b 100%)",
+            "radial-gradient(ellipse at 52% 58%, rgba(247,147,91,.32), transparent 43%), linear-gradient(180deg, #202b42 0%, #555164 38%, #b86d59 72%, #e5a36d 100%)",
         }}
       />
       <canvas
