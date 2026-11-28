@@ -297,7 +297,7 @@ function addRoadsideMountainRange(
 }
 
 
-function buildAttendantPose(time: number, stage: string, warningElapsed: number) {
+function buildAttendantPose(time: number, stage: string, warningElapsed: number, payingElapsed: number) {
   const npc = new MeshBuilder();
   const skin = hex("#b98768");
   const skinLight = hex("#d2a184");
@@ -314,7 +314,7 @@ function buildAttendantPose(time: number, stage: string, warningElapsed: number)
   const pointing = stage === "warning"
     ? smooth(0.18, 0.72, warningElapsed) * (1 - smooth(3.9, 4.55, warningElapsed))
     : 0;
-  const receiving = stage === "paying" ? smooth(0, 0.9, time * 0.6) : 0;
+  const receiving = stage === "paying" ? smooth(0, 0.9, payingElapsed) : 0;
   const blink = Math.sin(time * 2.3 + 0.6) > 0.992;
 
   // Piernas y botas firmes sobre la playa de la estación.
@@ -527,7 +527,7 @@ function buildWorld() {
     for (let i = 0; i < 30; i++) {
       const z = 10 - i * 5.25 - random() * 2.7;
       if (side === 1 && Math.abs(z - destinationSignZ) < 22) continue;
-      const x = roadCenter(z) + side * (6.1 + random() * 8.5);
+      const x = roadCenter(z) + side * (8.5 + random() * 8.5);
       const height = 4.2 + random() * 6.4;
       addPine(world, x, z, terrainY(x, z), height, Math.floor(random() * 1000));
     }
@@ -574,7 +574,7 @@ function buildWorld() {
     const side = random() > 0.5 ? 1 : -1;
     const z = 12 - random() * 135;
     if (side === 1 && Math.abs(z - destinationSignZ) < 24) continue;
-    const x = roadCenter(z) + side * (5.3 + random() * 9.5);
+    const x = roadCenter(z) + side * (6.4 + random() * 8.4);
     const y = terrainY(x, z);
     if (i % 3 === 0) {
       world.cone(x, y, z, 0.5 + random() * 0.7, 0.55 + random() * 0.8, 5, hex("#28372d"));
@@ -1378,7 +1378,7 @@ export function Route40LowPolyOpening() {
       windshieldMesh = createMesh(gl, buildWindshield());
       fuelHoseMesh = createMesh(gl, buildRefuelHose());
       paymentMesh = createMesh(gl, buildMoneyHandover());
-      attendantMesh = createMesh(gl, buildAttendantPose(0, "driving", 0));
+      attendantMesh = createMesh(gl, buildAttendantPose(0, "driving", 0, 0));
     } catch (error) {
       console.error("No se pudo iniciar la escena low poly de Ruta 40", error);
       if (program) gl.deleteProgram(program);
@@ -1512,7 +1512,8 @@ export function Route40LowPolyOpening() {
       const shake = transition * (0.005 + driveSpeed * 0.0021) * (outsideStage ? 0 : 1);
       const shakeX = Math.sin(now * 0.024) * shake;
       const shakeY = Math.sin(now * 0.039) * shake * 0.62;
-      const driverEye: V3 = [carX + shakeX, roadHeightAt(carZ) + 1.39 + shakeY, carZ + 0.56];
+      const suspensionBounce = (Math.sin(elapsed * 13.5) + Math.sin(elapsed * 22.0) * 0.32) * (driveSpeed / 5.4) * 0.018;
+      const driverEye: V3 = [carX + shakeX, roadHeightAt(carZ) + 1.39 + shakeY + suspensionBounce, carZ + 0.56];
       const driverTarget: V3 = elapsed < DURATION
         ? [roadCenter(carZ - 39) + shakeX * 0.7, roadHeightAt(carZ - 39) + 2.6 + shakeY, carZ - 39]
         : [
@@ -1597,7 +1598,8 @@ export function Route40LowPolyOpening() {
         lastAttendantUpdate = now;
         const activeStage = stageRef.current;
         const warningElapsed = activeStage === "warning" ? (now - warningStartedAtRef.current) / 1000 : 0;
-        const pose = buildAttendantPose(elapsed, activeStage, warningElapsed).data();
+        const payingElapsed = activeStage === "paying" ? (now - payingStartedAtRef.current) / 1000 : 0;
+        const pose = buildAttendantPose(elapsed, activeStage, warningElapsed, payingElapsed).data();
         gl.bindBuffer(gl.ARRAY_BUFFER, attendantMesh.buffer);
         gl.bufferData(gl.ARRAY_BUFFER, pose, gl.DYNAMIC_DRAW);
         attendantMesh.count = pose.length / 9;
