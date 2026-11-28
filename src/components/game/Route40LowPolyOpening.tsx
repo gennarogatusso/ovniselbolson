@@ -2105,6 +2105,35 @@ function playNpcImpactSequence(context: AudioContext) {
   cryHarmonic.stop(now + 0.5);
 }
 
+function createCampingAmbientAudio() {
+  const context = new window.AudioContext();
+  const buffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    const slow = 0.55 + 0.45 * Math.sin(i / context.sampleRate * 2.1);
+    data[i] = (Math.random() * 2 - 1) * slow * 0.28;
+  }
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  const filter = context.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 620;
+  const gain = context.createGain();
+  gain.gain.value = 0.022;
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(context.destination);
+  source.start();
+  void context.resume();
+  return () => {
+    const now = context.currentTime;
+    gain.gain.setTargetAtTime(0, now, 0.18);
+    try { source.stop(now + 0.55); } catch { /* El ambiente ya se detuvo */ }
+    source.onended = () => { void context.close(); };
+  };
+}
+
 function createEngineAudio(): EngineAudio {
   const context = new window.AudioContext();
   const filter = context.createBiquadFilter();
@@ -2577,8 +2606,42 @@ export function Route40LowPolyOpening() {
         if(npcImpactAt>0&&now-npcImpactAt>=15500){
           driveSpeed=0;keys.clear();
           if(document.pointerLockElement)document.exitPointerLock();
-          engineAudioRef.current?.stop();setStage("finished");
+          engineAudioRef.current?.stop();
+          campDistance=0;campSpeed=6.8;campLaneOffset=0;campStartedAt=now;
+          startEngineAudio();engineAudioRef.current?.setThrottle(.58);
+          try { campAmbientStop=createCampingAmbientAudio(); } catch (error) {
+            console.warn("El ambiente natural del camping no está disponible", error);
+          }
+          setStage("campApproach");
         }
+      }
+      if(stageRef.current==="campApproach"){
+        const braking=keys.has("s"),accelerating=keys.has("w")&&!braking;
+        if(keys.has("a"))campLaneOffset=clamp(campLaneOffset-dt*1.4,-1.6,1.6);
+        if(keys.has("d"))campLaneOffset=clamp(campLaneOffset+dt*1.4,-1.6,1.6);
+        if(braking)campSpeed=Math.max(0,campSpeed-dt*8.0);
+        else if(CAMP_STOP_DISTANCE-campDistance<=13.5)campSpeed=Math.max(0,campSpeed-dt*1.8);
+        else if(accelerating)campSpeed=Math.min(8.4,campSpeed+dt*2.1);
+        else campSpeed=Math.min(7.0,campSpeed+dt*.45);
+        campDistance=Math.min(CAMP_STOP_DISTANCE,campDistance+campSpeed*dt);
+        lookYaw=mix(lookYaw,lookYawTarget,1-Math.exp(-dt*12));
+        lookPitch=mix(lookPitch,lookPitchTarget,1-Math.exp(-dt*12));
+        if(campDistance>=CAMP_STOP_DISTANCE-.05||campSpeed<=.04){
+          campDistance=Math.min(campDistance,CAMP_STOP_DISTANCE);
+          campSpeed=0;keys.clear();
+          if(document.pointerLockElement)document.exitPointerLock();
+          engineAudioRef.current?.stop();
+          setStage("campStopped");
+        }
+      }
+      if(stageRef.current==="exiting"&&now-exitStartedAt>=4400){
+        walkStartedAt=now;setStage("walkingToTrunk");
+      }
+      if(stageRef.current==="walkingToTrunk"&&now-walkStartedAt>=2800){
+        setStage("trunkPrompt");
+      }
+      if(stageRef.current==="trunkOpening"&&now-trunkStartedAt>=4200){
+        setStage("ending");
       }
       const rect = canvas.getBoundingClientRect();
       const width = Math.max(1, rect.width);
