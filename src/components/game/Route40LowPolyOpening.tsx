@@ -156,13 +156,26 @@ function roadCenter(z: number) {
   return natural + 8.2 * (turnIn - turnOut);
 }
 
-function roadHeightAt(z: number) {
+function roadDipAt(z: number) {
   const descentIn = smooth(3, 43, -z);
   const descentOut = smooth(78, 128, -z);
-  const downhillDip = -6.2 * descentIn * (1 - descentOut);
+  return -6.2 * descentIn * (1 - descentOut);
+}
+
+function roadHeightAt(z: number) {
+  const downhillDip = roadDipAt(z);
   const progress = clamp((-z - 174) / 105, 0, 1);
   const eased = progress * progress * (3 - 2 * progress);
   return 0.18 + downhillDip + eased * 15.5;
+}
+
+function terrainSurfaceY(x: number, z: number) {
+  const naturalGround = terrainY(x, z);
+  const distanceFromRoad = Math.abs(x - roadCenter(z));
+  const roadCorridor = 1 - smooth(8, 12, distanceFromRoad);
+  const dip = roadDipAt(z);
+  const depth = dip - 0.55 * clamp(-dip / 6.2, 0, 1);
+  return naturalGround + depth * roadCorridor;
 }
 
 const PIXEL_GLYPHS: Record<string, string[]> = {
@@ -424,21 +437,22 @@ function buildWorld() {
     for (let xi = 0; xi < xSteps; xi++) {
       const x0 = -84 + (xi / xSteps) * 168;
       const x1 = -84 + ((xi + 1) / xSteps) * 168;
-      const a: V3 = [x0, terrainY(x0, z0), z0];
-      const b: V3 = [x0, terrainY(x0, z1), z1];
-      const c: V3 = [x1, terrainY(x1, z1), z1];
-      const d: V3 = [x1, terrainY(x1, z0), z0];
+      // Hunde el terreno solo bajo la bajada para que la malla verde no atraviese el asfalto.
+      const a: V3 = [x0, terrainSurfaceY(x0, z0), z0];
+      const b: V3 = [x0, terrainSurfaceY(x0, z1), z1];
+      const c: V3 = [x1, terrainSurfaceY(x1, z1), z1];
+      const d: V3 = [x1, terrainSurfaceY(x1, z0), z0];
       const palette = random() > 0.56 ? hex("#29352f") : hex("#303a33");
       const shade = 0.88 + random() * 0.18;
       world.quad(a, b, c, d, [palette[0] * shade, palette[1] * shade, palette[2] * shade]);
     }
   }
 
-  // Solo cordilleras laterales: el horizonte frontal queda despejado.
-  addRoadsideMountainRange(world, -1, 31, 13, 46, 15);
-  addRoadsideMountainRange(world, 1, 47, 13, 46, 15);
-  addRoadsideMountainRange(world, -1, 71, 52, 84, 20);
-  addRoadsideMountainRange(world, 1, 89, 52, 84, 20);
+  // Cordilleras lejanas a ambos lados, sin cruzarse visualmente con la estación YPF.
+  addRoadsideMountainRange(world, -1, 31, 62, 104, 15);
+  addRoadsideMountainRange(world, 1, 47, 62, 104, 15);
+  addRoadsideMountainRange(world, -1, 71, 112, 160, 21);
+  addRoadsideMountainRange(world, 1, 89, 112, 160, 21);
 
   // Banquinas, asfalto, marcas viales y pequeños parches de pavimento.
   for (let z = -292; z < 17; z += 2.5) {
@@ -781,7 +795,6 @@ function buildCockpit() {
   cockpit.box([0, 1.03, -0.83], [0.29, 0.25, 0.12], hex("#30383b"), hex("#161d21"));
   cockpit.box([0, 1.03, -0.755], [0.17, 0.14, 0.035], hex("#77756a"));
   cockpit.box([0, 1.03, -0.73], [0.11, 0.09, 0.018], hex("#30383b"));
-  addPixelText(cockpit, "R40", 0, 1.0, -0.715, 0.015, warmWhite);
   for (let i = 0; i < 14; i++) {
     const a = (i / 14) * Math.PI * 2;
     const x1 = Math.cos(a) * 0.475;
