@@ -1953,6 +1953,13 @@ void main() {
   float waterGlint = pow(max(0.0, waterRipple), 8.0) * 0.24;
   vec3 waterColor = color * vec3(0.78, 1.08, 1.18)
     + vec3(0.018, 0.075, 0.092) * (0.55 + waterRipple * 0.45);
+  float sunsetReflection = exp(-abs(vWorldPosition.x + 48.0) * 0.07)
+    * (0.3 + 0.7 * max(waterRipple, 0.0));
+  float violetReflection = (0.5 + 0.5 * cos(vWorldPosition.x * 0.045 + vWorldPosition.z * 0.017 + uTime * 0.14));
+  float treeReflection = pow(max(0.0, sin(vWorldPosition.z * 0.22 + sin(vWorldPosition.x * 0.1) * 1.4)), 10.0) * 0.09;
+  waterColor += vec3(0.88, 0.42, 0.26) * sunsetReflection * 0.16;
+  waterColor += vec3(0.22, 0.14, 0.3) * violetReflection * 0.07;
+  waterColor *= 1.0 - treeReflection;
   color = mix(color, waterColor, vWater);
   color += vec3(0.34, 0.48, 0.48) * waterGlint * vWater;
   float fog = smoothstep(58.0, 238.0, vDepth);
@@ -2906,7 +2913,7 @@ export function Route40LowPolyOpening() {
             translation(carX - 0.98, carY + 0.55, carZ - 1.18),
             rotationY(-doorOpen * 1.2),
           );
-          bindMesh(gl, program, campingDoorMesh, viewProjection, view, doorModel);
+          bindMesh(gl, program, campingDoorMesh, viewProjection, view, doorModel, doorOpen * outsideBlend);
         }
 
         // El personaje baja del lado del conductor, cierra la puerta y camina hacia el baúl.
