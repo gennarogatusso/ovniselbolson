@@ -193,7 +193,8 @@ function terrainSurfaceY(x: number, z: number) {
   // El paisaje acompaña la bajada a escala amplia; una holgura local evita que el terreno atraviese el asfalto.
   const downhillEnvelope = 1 - smooth(20, 68, distanceFromRoad);
   const roadClearance = 1 - smooth(6.2, 19, distanceFromRoad);
-  const roadsideGround = naturalGround + roadDipAt(z) * downhillEnvelope - 0.78 * roadClearance;
+  const uphillLift = (roadHeightAt(z) - (0.18 + roadDipAt(z))) * (1 - smooth(5, 38, distanceFromRoad));
+  const roadsideGround = naturalGround + roadDipAt(z) * downhillEnvelope + uphillLift - 0.78 * roadClearance;
   // Explanada suave del aeródromo al este de la ruta, separada del asfalto por el sendero de bicicletas.
   const airportFieldX = 1 - smooth(27, 43, Math.abs(x + 53.5));
   const airportFieldZ = 1 - smooth(86, 103, Math.abs(z + 167));
@@ -288,11 +289,11 @@ function addRoadsideMountainRange(
   heightBase: number,
 ) {
   const random = randomSource(seed);
-  const sections = 30;
+  const sections = 46;
   const startZ = 14;
-  const endZ = -292;
+  const endZ = -448;
   const section = (z: number) => {
-    const fade = z < -268 ? Math.max(0.12, (z + 292) / 24) : 1;
+    const fade = z < -420 ? Math.max(0.12, (z + 448) / 28) : 1;
     const sway = Math.sin(z * 0.043 + seed) * 3.8 + Math.sin(z * 0.091 + seed * 0.3) * 1.9;
     const peakX = side * (innerDistance + 7.5 + Math.sin(z * 0.067 + seed) * 2.2);
     const roadLift = roadHeightAt(z) - 0.18;
@@ -784,10 +785,10 @@ function buildWorld() {
   const destinationSignZ = -53;
 
   // Terreno patagónico nocturno: relieve poligonal y valores oscuros para que destaque la luz del auto.
-  const xSteps = 48, zSteps = 106;
+  const xSteps = 48, zSteps = 152;
   for (let zi = 0; zi < zSteps; zi++) {
-    const z0 = -304 + (zi / zSteps) * 322;
-    const z1 = -304 + ((zi + 1) / zSteps) * 322;
+    const z0 = -452 + (zi / zSteps) * 470;
+    const z1 = -452 + ((zi + 1) / zSteps) * 470;
     for (let xi = 0; xi < xSteps; xi++) {
       const x0 = -176 + (xi / xSteps) * 260;
       const x1 = -176 + ((xi + 1) / xSteps) * 260;
@@ -810,7 +811,7 @@ function buildWorld() {
   addRoadsideMountainRange(world, 1, 89, 112, 160, 21);
 
   // Banquinas, asfalto, marcas viales y pequeños parches de pavimento.
-  for (let z = -292; z < 17; z += 2.5) {
+  for (let z = -448; z < 17; z += 2.5) {
     const next = z + 2.5;
     const c0 = roadCenter(z), c1 = roadCenter(next);
     const left0 = c0 - 4.15, right0 = c0 + 4.15;
@@ -842,11 +843,11 @@ function buildWorld() {
 
   // Guardarraíles metálicos con postes separados y sombras propias.
   for (const side of [-1, 1]) {
-    for (let z = -289; z < 15; z += 4.2) {
+    for (let z = -445; z < 15; z += 4.2) {
       const x = roadCenter(z) + side * 4.72;
       world.box([x, roadHeightAt(z) + 0.49, z], [0.14, 0.98, 0.14], hex("#555d5e"));
     }
-    for (let z = -289; z < 14; z += 4.2) {
+    for (let z = -445; z < 14; z += 4.2) {
       const mid = z + 2.1, x = roadCenter(mid) + side * 4.72;
       world.box([x, roadHeightAt(mid) + 0.92, mid], [0.19, 0.18, 4.3], hex("#727a79"), hex("#424c50"));
     }
@@ -896,7 +897,7 @@ function buildWorld() {
 
   // Taludes rocosos que acompañan la pendiente y árboles pegados al camino.
   for (const side of [-1, 1]) {
-    for (let z = -178; z >= -288; z -= 5.2) {
+    for (let z = -178; z >= -442; z -= 5.2) {
       if (side < 0 && z < -74 && z > -258) continue;
       const next = z - 5.2;
       const c0 = roadCenter(z), c1 = roadCenter(next);
@@ -911,18 +912,30 @@ function buildWorld() {
         hex(side < 0 ? "#3f494b" : "#485152"),
       );
     }
-    for (let z = -180; z >= -287; z -= 8.4) {
+    for (let z = -180; z >= -438; z -= 8.4) {
       if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + side * (8.2 + random() * 2.6);
       const y = roadHeightAt(z) - 1.4 - random() * 0.8;
       const height = 5.2 + random() * 5.5;
       addPine(world, x, z, y, height, Math.floor(random() * 1000));
     }
-    for (let z = -184; z >= -286; z -= 13.5) {
+    for (let z = -184; z >= -438; z -= 13.5) {
       if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + side * (18 + random() * 6.2);
       const y = roadHeightAt(z) - 6.2 - random() * 0.7;
       addPine(world, x, z, y, 6.5 + random() * 5.5, Math.floor(random() * 1000));
+    }
+  }
+
+  // Bosque de la última subida: acompaña la ruta hasta después de la secuencia final.
+  const uphillForest = randomSource(6182);
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 34; i++) {
+      const z = -164 - i * 8.4 - uphillForest() * 2.1;
+      const x = roadCenter(z) + side * (9.2 + uphillForest() * 8.8);
+      const base = terrainSurfaceY(x, z) - 0.1;
+      const height = 5.4 + uphillForest() * 5.8;
+      addPine(world, x, z, base, height, Math.floor(uphillForest() * 1000));
     }
   }
 
@@ -945,7 +958,7 @@ function buildWorld() {
   // Postes de madera y cables en la margen de la ruta, sin atravesar la bicisenda ni la pista.
   for (const side of [-1, 1]) {
     const poleOffset = side < 0 ? -20.5 : 15.8;
-    for (let i = 0; i < 22; i++) {
+    for (let i = 0; i < 35; i++) {
       const z = 7 - i * 14;
       if (side < 0 && z < -74 && z > -258) continue;
       const x = roadCenter(z) + poleOffset;
@@ -954,7 +967,7 @@ function buildWorld() {
       world.box([x, y + 7.7, z], [2.7, 0.16, 0.16], hex("#4a4035"));
       world.box([x - 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
       world.box([x + 0.78, y + 7.45, z], [0.1, 0.7, 0.1], hex("#3d352d"));
-      if (i < 21) {
+      if (i < 34) {
         const nextZ = z - 15, nextX = roadCenter(nextZ) + poleOffset;
         world.beam([x - 0.8, y + 7.75, z], [nextX - 0.8, roadHeightAt(nextZ) - 0.18 + 7.75, nextZ], 0.045, hex("#232c31"));
         world.beam([x + 0.8, y + 7.75, z], [nextX + 0.8, roadHeightAt(nextZ) - 0.18 + 7.75, nextZ], 0.045, hex("#30373a"));
@@ -986,14 +999,14 @@ function buildWorld() {
   addPixelText(world, "2 KILÓMETROS", destinationX, destinationY - 0.55, destinationSignZ + 0.23, 0.11, hex("#fff3db"));
   addYPFStation(world);
 
-  const signalZ=-208,signalX=roadCenter(signalZ)+4.65,signalGround=roadHeightAt(signalZ)-.18;
+  const signalZ=-220,signalX=roadCenter(signalZ)+3.55,signalGround=roadHeightAt(signalZ)-.18;
   world.box([signalX,signalGround+3.1,signalZ],[.2,6.2,.2],hex("#42484a"));
   world.beam([signalX,signalGround+6.2,signalZ],[signalX-1.3,signalGround+6.2,signalZ],.18,hex("#42484a"));
   world.box([signalX,signalGround+5.45,signalZ],[.92,2.35,.66],hex("#20272b"),hex("#394044"));
   world.sphere(signalX,signalGround+6.12,signalZ+.36,.235,hex("#4b2020"),16,9);
   world.sphere(signalX,signalGround+5.45,signalZ+.36,.235,hex("#514425"),16,9);
   world.sphere(signalX,signalGround+4.78,signalZ+.36,.235,hex("#1d432c"),16,9);
-  world.box([roadCenter(-213),roadHeightAt(-213)-.1,-213],[8.6,.055,.18],hex("#e7dfce"));
+  world.box([roadCenter(-210),roadHeightAt(-210)-.1,-210],[8.6,.055,.18],hex("#e7dfce"));
   return world;
 }
 
@@ -1890,7 +1903,7 @@ export function Route40LowPolyOpening() {
         driveSpeed=0;
         if(now-signalWarningStartedAt>=3200){
           escapeStartedAt=now;escapeStartCarZ=roadZForPhysics;escapeStartCarX=roadCenter(escapeStartCarZ)+laneOffset;
-          npcImpactZ=escapeStartCarZ-4;npcImpactX=roadCenter(npcImpactZ)+laneOffset;
+          npcImpactZ=escapeStartCarZ-3.25;npcImpactX=roadCenter(npcImpactZ)+laneOffset+.5;
           driveSpeed=8.8;keys.clear();startEngineAudio();engineAudioRef.current?.setThrottle(.98);setStage("escape");
         }
       }
@@ -1925,9 +1938,9 @@ export function Route40LowPolyOpening() {
       if (crashStartedAt === 0 && elapsed >= DURATION &&
         (stageRef.current === "driving" || stageRef.current === "climbing" || stageRef.current === "escape")) {
         const collision = trafficActors.some((traffic) => {
-          const span = 308;
+          const span = 464;
           const raw = traffic.baseZ + elapsed * traffic.speed;
-          const trafficZ = -294 + (((raw + 294) % span) + span) % span;
+          const trafficZ = -450 + (((raw + 450) % span) + span) % span;
           // La separación lateral se mide contra el eje local de la ruta para no generar falsos choques en curvas.
           const laneOverlap = Math.abs(laneOffset + 2.15) < 1.88;
           return Math.abs(trafficZ - carZ) < 4.15 && laneOverlap;
@@ -1947,7 +1960,7 @@ export function Route40LowPolyOpening() {
       const outsideStage = false;
       const crashAge = stageRef.current === "crashed" ? (now - crashStartedAt) / 1000 : 0;
       const crashShake = stageRef.current === "crashed" ? (1 - smooth(0, 0.72, crashAge)) * 0.055 : 0;
-      const hitShake=npcImpactAt>0?(1-smooth(0,.62,(now-npcImpactAt)/1000))*.045:0;
+      const hitShake=npcImpactAt>0?(1-smooth(0,.72,(now-npcImpactAt)/1000))*.085:0;
       const shake = transition * (0.005 + driveSpeed * 0.0021) * (outsideStage ? 0 : 1) + crashShake + hitShake;
       const shakeX = Math.sin(now * 0.024) * shake;
       const shakeY = Math.sin(now * 0.039) * shake * 0.62;
@@ -1995,7 +2008,7 @@ export function Route40LowPolyOpening() {
       }
       // Autos que vienen de frente por el carril opuesto.
       for(const traffic of trafficActors){
-        const span=308,raw=traffic.baseZ+elapsed*traffic.speed,z=-294+(((raw+294)%span)+span)%span;
+        const span=464,raw=traffic.baseZ+elapsed*traffic.speed,z=-450+(((raw+450)%span)+span)%span;
         const x=roadCenter(z)-2.15,y=roadHeightAt(z)-.16;
         const model=multiply(translation(x,y,z),rotationY(Math.PI));
         bindMesh(gl,program,traffic.mesh,viewProjection,view,model);
@@ -2022,27 +2035,27 @@ export function Route40LowPolyOpening() {
       const carRotation=multiply(rotationY(steeringAngle),rotationX(uphillPitch));
       const carModel=multiply(translation(carX,carY,carZ),carRotation);
       const aerialVisibility = 1 - smooth(5.1, 5.95, elapsed);
-      const signalZ=-208,signalX=roadCenter(signalZ)+4.65,signalGround=roadHeightAt(signalZ)-.18;
-      const signalActive=["signalJuggle","signalWarning","escape"].includes(stageRef.current);
+      const signalZ=-220,signalX=roadCenter(signalZ)+3.55,signalGround=roadHeightAt(signalZ)-.18;
+      const signalActive=["climbing","signalJuggle","signalWarning","escape"].includes(stageRef.current);
       if(signalActive&&signalRedMesh){
-        const redModel=multiply(translation(signalX,signalGround+6.12,signalZ+.39),scaling(1.75,1.75,1.75));
+        const redModel=multiply(translation(signalX,signalGround+6.12,signalZ+.39),scaling(2.05,2.05,2.05));
         bindMesh(gl,program,signalRedMesh,viewProjection,view,redModel);
       }
       if(["signalJuggle","signalWarning","escape"].includes(stageRef.current)&&jugglerMesh){
-        const approach=stageRef.current==="signalWarning"?smooth(0,1.3,(now-signalWarningStartedAt)/1000):stageRef.current==="escape"?1:0;
-        let npcX=mix(signalX,carX+2,approach),npcZ=mix(signalZ+1.65,carZ+.28,approach);
-        let npcY=terrainSurfaceY(npcX,npcZ)+.04,npcRotation=rotationY(Math.PI);
+        const approach=stageRef.current==="signalWarning"?smooth(0,2.0,(now-signalWarningStartedAt)/1000):stageRef.current==="escape"?1:0;
+        let npcX=mix(signalX-.55,carX+1.45,approach),npcZ=mix(signalZ+7,carZ+.48,approach);
+        let npcY=roadHeightAt(npcZ)-.16,npcRotation=rotationY(Math.PI);
         if(stageRef.current==="escape"){
           const escapeAge=Math.max(0,(now-escapeStartedAt)/1000);
           if(npcImpactAt===0){
             const crossing=smooth(.04,.34,escapeAge);
-            npcX=mix(escapeStartCarX+2,npcImpactX,crossing);
-            npcZ=mix(escapeStartCarZ+.28,npcImpactZ,crossing);
-            npcY=terrainSurfaceY(npcX,npcZ)+.04;
+            npcX=mix(escapeStartCarX+1.45,npcImpactX,crossing);
+            npcZ=mix(escapeStartCarZ+.48,npcImpactZ,crossing);
+            npcY=roadHeightAt(npcZ)-.16;
           }else{
             const hitAge=(now-npcImpactAt)/1000,fall=smooth(0,.42,hitAge);
             npcX=npcImpactX+2.3*fall;npcZ=npcImpactZ+fall;
-            npcY=terrainSurfaceY(npcX,npcZ)+.13+Math.sin(Math.min(hitAge,.58)/.58*Math.PI)*1.1*(1-smooth(.5,.95,hitAge));
+            npcY=roadHeightAt(npcZ)+.12+Math.sin(Math.min(hitAge,.58)/.58*Math.PI)*1.1*(1-smooth(.5,.95,hitAge));
             npcRotation=multiply(rotationY(Math.PI),rotationZ(1.42*fall));
           }
         }
@@ -2061,7 +2074,7 @@ export function Route40LowPolyOpening() {
         const bloodAge=(now-npcImpactAt)/1000,opacity=1-smooth(.7,2.1,bloodAge);
         if(opacity>.01){
           const bloodX=npcImpactX+1.15,bloodZ=npcImpactZ+1;
-          const bloodModel=translation(bloodX,terrainSurfaceY(bloodX,bloodZ)+.045,bloodZ);
+          const bloodModel=multiply(translation(bloodX,roadHeightAt(bloodZ)+.045,bloodZ),scaling(1.45,.7,1.45));
           bindMesh(gl,program,bloodMesh,viewProjection,view,bloodModel,opacity*.72);
         }
       }
