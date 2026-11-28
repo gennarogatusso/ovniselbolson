@@ -1371,14 +1371,13 @@ function buildCampingBridge() {
 function buildCampingGateLeaf() {
   const gate = new MeshBuilder();
   const wood = hex("#704f31"), lightWood = hex("#9a7448");
-  gate.beam([0, 1.28, 0], [5.2, 1.28, 0], 0.24, wood);
-  gate.beam([0, 2.15, 0], [5.2, 2.15, 0], 0.22, lightWood);
-  gate.beam([0.22, 0.3, 0], [0.22, 2.35, 0], 0.19, wood);
-  gate.beam([1.85, 0.3, 0], [1.85, 2.35, 0], 0.17, lightWood);
-  gate.beam([3.45, 0.3, 0], [3.45, 2.35, 0], 0.17, wood);
-  gate.beam([5.0, 0.3, 0], [5.0, 2.35, 0], 0.19, lightWood);
-  gate.beam([0.18, 0.32, 0], [5.05, 2.3, 0], 0.15, wood);
-  gate.beam([0.18, 2.28, 0], [5.05, 0.32, 0], 0.11, lightWood);
+  gate.beam([0, 1.28, 0], [11.1, 1.28, 0], 0.24, wood);
+  gate.beam([0, 2.15, 0], [11.1, 2.15, 0], 0.22, lightWood);
+  for (const x of [0.22, 3.7, 7.4, 10.9]) {
+    gate.beam([x, 0.3, 0], [x, 2.35, 0], 0.19, x % 2 ? wood : lightWood);
+  }
+  gate.beam([0.18, 0.32, 0], [11.0, 2.3, 0], 0.15, wood);
+  gate.beam([0.18, 2.28, 0], [11.0, 0.32, 0], 0.11, lightWood);
   return gate;
 }
 
@@ -2754,7 +2753,136 @@ export function Route40LowPolyOpening() {
       ];
       const view = lookAt(eye, target, cameraUp);
       const viewProjection = multiply(projection, view);
+
       const identity = translation(0, 0, 0);
+      if (campingMode) {
+        if (campingWorldMesh) bindMesh(gl, program, campingWorldMesh, viewProjection, view, identity);
+        if (campingWaterMesh) {
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.depthMask(false);
+          bindMesh(gl, program, campingWaterMesh, viewProjection, view, identity, 0.9, true);
+          gl.depthMask(true);
+          gl.disable(gl.BLEND);
+        }
+        if (campingBridgeMesh) bindMesh(gl, program, campingBridgeMesh, viewProjection, view, identity);
+
+        // La tranquera gira sobre su bisagra y queda paralela al camino antes de que llegue el vehículo.
+        const gateOpenProgress = smooth(10, 22, campDistance);
+        const gatePivotX = campRoadX(CAMP_GATE_Z) - 5.65;
+        const gatePivotY = campGroundY(gatePivotX, CAMP_GATE_Z);
+        const gateModel = multiply(
+          translation(gatePivotX, gatePivotY, CAMP_GATE_Z),
+          rotationY(Math.PI * 0.5 * gateOpenProgress),
+        );
+        if (campingGateLeafMesh) bindMesh(gl, program, campingGateLeafMesh, viewProjection, view, gateModel);
+
+        const carRotation = rotationY(campingMode && stageRef.current === "campApproach" ? steeringAngle * 0.34 : 0);
+        const carModel = multiply(translation(carX, carY, carZ), carRotation);
+        const outsideBlend = stageRef.current === "exiting"
+          ? smooth(0.25, 3.7, (now - exitStartedAt) / 1000)
+          : ["walkingToTrunk", "trunkPrompt", "trunkOpening", "ending"].includes(stageRef.current) ? 1 : 0;
+        const cabinBlend = 1 - outsideBlend;
+
+        // Durante la llegada se conserva el habitáculo, las manos, el volante y el parabrisas actuales.
+        if (cabinBlend > 0.005) {
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.depthMask(false);
+          bindMesh(gl, program, cockpitMesh, viewProjection, view, carModel, cabinBlend);
+          const steeringModel = multiply(
+            multiply(multiply(carModel, translation(0, 1.03, -0.88)), rotationZ(steeringAngle * 2.25)),
+            translation(0, -1.03, 0.88),
+          );
+          bindMesh(gl, program, steeringAssemblyMesh, viewProjection, view, steeringModel, cabinBlend);
+          bindMesh(gl, program, windshieldMesh, viewProjection, view, carModel, cabinBlend * 0.19);
+          if (npcImpactAt > 0 && windshieldCracksMesh) {
+            bindMesh(gl, program, windshieldCracksMesh, viewProjection, view, carModel, cabinBlend * 0.88);
+          }
+          gl.depthMask(true);
+          gl.disable(gl.BLEND);
+        }
+
+        // El modelo exterior es el mismo vehículo low-poly de la escena anterior.
+        if (outsideBlend > 0.005) {
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.depthMask(false);
+          bindMesh(gl, program, carMesh, viewProjection, view, carModel, outsideBlend);
+          gl.depthMask(true);
+          gl.disable(gl.BLEND);
+        }
+
+        const exitElapsed = stageRef.current === "exiting" ? (now - exitStartedAt) / 1000 : 0;
+        const doorOpen = stageRef.current === "exiting"
+          ? smooth(0.12, 0.85, exitElapsed) * (1 - smooth(3.55, 4.25, exitElapsed))
+          : 0;
+        if (campingDoorMesh && doorOpen > 0.005) {
+          const doorModel = multiply(
+            translation(carX - 0.98, carY + 0.55, carZ - 1.18),
+            rotationY(-doorOpen * 1.2),
+          );
+          bindMesh(gl, program, campingDoorMesh, viewProjection, view, doorModel);
+        }
+
+        // El personaje baja del lado del conductor, cierra la puerta y camina hacia el baúl.
+        let playerVisible = false, playerX = carX - 2.75, playerZ = carZ + 0.85, playerFacing = -Math.PI * 0.5;
+        let playerOpacity = 1;
+        if (stageRef.current === "exiting") {
+          const exitProgress = (now - exitStartedAt) / 1000;
+          const stepOut = smooth(0.8, 2.75, exitProgress);
+          playerVisible = exitProgress > 0.55;
+          playerX = mix(carX - 0.72, carX - 2.85, stepOut);
+          playerZ = mix(carZ + 0.1, carZ + 0.85, stepOut);
+          playerOpacity = smooth(0.55, 1.0, exitProgress);
+        } else if (stageRef.current === "walkingToTrunk") {
+          const walkProgress = smooth(0.12, 2.65, (now - walkStartedAt) / 1000);
+          playerVisible = true;
+          playerX = mix(carX - 2.85, carX - 1.05, walkProgress);
+          playerZ = carZ + 0.85 + walkProgress * 4.25;
+          playerFacing = Math.PI;
+        } else if (["trunkPrompt", "trunkOpening", "ending"].includes(stageRef.current)) {
+          playerVisible = true;
+          playerX = carX - 1.05;
+          playerZ = carZ + 5.1;
+          playerFacing = Math.PI;
+        }
+        if (playerVisible && campingCharacterMesh) {
+          const footstep = stageRef.current === "walkingToTrunk" ? Math.abs(Math.sin((now - walkStartedAt) * 0.009)) * 0.07 : 0;
+          const playerModel = multiply(
+            translation(playerX, footstep, playerZ),
+            rotationY(playerFacing),
+          );
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.depthMask(false);
+          bindMesh(gl, program, campingCharacterMesh, viewProjection, view, playerModel, playerOpacity);
+          gl.depthMask(true);
+          gl.disable(gl.BLEND);
+        }
+
+        // El portón trasero se levanta desde sus bisagras; la carpa y la caja ya están dentro del baúl.
+        const trunkProgress = stageRef.current === "ending"
+          ? 1
+          : stageRef.current === "trunkOpening"
+            ? smooth(0.08, 1.65, (now - trunkStartedAt) / 1000)
+            : 0;
+        if (campingTrunkLidMesh && trunkProgress > 0.005) {
+          const lidModel = multiply(
+            translation(carX, carY + 1.25, carZ + 2.2),
+            rotationX(-1.42 * trunkProgress),
+          );
+          bindMesh(gl, program, campingTrunkLidMesh, viewProjection, view, lidModel);
+        }
+        if (campingGearMesh && trunkProgress > 0.72) {
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.depthMask(false);
+          bindMesh(gl, program, campingGearMesh, viewProjection, view, carModel, smooth(0.72, 0.98, trunkProgress));
+          gl.depthMask(true);
+          gl.disable(gl.BLEND);
+        }
+      } else {
       bindMesh(gl, program, worldMesh, viewProjection, view, identity);
       if (skyMesh) bindMesh(gl, program, skyMesh, viewProjection, view, identity);
       const signReveal = smooth(
@@ -2943,6 +3071,7 @@ export function Route40LowPolyOpening() {
         }
         gl.depthMask(true);
         gl.disable(gl.BLEND);
+      }
       }
 
       if (engineAudioRef.current) {
