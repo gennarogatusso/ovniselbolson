@@ -7,7 +7,10 @@ type Mesh = { buffer: WebGLBuffer; count: number };
 const DURATION = 14.4;
 const SIGNAL_Z = -220;
 const SIGNAL_STOP_Z = SIGNAL_Z + 32;
-const THREAT_Z = SIGNAL_STOP_Z - 7;
+const THREAT_Z = SIGNAL_STOP_Z - 22;
+const NPC_NERVOUS_MS = 3000;
+const NPC_AIM_RAISE_MS = 720;
+const NPC_AIM_HOLD_MS = 1000;
 const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
 const smooth = (a: number, b: number, n: number) => {
   const t = clamp((n - a) / (b - a), 0, 1);
@@ -153,6 +156,16 @@ class MeshBuilder {
       }
     }
   }
+  append(other: MeshBuilder, offset: V3 = [0, 0, 0]) {
+    for (let i = 0; i < other.values.length; i += 9) {
+      this.values.push(
+        other.values[i]! + offset[0], other.values[i + 1]! + offset[1], other.values[i + 2]! + offset[2],
+        other.values[i + 3]!, other.values[i + 4]!, other.values[i + 5]!,
+        other.values[i + 6]!, other.values[i + 7]!, other.values[i + 8]!,
+      );
+    }
+  }
+
   data() {
     return new Float32Array(this.values);
   }
@@ -202,8 +215,8 @@ function terrainSurfaceY(x: number, z: number) {
   const airportFieldX = 1 - smooth(27, 43, Math.abs(x + 53.5));
   const airportFieldZ = 1 - smooth(86, 103, Math.abs(z + 167));
   const airportField = airportFieldX * airportFieldZ;
-  const pitchArea=(1-smooth(23,34,Math.abs(x+107)))*(1-smooth(39,52,Math.abs(z+166)));
-  const schoolArea=(1-smooth(15,25,Math.abs(x+141)))*(1-smooth(15,26,Math.abs(z+166)));
+  const pitchArea=(1-smooth(23,34,Math.abs(x+43)))*(1-smooth(39,52,Math.abs(z+40)));
+  const schoolArea=(1-smooth(15,25,Math.abs(x+77)))*(1-smooth(15,26,Math.abs(z+40)));
   return mix(mix(roadsideGround,-0.16,airportField),-0.13,Math.max(pitchArea,schoolArea));
 }
 
@@ -269,9 +282,18 @@ function addPixelTextYZ(mesh:MeshBuilder,text:string,centerY:number,centerZ:numb
   const chars=Array.from(text),width=chars.length*6*cell-cell;let cursor=centerZ-width/2;
   for(const ch of chars){const glyph=PIXEL_GLYPHS[ch]??PIXEL_GLYPHS[" "]!;for(let row=0;row<7;row++){const pixels=glyph[row]??"00000";for(let col=0;col<5;col++)if(pixels[col]==="1")mesh.box([x,centerY+(3-row)*cell,cursor+col*cell+cell/2],[Math.max(.018,cell*.24),cell*.82,cell*.82],color);}cursor+=6*cell;}
 }
-function addPine(mesh: MeshBuilder, x: number, z: number, base: number, height: number, seed: number) {
+function addPine(mesh: MeshBuilder, x: number, z: number, _base: number, height: number, seed: number) {
+  let treeX = x;
+  const pathX = roadCenter(z) - 12.1;
+  if (z <= -76 && z >= -258 && Math.abs(treeX - pathX) < 8.0) {
+    treeX = pathX - 10.0;
+  }
+  const insideMovedPitch = Math.abs(treeX + 43) < 27 && Math.abs(z + 40) < 42;
+  const insideMovedSchool = Math.abs(treeX + 77) < 16 && Math.abs(z + 40) < 18;
+  if (insideMovedPitch || insideMovedSchool) return;
+  const base = terrainSurfaceY(treeX, z);
   const trunk = hex(seed % 2 < 1 ? "#332b25" : "#292922");
-  mesh.box([x, base + height * 0.13, z], [height * 0.075, height * 0.27, height * 0.075], trunk);
+  mesh.box([treeX, base + height * 0.13, z], [height * 0.075, height * 0.27, height * 0.075], trunk);
   const greens = [hex("#172b29"), hex("#1d3430"), hex("#263a34"), hex("#304139")];
   const layers = 3 + (Math.floor(seed) % 2);
   for (let layer = 0; layer < layers; layer++) {
@@ -279,7 +301,7 @@ function addPine(mesh: MeshBuilder, x: number, z: number, base: number, height: 
     const baseY = base + height * (0.22 + fraction * 0.58);
     const layerHeight = height * (0.48 - fraction * 0.12);
     const radius = height * (0.33 - fraction * 0.08) * (0.9 + (seed % 7) * 0.018);
-    mesh.cone(x, baseY, z, radius, layerHeight, 5 + (layer % 2), greens[(Math.floor(seed + layer) % greens.length)]!, greens[(Math.floor(seed + layer + 1) % greens.length)]!);
+    mesh.cone(treeX, baseY, z, radius, layerHeight, 5 + (layer % 2), greens[(Math.floor(seed + layer) % greens.length)]!, greens[(Math.floor(seed + layer + 1) % greens.length)]!);
   }
 }
 
@@ -413,10 +435,12 @@ function buildAttendantPose(time: number, stage: string, warningElapsed: number,
   return npc;
 }
 
-function addYPFStation(mesh: MeshBuilder) {
+function addYPFStation(world: MeshBuilder) {
+  const mesh = new MeshBuilder();
+  const stationOffset = 6.5;
   const stationX = 11.2;
   const stationZ = -166;
-  const ground = terrainY(stationX, stationZ);
+  const ground = terrainY(stationX + stationOffset, stationZ);
   const blue = hex("#0875b9");
   const deepBlue = hex("#07548b");
   const white = hex("#e6edf0");
@@ -478,6 +502,7 @@ function addYPFStation(mesh: MeshBuilder) {
   for (const x of [4.0, 18.8]) {
     mesh.box([x, ground + 5.1, stationZ], [0.08, 0.08, 0.9], hex("#f6dba8"));
   }
+  world.append(mesh, [stationOffset, 0, 0]);
 }
 
 
@@ -658,7 +683,8 @@ function addBikePathAndAerodrome(mesh: MeshBuilder) {
 }
 
 
-function addSchoolAndFootballField(m:MeshBuilder){
+function addSchoolAndFootballField(world:MeshBuilder){
+  const m=new MeshBuilder();
   const cx=-107,cz=-166,hw=19,hl=33,y=-.075,ly=y+.055,l=cx-hw,r=cx+hw,n=cz+hl,f=cz-hl,white=hex("#eee9dc");
   // Cancha de tierra apisonada, no de césped.
   m.quad([l,y,n],[l,y,f],[r,y,f],[r,y,n],hex("#a17a4d"));
@@ -681,18 +707,18 @@ function addSchoolAndFootballField(m:MeshBuilder){
   // Alambrado completamente cerrado, con postes, diagonales y travesaños.
   const fl=l-2.2,fr=r+2.2,fn=n+2.2,ff=f-2.2,fh=2.15;
   for(const x of [fl,fr]){
-    for(let z=ff;z<=fn;z+=6.5)m.box([x,terrainSurfaceY(x,z)+fh/2,z],[.1,fh,.1],hex("#4c5555"));
+    for(let z=ff;z<=fn;z+=6.5)m.box([x,terrainSurfaceY(x+64,z+126)+fh/2,z],[.1,fh,.1],hex("#4c5555"));
     for(const h of [.42,1.18,fh])m.beam([x,h,ff],[x,h,fn],.03,hex("#7c8580"));
     for(let z=ff;z<fn;z+=3.3){m.beam([x,.4,z],[x,fh,z+1.65],.018,hex("#9aa09a"));m.beam([x,fh,z],[x,.4,z+1.65],.018,hex("#9aa09a"));}
   }
   for(const z of [ff,fn]){
-    for(let x=fl;x<=fr;x+=6)m.box([x,terrainSurfaceY(x,z)+fh/2,z],[.1,fh,.1],hex("#4c5555"));
+    for(let x=fl;x<=fr;x+=6)m.box([x,terrainSurfaceY(x+64,z+126)+fh/2,z],[.1,fh,.1],hex("#4c5555"));
     for(const h of [.42,1.18,fh])m.beam([fl,h,z],[fr,h,z],.03,hex("#7c8580"));
   }
   for(const x of [cx-3,cx+3])m.beam([x,0,ff],[x,2,ff],.06,hex("#d0d0c8"));
   for(const x of [l-4,r+4]){m.box([x,4,cz],[.16,8,.16],hex("#4a5053"));m.box([x,7.8,cz],[.42,.22,.32],hex("#f1d5a0"));}
   // Escuela barrial detrás de la cancha.
-  const sx=-141,sz=-166,gy=terrainSurfaceY(sx,sz);
+  const sx=-141,sz=-166,gy=terrainSurfaceY(sx+64,sz+126);
   m.box([sx,gy+2.45,sz],[24,4.9,28],hex("#d5c5a1"),hex("#b7aa8c"));
   m.box([sx,gy+4.98,sz],[24.8,.38,28.8],hex("#a5503d"),hex("#713f36"));
   m.box([sx+12.08,gy+.72,sz],[.16,1.44,27.2],hex("#78796c"));
@@ -702,6 +728,8 @@ function addSchoolAndFootballField(m:MeshBuilder){
   m.box([sx+12.36,gy+4.35,sz],[.14,.72,7.6],hex("#244b60"));addPixelTextYZ(m,"ESCUELA",gy+4.25,sz,sx+12.44,.075,hex("#f2eddb"));
   m.quad([sx+12.1,gy+.025,sz-11],[sx+12.1,gy+.025,sz+11],[sx+14.2,gy+.025,sz+11],[sx+14.2,gy+.025,sz-11],hex("#777466"));
   m.box([sx+16,gy+3.5,sz-12],[.12,7,.12],hex("#6a6656"));m.beam([sx+16,gy+6.7,sz-12],[sx+18.8,gy+6,sz-12],.12,hex("#f1e6cf"));
+  // Traslado conjunto: misma cancha, alambrado, arcos y escuela; queda antes del aeródromo y más cerca de la ruta.
+  world.append(m,[64,0,126]);
 }
 function buildPathPedestrian(kind:"walk"|"run",jacket:string,skin:string){
   const m=new MeshBuilder(),cloth=hex(jacket),flesh=hex(skin),dark=hex("#29343a"),stride=kind==="run"?.3:.15,swing=kind==="run"?.25:.12;
@@ -752,11 +780,11 @@ function buildFootballBall(){
   return m;
 }
 
-function buildArmedThreat(){
+function buildArmedThreatBody(){
   const m=new MeshBuilder();
   const coat=hex("#34343a"),coatLight=hex("#55515a"),pants=hex("#252b34"),skin=hex("#c99576");
-  const hair=hex("#282329"),dark=hex("#171a20"),metal=hex("#444b53"),white=hex("#f1e8df");
-  // Figura adulta en el centro de la calzada, mirando al conductor (+Z).
+  const hair=hex("#282329"),dark=hex("#171a20"),white=hex("#f1e8df");
+  // Cuerpo, piernas y cabeza del hombre, orientado hacia el conductor (+Z).
   m.box([0,1.13,0],[.58,.78,.34],coat,coatLight);
   m.box([0,.73,0],[.43,.22,.32],pants);
   m.beam([-.13,.66,0],[-.2,.19,-.02],.17,pants);
@@ -768,7 +796,7 @@ function buildArmedThreat(){
   m.box([0,2.36,-.015],[.64,.19,.55],hair);
   m.box([-.33,2.02,0],[.12,.22,.17],skin);
   m.box([.33,2.02,0],[.12,.22,.17],skin);
-  // Ojos muy abiertos, cejas tensas y boca abierta: expresión de susto.
+  // Ojos muy abiertos y boca abierta: miedo visible antes de que se enfurezca.
   m.box([-.145,2.08,.271],[.145,.16,.035],white);
   m.box([.145,2.08,.271],[.145,.16,.035],white);
   m.box([-.145,2.075,.296],[.052,.095,.025],dark);
@@ -777,22 +805,35 @@ function buildArmedThreat(){
   m.beam([.075,2.29,.29],[.235,2.235,.275],.065,hair);
   m.box([0,1.82,.278],[.15,.19,.045],dark);
   m.box([0,1.82,.304],[.075,.11,.018],hex("#813f43"));
-  // Brazos extendidos hacia delante; las manos sostienen una pistola que apunta al parabrisas.
-  const leftShoulder:V3=[-.25,1.43,0],leftElbow:V3=[-.39,1.56,.32],leftHand:V3=[-.055,1.77,.68];
-  const rightShoulder:V3=[.25,1.43,0],rightElbow:V3=[.4,1.58,.34],rightHand:V3=[.075,1.78,.73];
+  return m;
+}
+function buildArmedThreatArms(){
+  const m=new MeshBuilder();
+  const coat=hex("#34343a"),skin=hex("#c99576"),metal=hex("#444b53"),dark=hex("#171a20");
+  // Ambas manos forman una empuñadura a dos manos; este conjunto rota desde la postura baja hasta apuntar.
+  const leftShoulder:V3=[-.25,1.43,0],leftElbow:V3=[-.42,1.32,.34],leftHand:V3=[-.09,1.76,.75];
+  const rightShoulder:V3=[.25,1.43,0],rightElbow:V3=[.39,1.55,.34],rightHand:V3=[.075,1.78,.73];
   m.beam(leftShoulder,leftElbow,.22,coat);
-  m.beam(leftElbow,leftHand,.135,skin);
-  m.box(leftHand,[.17,.13,.17],skin);
+  m.beam(leftElbow,leftHand,.13,skin);
+  m.box(leftHand,[.18,.13,.18],skin);
   m.beam(rightShoulder,rightElbow,.22,coat);
   m.beam(rightElbow,rightHand,.14,skin);
   m.box(rightHand,[.18,.14,.18],skin);
-  // Pistola low-poly: corredera, cañón y empuñadura claramente visibles.
+  m.beam([-.13,1.79,.73],[-.02,1.82,.82],.075,skin);
+  m.beam([.13,1.79,.74],[.08,1.83,.84],.075,skin);
+  // Pistola low-poly con corredera, cañón y empuñadura.
   m.box([.035,1.86,.87],[.18,.16,.42],metal,dark);
   m.box([.035,1.87,1.16],[.105,.105,.27],dark);
   m.box([.035,1.69,.78],[.14,.25,.16],dark);
   m.beam([-.035,1.77,.82],[.12,1.77,.82],.035,metal);
   m.box([.035,1.955,.83],[.12,.035,.16],hex("#737b82"));
   m.box([.035,1.86,1.31],[.07,.07,.035],dark);
+  return m;
+}
+function buildThreatAngryBrows(){
+  const m=new MeshBuilder(),hair=hex("#282329");
+  m.beam([-.24,2.29,.282],[-.07,2.205,.305],.07,hair);
+  m.beam([.07,2.205,.305],[.24,2.29,.282],.07,hair);
   return m;
 }
 function buildSignalLens(){const m=new MeshBuilder();m.sphere(0,0,0,.135,hex("#ff312b"),14,9);return m;}
@@ -1077,7 +1118,6 @@ function buildCar() {
     }
   }
   for (const x of [-0.62, 0.62]) {
-    car.box([x, 0.57, -2.17], [0.33, 0.18, 0.12], hex("#e5d3a2"));
     car.box([x, 0.55, 2.2], [0.33, 0.16, 0.1], hex("#a4463d"));
   }
   car.box([0, 0.81, 2.18], [1.1, 0.08, 0.12], hex("#171e24"));
@@ -1286,9 +1326,8 @@ function buildCockpit() {
     cockpit.beam([side * 1.95, 1.19, -2.53], [side * 1.95, 1.57, -2.53], 0.025, silverDark);
   }
 
-  // Techo elevado y más fino: deja respirar el parabrisas y mantiene visible el marco al mirar 360°.
-  cockpit.box([0, 2.57, -3.48], [3.48, 0.13, 1.72], hex("#303a40"), hex("#202930"));
-  cockpit.box([0, 2.57, 0.55], [3.48, 0.13, 2.72], hex("#303a40"), hex("#202930"));
+  // Techo interior continuo: cierra el claro entre los paneles delanteros y traseros sin bajar la altura.
+  cockpit.box([0, 2.57, -0.95], [3.62, 0.13, 7.5], hex("#303a40"), hex("#202930"));
   // Asiento trasero, respaldo, apoyacabezas y bandeja posterior.
   cockpit.box([0, 0.56, 2.05], [2.95, 0.28, 1.45], leather, hex("#1d2428"));
   cockpit.box([0, 1.12, 2.63], [2.95, 1.0, 0.34], leather, hex("#343638"));
@@ -1635,11 +1674,11 @@ export function Route40LowPolyOpening() {
   const mouseSensitivityRef = useRef(0.00235);
   const [mouseSensitivity, setMouseSensitivity] = useState(0.00235);
   const keysRef = useRef<Set<string>>(new Set());
-  const stageRef = useRef<"driving" | "climbing" | "signalEncounter" | "escape" | "finished" | "crashed">("driving");
+  const stageRef = useRef<"driving" | "climbing" | "signalEncounter" | "signalAim" | "escape" | "finished" | "crashed">("driving");
   const engineAudioRef = useRef<EngineAudio | null>(null);
-  const [interactionStage, setInteractionStage] = useState<"driving" | "climbing" | "signalEncounter" | "escape" | "finished" | "crashed">("driving");
+  const [interactionStage, setInteractionStage] = useState<"driving" | "climbing" | "signalEncounter" | "signalAim" | "escape" | "finished" | "crashed">("driving");
   const [fallback, setFallback] = useState(false);
-  const setStage = (next: "driving" | "climbing" | "signalEncounter" | "escape" | "finished" | "crashed") => {
+  const setStage = (next: "driving" | "climbing" | "signalEncounter" | "signalAim" | "escape" | "finished" | "crashed") => {
     stageRef.current = next;
     setInteractionStage(next);
   };
@@ -1675,7 +1714,7 @@ export function Route40LowPolyOpening() {
     let driveElapsed = 0;
     let climbElapsed = 0;
     let travelled = 0;
-    let signalEncounterStartedAt=0,escapeStartedAt=0,npcImpactAt=0;
+    let signalEncounterStartedAt=0,signalAimStartedAt=0,escapeStartedAt=0,npcImpactAt=0;
     let npcImpactX=0,npcImpactZ=THREAT_Z;
     // La cinemática entrega el vehículo ya rodando; no necesita que el jugador lo arranque desde cero.
     let driveSpeed = 4.15;
@@ -1778,7 +1817,9 @@ export function Route40LowPolyOpening() {
     let trafficActors: Array<{mesh:Mesh;baseZ:number;speed:number}> = [];
     let footballActors: Array<{mesh:Mesh;baseX:number;baseZ:number;phase:number;speed:number;radiusX:number;radiusZ:number}> = [];
     let footballBallMesh: Mesh | null = null;
-    let armedThreatMesh: Mesh | null = null;
+    let armedThreatBodyMesh: Mesh | null = null;
+    let armedThreatArmsMesh: Mesh | null = null;
+    let threatAngryBrowsMesh: Mesh | null = null;
     let signalRedMesh: Mesh | null = null;
     let bloodMesh: Mesh | null = null;
     let program: WebGLProgram | null = null;
@@ -1839,10 +1880,12 @@ export function Route40LowPolyOpening() {
       ];
       footballActors=players.map((p,i)=>({
         mesh:createMesh(gl,buildFootballPlayer(p.team===0?"#b94e3f":"#e4dfce",p.team===0?"#263a58":"#4b3431",i)),
-        baseX:p.x,baseZ:p.z,phase:p.phase,speed:p.speed,radiusX:p.rx,radiusZ:p.rz,
+        baseX:p.x+64,baseZ:p.z+126,phase:p.phase,speed:p.speed,radiusX:p.rx,radiusZ:p.rz,
       }));
       footballBallMesh=createMesh(gl,buildFootballBall());
-      armedThreatMesh=createMesh(gl,buildArmedThreat());
+      armedThreatBodyMesh=createMesh(gl,buildArmedThreatBody());
+      armedThreatArmsMesh=createMesh(gl,buildArmedThreatArms());
+      threatAngryBrowsMesh=createMesh(gl,buildThreatAngryBrows());
       signalRedMesh=createMesh(gl,buildSignalLens());
       bloodMesh=createMesh(gl,buildStylizedBlood());
       crashExplosionMesh=createMesh(gl,buildCrashExplosion());
@@ -1913,7 +1956,11 @@ export function Route40LowPolyOpening() {
       if(stageRef.current==="climbing"){
         const braking=keys.has("s"),throttle=keys.has("w")&&!braking;
         const uphillPenalty=clamp((roadHeightAt(roadZForPhysics-3)-roadHeightAt(roadZForPhysics+3))*.09,0,.6);
-        if(throttle)driveSpeed=Math.min(5.4,driveSpeed+dt*(2.25-uphillPenalty));
+        const distanceToStop=(-DURATION*4.1-travelled)-SIGNAL_STOP_Z;
+        const brakingDistance=(driveSpeed*driveSpeed)/(2*2.7)+1.0;
+        const automaticBrake=distanceToStop<=brakingDistance;
+        if(automaticBrake)driveSpeed=Math.max(0,driveSpeed-dt*2.7);
+        else if(throttle)driveSpeed=Math.min(5.4,driveSpeed+dt*(2.25-uphillPenalty));
         else if(braking)driveSpeed=Math.max(0,driveSpeed-dt*8.2);
         else driveSpeed=Math.min(5.1,driveSpeed+dt*Math.max(.45,1.2-uphillPenalty));
         climbElapsed+=dt*clamp(driveSpeed/5.1,0,1);
@@ -1925,7 +1972,7 @@ export function Route40LowPolyOpening() {
         lookPitch=mix(lookPitch,lookPitchTarget,1-Math.exp(-dt*18));
         travelled+=driveSpeed*dt;
         const approachingCarZ=-DURATION*4.1-travelled;
-        if(approachingCarZ<=SIGNAL_STOP_Z){
+        if((automaticBrake&&driveSpeed<=.05)||approachingCarZ<=SIGNAL_STOP_Z){
           driveSpeed=0;laneOffset=0;signalEncounterStartedAt=now;keys.clear();
           lookYawTarget=0;lookYaw=0;lookPitchTarget=0;lookPitch=0;
           engineAudioRef.current?.stop();setStage("signalEncounter");
@@ -1933,7 +1980,14 @@ export function Route40LowPolyOpening() {
       }
       if(stageRef.current==="signalEncounter"){
         driveSpeed=0;
-        if(now-signalEncounterStartedAt>=5200){
+        if(now-signalEncounterStartedAt>=NPC_NERVOUS_MS){
+          signalAimStartedAt=now;
+          setStage("signalAim");
+        }
+      }
+      if(stageRef.current==="signalAim"){
+        driveSpeed=0;
+        if(now-signalAimStartedAt>=NPC_AIM_RAISE_MS+NPC_AIM_HOLD_MS){
           escapeStartedAt=now;
           npcImpactZ=THREAT_Z;
           npcImpactX=roadCenter(THREAT_Z);
@@ -2054,15 +2108,15 @@ export function Route40LowPolyOpening() {
         const phase=elapsed*player.speed+player.phase;
         const x=player.baseX+Math.sin(phase)*player.radiusX;
         const z=player.baseZ+Math.cos(phase*.82)*player.radiusZ;
-        const y=terrainSurfaceY(x,z)+.035;
+        const y=terrainSurfaceY(x,z)-.05;
         const facing=Math.atan2(Math.cos(phase)*player.radiusX,-Math.sin(phase*.82)*player.radiusZ*.82);
         const model=multiply(translation(x,y,z),rotationY(facing));
         bindMesh(gl,program,player.mesh,viewProjection,view,model);
       }
       // Pelota que rueda y da pequeños saltos durante el partido.
       if(footballBallMesh){
-        const ballX=-107+Math.sin(elapsed*1.08)*5.5;
-        const ballZ=-166+Math.cos(elapsed*1.42)*8.5;
+        const ballX=-43+Math.sin(elapsed*1.08)*5.5;
+        const ballZ=-40+Math.cos(elapsed*1.42)*8.5;
         const ballY=terrainSurfaceY(ballX,ballZ)+.24+Math.abs(Math.sin(elapsed*4.8))*.12;
         const ballModel=multiply(translation(ballX,ballY,ballZ),rotationY(elapsed*3.1));
         bindMesh(gl,program,footballBallMesh,viewProjection,view,ballModel);
@@ -2072,25 +2126,61 @@ export function Route40LowPolyOpening() {
       const carModel=multiply(translation(carX,carY,carZ),carRotation);
       const aerialVisibility = 1 - smooth(5.1, 5.95, elapsed);
       const signalZ=SIGNAL_Z,signalX=roadCenter(signalZ)+3.55,signalGround=roadHeightAt(signalZ)-.18;
-      const signalActive=["climbing","signalEncounter","escape"].includes(stageRef.current);
+      const signalActive=["climbing","signalEncounter","signalAim","escape"].includes(stageRef.current);
       if(signalActive&&signalRedMesh){
         const redModel=multiply(translation(signalX,signalGround+6.12,signalZ+.39),scaling(2.05,2.05,2.05));
         bindMesh(gl,program,signalRedMesh,viewProjection,view,redModel);
       }
-      if((stageRef.current==="signalEncounter"||stageRef.current==="escape")&&armedThreatMesh){
+      if((stageRef.current==="signalEncounter"||stageRef.current==="signalAim"||stageRef.current==="escape")&&armedThreatBodyMesh){
         let npcX=roadCenter(THREAT_Z),npcZ=THREAT_Z;
-        let npcY=roadHeightAt(npcZ)-.02,npcRotation=rotationY(0);
+        let npcY=roadHeightAt(npcZ)-.02,impactFall=0;
         if(stageRef.current==="escape"&&npcImpactAt>0){
           const hitAge=(now-npcImpactAt)/1000;
-          const fall=smooth(0,.48,hitAge);
-          npcX=npcImpactX+2.0*fall;
-          npcZ=npcImpactZ+.8*fall;
+          impactFall=smooth(0,.48,hitAge);
+          npcX=npcImpactX+2.0*impactFall;
+          npcZ=npcImpactZ+.8*impactFall;
           const airborne=1-smooth(.28,.9,hitAge);
           npcY=roadHeightAt(npcZ)-.02+Math.sin(Math.min(hitAge,.62)/.62*Math.PI)*1.2*airborne;
-          npcRotation=rotationZ(1.48*fall);
         }
-        const npcModel=multiply(translation(npcX,npcY,npcZ),npcRotation);
-        bindMesh(gl,program,armedThreatMesh,viewProjection,view,npcModel);
+        const threatAge=stageRef.current==="signalEncounter"
+          ? clamp((now-signalEncounterStartedAt)/1000,0,3)
+          : 3;
+        const aimElapsed=stageRef.current==="signalAim"?(now-signalAimStartedAt)/1000:stageRef.current==="escape"?1:0;
+        const aimProgress=stageRef.current==="signalEncounter"?0:stageRef.current==="signalAim"
+          ? smooth(0,NPC_AIM_RAISE_MS/1000,aimElapsed)
+          : 1;
+        const nervousness=stageRef.current==="signalEncounter"?1:stageRef.current==="signalAim"?1-aimProgress:0;
+        const anger=stageRef.current==="signalEncounter"?smooth(1.1,2.8,threatAge):1;
+        const bodySway=stageRef.current==="escape"&&npcImpactAt>0
+          ? 0
+          : Math.sin(now*.021)*.018*nervousness + Math.sin(now*.037)*.009*nervousness + anger*.025;
+        const bodyBob=stageRef.current==="escape"&&npcImpactAt>0
+          ? 0
+          : Math.sin(now*.028)*.035*nervousness;
+        const fallRotation=rotationZ(1.48*impactFall);
+        const npcRoot=multiply(translation(npcX,npcY+bodyBob,npcZ),fallRotation);
+        const bodyModel=multiply(npcRoot,rotationZ(bodySway));
+        bindMesh(gl,program,armedThreatBodyMesh,viewProjection,view,bodyModel);
+        if(armedThreatArmsMesh){
+          const jitterGain=stageRef.current==="escape"?0:(.035+.105*smooth(0,2.7,threatAge))*nervousness;
+          const weaponPitch=.72*(1-aimProgress)
+            +(Math.sin(now*.031)+Math.sin(now*.047+.8)*.42)*jitterGain;
+          const weaponYaw=(Math.sin(now*.019+.6)+Math.sin(now*.041)*.32)*jitterGain*.85;
+          const shoulderPivot=multiply(bodyModel,translation(0,1.43,0));
+          const armsModel=multiply(
+            multiply(
+              multiply(shoulderPivot,rotationY(weaponYaw)),
+              rotationX(weaponPitch),
+            ),
+            translation(0,-1.43,0),
+          );
+          bindMesh(gl,program,armedThreatArmsMesh,viewProjection,view,armsModel);
+        }
+        if(threatAngryBrowsMesh&&anger>.01){
+          gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+          bindMesh(gl,program,threatAngryBrowsMesh,viewProjection,view,bodyModel,anger);
+          gl.depthMask(true);gl.disable(gl.BLEND);
+        }
       }
       if(npcImpactAt>0&&bloodMesh){
         const bloodAge=(now-npcImpactAt)/1000,opacity=1-smooth(.7,2.1,bloodAge);
@@ -2195,7 +2285,9 @@ export function Route40LowPolyOpening() {
       if (cockpitMesh) gl.deleteBuffer(cockpitMesh.buffer);
       if (windshieldMesh) gl.deleteBuffer(windshieldMesh.buffer);
       if (crashExplosionMesh) gl.deleteBuffer(crashExplosionMesh.buffer);
-      if(armedThreatMesh)gl.deleteBuffer(armedThreatMesh.buffer);
+      if(armedThreatBodyMesh)gl.deleteBuffer(armedThreatBodyMesh.buffer);
+      if(armedThreatArmsMesh)gl.deleteBuffer(armedThreatArmsMesh.buffer);
+      if(threatAngryBrowsMesh)gl.deleteBuffer(threatAngryBrowsMesh.buffer);
       if(signalRedMesh)gl.deleteBuffer(signalRedMesh.buffer);
       if(bloodMesh)gl.deleteBuffer(bloodMesh.buffer);
       for(const player of footballActors) gl.deleteBuffer(player.mesh.buffer);
@@ -2314,10 +2406,12 @@ export function Route40LowPolyOpening() {
           </div>
         </div>
       </div>
-      {interactionStage === "signalEncounter" && (
+      {(interactionStage === "signalEncounter" || interactionStage === "signalAim") && (
         <div className="pointer-events-none absolute inset-x-4 bottom-[10%] z-40 flex justify-center">
           <div className="w-full max-w-2xl border border-red-200/40 bg-[#101820]/92 px-6 py-5 text-center shadow-[0_0_48px_rgba(0,0,0,.62)] backdrop-blur-md">
-            <p className="font-mono text-[9px] tracking-[.34em] text-red-200/90">UN HOMBRE ARMADO BLOQUEA LA RUTA</p>
+            <p className="font-mono text-[9px] tracking-[.34em] text-red-200/90">
+              {interactionStage === "signalEncounter" ? "UN HOMBRE ARMADO ESTÁ NERVIOSO" : "EL HOMBRE LEVANTA EL ARMA Y TE APUNTA"}
+            </p>
             <p className="mt-3 font-serif text-lg leading-relaxed text-[#fff0d8] sm:text-2xl">“TENE CUIDADO HOY A LA NOCHE VIENEN ELLOS, TIENES QUE ESCONDERTE”</p>
           </div>
         </div>
