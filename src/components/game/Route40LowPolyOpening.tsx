@@ -1165,7 +1165,9 @@ function campRoadX(z: number) {
 }
 
 function campGroundY(x: number, z: number) {
-  return -0.12 + Math.sin(x * 0.16 + z * 0.055) * 0.13 + Math.sin(z * 0.095 - x * 0.035) * 0.085;
+  const natural = -0.12 + Math.sin(x * 0.16 + z * 0.055) * 0.13 + Math.sin(z * 0.095 - x * 0.035) * 0.085;
+  const riverBasin = (1 - smooth(30, 47, Math.abs(x))) * (1 - smooth(18, 31, Math.abs(z - CAMP_RIVER_Z)));
+  return natural - riverBasin * 2.65;
 }
 
 function addCampingTree(mesh: MeshBuilder, x: number, z: number, height: number, seed: number, broadleaf: boolean) {
@@ -1200,10 +1202,7 @@ function buildCampingWorld() {
     const z1 = z0 - 10;
     for (let x0 = -100; x0 < 100; x0 += 10) {
       const x1 = x0 + 10;
-      const point = (x: number, z: number): V3 => {
-        const basin = (1 - smooth(30, 47, Math.abs(x))) * (1 - smooth(18, 31, Math.abs(z - CAMP_RIVER_Z)));
-        return [x, campGroundY(x, z) - basin * 2.65, z];
-      };
+      const point = (x: number, z: number): V3 => [x, campGroundY(x, z), z];
       const p00 = point(x0, z0), p10 = point(x1, z0), p11 = point(x1, z1), p01 = point(x0, z1);
       const shade = random();
       const color = hex(shade > 0.72 ? "#405a3b" : shade > 0.36 ? "#354f38" : "#2d4834");
@@ -1273,8 +1272,17 @@ function buildCampingWorld() {
     const side = i % 2 ? -1 : 1;
     const x = side * (31 + random() * 16);
     const z = CAMP_RIVER_Z - 16 + random() * 32;
-    const y = campGroundY(x, z) - 0.08;
+    const y = campGroundY(x, z);
     world.ellipsoid(x, y + 0.2, z, 0.8 + random() * 1.7, 0.35 + random() * 0.7, 0.8 + random() * 1.4, hex(i % 3 ? "#777c70" : "#8d8979"), 8, 5);
+  }
+
+  // Piedras de canto rodado bajo el agua, asentadas en el fondo del cauce.
+  for (let i = 0; i < 86; i++) {
+    const x = -34 + random() * 68;
+    const z = CAMP_RIVER_Z - 11 + random() * 22;
+    const ground = campGroundY(x, z);
+    const radius = 0.28 + random() * 0.48;
+    world.ellipsoid(x, ground + 0.16, z, radius * 1.25, 0.18 + random() * 0.14, radius, hex(i % 3 ? "#777f78" : "#8c9185"), 8, 5);
   }
 
   // Montañas lejanas patagónicas, con planos facetados y sombras violetas de atardecer.
@@ -1328,10 +1336,7 @@ function buildCampingBridge() {
   const deckY = 1.12;
   const deckHalfWidth = 0.82;
   const bridgeZ = (x: number) => CAMP_RIVER_Z - x * 0.075;
-  const bankY = (x: number, z: number) => {
-    const riverBasin = (1 - smooth(30, 47, Math.abs(x))) * (1 - smooth(18, 31, Math.abs(z - CAMP_RIVER_Z)));
-    return campGroundY(x, z) - riverBasin * 2.65;
-  };
+  const bankY = (x: number, z: number) => campGroundY(x, z);
 
   // Torres y anclajes asentados en la altura real de cada margen.
   for (const side of [-1, 1]) {
@@ -2831,7 +2836,7 @@ export function Route40LowPolyOpening() {
           gl.enable(gl.BLEND);
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
           gl.depthMask(false);
-          bindMesh(gl, program, campingWaterMesh, viewProjection, view, identity, 0.9, true);
+          bindMesh(gl, program, campingWaterMesh, viewProjection, view, identity, 0.76, true);
           gl.depthMask(true);
           gl.disable(gl.BLEND);
         }
