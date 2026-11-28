@@ -1306,7 +1306,7 @@ function buildCampingWorld() {
 
   // Sol bajo, nubes de atardecer y luna visible, de escala contenida.
   world.sphere(-48, 16, -214, 5.0, hex("#e9a06b"), 16, 9);
-  world.sphere(42, 29, -228, 2.45, hex("#e6dfd1"), 16, 9);
+  world.sphere(42, 43, -218, 2.45, hex("#e6dfd1"), 16, 9);
   for (let i = 0; i < 10; i++) {
     const x = -76 + i * 16;
     const y = 25 + Math.sin(i * 1.8) * 4;
@@ -2772,10 +2772,11 @@ export function Route40LowPolyOpening() {
       const crashAge = stageRef.current === "crashed" ? (now - crashStartedAt) / 1000 : 0;
       const crashShake = stageRef.current === "crashed" ? (1 - smooth(0, 0.72, crashAge)) * 0.055 : 0;
       const hitShake=npcImpactAt>0?(1-smooth(0,.72,(now-npcImpactAt)/1000))*.085:0;
-      const shake = transition * (0.005 + driveSpeed * 0.0021) * (outsideStage ? 0 : 1) + crashShake + hitShake;
+      const cameraSpeed = campingMode ? campSpeed : driveSpeed;
+      const shake = transition * (0.005 + cameraSpeed * 0.0021) * (outsideStage ? 0 : 1) + crashShake + hitShake;
       const shakeX = Math.sin(now * 0.024) * shake;
       const shakeY = Math.sin(now * 0.039) * shake * 0.62;
-      const suspensionBounce = (Math.sin(elapsed * 13.5) + Math.sin(elapsed * 22.0) * 0.32) * (driveSpeed / 5.4) * 0.018;
+      const suspensionBounce = (Math.sin(elapsed * 13.5) + Math.sin(elapsed * 22.0) * 0.32) * (cameraSpeed / 5.4) * 0.018;
       const uphillGrade=clamp((roadHeightAt(carZ-18)-roadHeightAt(carZ+2))/20,0,.48);
       const uphillPitch=Math.atan(uphillGrade)*.96;
       const driverEye: V3 = [carX+shakeX,roadHeightAt(carZ)+1.43+shakeY+suspensionBounce+uphillPitch*.52,carZ+.56];
@@ -3205,7 +3206,7 @@ export function Route40LowPolyOpening() {
       }
       if (campEndingShadeRef.current && campEndingTextRef.current) {
         const endingElapsed = endingStartedAt > 0 ? (now - endingStartedAt) / 1000 : -1;
-        campEndingShadeRef.current.style.opacity = String(smooth(0.1, 2.0, endingElapsed) * 0.88);
+        campEndingShadeRef.current.style.opacity = String(smooth(0.1, 2.0, endingElapsed));
         campEndingTextRef.current.style.opacity = String(smooth(0.72, 1.9, endingElapsed));
         campEndingTextRef.current.style.transform = `translateY(${(1 - smooth(0.72, 1.9, endingElapsed)) * 14}px)`;
       }
