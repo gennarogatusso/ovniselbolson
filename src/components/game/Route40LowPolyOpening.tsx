@@ -172,10 +172,11 @@ function roadHeightAt(z: number) {
 function terrainSurfaceY(x: number, z: number) {
   const naturalGround = terrainY(x, z);
   const distanceFromRoad = Math.abs(x - roadCenter(z));
-  const roadCorridor = 1 - smooth(8, 12, distanceFromRoad);
+  // Wide clearance is intentional because the terrain grid is coarser than the road mesh.
+  const roadCorridor = 1 - smooth(8, 19, distanceFromRoad);
   const dip = roadDipAt(z);
-  const depth = dip - 0.55 * clamp(-dip / 6.2, 0, 1);
-  return naturalGround + depth * roadCorridor;
+  const clearance = -0.85 + dip;
+  return naturalGround + clearance * roadCorridor;
 }
 
 const PIXEL_GLYPHS: Record<string, string[]> = {
@@ -295,6 +296,91 @@ function addRoadsideMountainRange(
   }
 }
 
+
+function buildAttendantPose(time: number, stage: string, warningElapsed: number) {
+  const npc = new MeshBuilder();
+  const skin = hex("#b98768");
+  const skinLight = hex("#d2a184");
+  const navy = hex("#064f83");
+  const uniform = hex("#0875b9");
+  const uniformLight = hex("#268dcc");
+  const pants = hex("#24333e");
+  const boots = hex("#141d25");
+  const white = hex("#e6edf0");
+  const faceZ = 0.31;
+  const bob = Math.sin(time * 1.7) * 0.025;
+  const talking = stage === "onFoot" || stage === "fueling" || stage === "payment" || stage === "paying";
+  const talkMotion = talking ? Math.sin(time * 3.2) * 0.08 : 0;
+  const pointing = stage === "warning"
+    ? smooth(0.18, 0.72, warningElapsed) * (1 - smooth(3.9, 4.55, warningElapsed))
+    : 0;
+  const receiving = stage === "paying" ? smooth(0, 0.9, time * 0.6) : 0;
+  const blink = Math.sin(time * 2.3 + 0.6) > 0.992;
+
+  // Piernas y botas firmes sobre la playa de la estación.
+  npc.box([-0.2, 0.43, 0], [0.27, 0.91, 0.34], pants);
+  npc.box([0.2, 0.43, 0], [0.27, 0.91, 0.34], pants);
+  npc.box([-0.22, 0.08, 0.13], [0.42, 0.18, 0.58], boots);
+  npc.box([0.22, 0.08, 0.13], [0.42, 0.18, 0.58], boots);
+
+  // Torso joven con uniforme, bolsillo, insignia y movimiento sutil de respiración.
+  npc.box([0, 1.23 + bob, 0], [0.92, 1.18, 0.53], uniform, navy);
+  npc.box([0, 1.75 + bob, 0.03], [0.42, 0.18, 0.56], white);
+  npc.beam([-0.12, 1.72 + bob, faceZ], [0, 1.49 + bob, faceZ + 0.015], 0.045, white);
+  npc.beam([0.12, 1.72 + bob, faceZ], [0, 1.49 + bob, faceZ + 0.015], 0.045, white);
+  npc.box([-0.27, 1.39 + bob, faceZ + 0.285], [0.23, 0.31, 0.035], uniformLight);
+  npc.box([-0.27, 1.42 + bob, faceZ + 0.31], [0.16, 0.055, 0.025], white);
+
+  // Brazo izquierdo: gesticula al conversar y después se extiende para recibir el efectivo.
+  const leftShoulder: V3 = [-0.43, 1.62 + bob, 0];
+  const leftElbow: V3 = [-0.76 - receiving * 0.18, 1.34 + talkMotion + receiving * 0.14, 0.08];
+  const leftHand: V3 = [-1.18 - receiving * 0.18, 1.5 + talkMotion + receiving * 0.05, 0.16];
+  npc.beam(leftShoulder, leftElbow, 0.25, navy);
+  npc.beam(leftElbow, leftHand, 0.16, skin);
+  npc.box(leftHand, [0.23, 0.14, 0.16], skin, skinLight);
+  // Brazo derecho: reposo conversacional o gesto claro de señalar al cielo.
+  const rightShoulder: V3 = [0.43, 1.62 + bob, 0];
+  const rightElbow: V3 = [mix(0.72, 0.82, pointing), mix(1.02 + talkMotion, 2.08, pointing), 0.1];
+  const rightWrist: V3 = [mix(0.74, 0.88, pointing), mix(0.91 + talkMotion, 2.73, pointing), 0.2];
+  const rightPalm: V3 = [rightWrist[0], rightWrist[1] + 0.06, rightWrist[2] + 0.04];
+  npc.beam(rightShoulder, rightElbow, 0.24, navy);
+  npc.beam(rightElbow, rightWrist, 0.15, skin);
+  npc.box(rightPalm, [0.2, 0.15, 0.16], skin, skinLight);
+  if (pointing > 0.08) {
+    // Índice extendido verticalmente; los demás dedos quedan recogidos.
+    npc.beam([rightPalm[0], rightPalm[1] + 0.04, rightPalm[2] + 0.04],
+      [rightPalm[0] + 0.02, rightPalm[1] + 0.58 * pointing, rightPalm[2] + 0.08], 0.055, skinLight);
+    for (const finger of [-1, 0, 1]) {
+      npc.beam([rightPalm[0] + finger * 0.055, rightPalm[1], rightPalm[2] + 0.04],
+        [rightPalm[0] + finger * 0.06, rightPalm[1] - 0.12, rightPalm[2] + 0.11], 0.045, skin);
+    }
+  } else {
+    for (const finger of [-1, 0, 1]) {
+      npc.beam([rightPalm[0] + finger * 0.055, rightPalm[1], rightPalm[2] + 0.04],
+        [rightPalm[0] + finger * 0.06, rightPalm[1] - 0.09, rightPalm[2] + 0.11], 0.045, skin);
+    }
+  }
+
+  // Cuello, cabeza, facciones y gorra; el pequeño cambio de mirada enfatiza la advertencia.
+  npc.box([0, 1.9 + bob, 0], [0.31, 0.31, 0.3], skin);
+  npc.box([0, 2.3 + bob + pointing * 0.035, 0], [0.68, 0.77, 0.57], skin, hex("#a9765b"));
+  npc.box([-0.37, 2.3 + bob, 0], [0.13, 0.24, 0.18], skinLight);
+  npc.box([0.37, 2.3 + bob, 0], [0.13, 0.24, 0.18], skin);
+  npc.box([0, 2.61 + bob, -0.05], [0.64, 0.19, 0.52], hex("#42332e"));
+  npc.box([0, 2.68 + bob, -0.06], [0.58, 0.13, 0.5], hex("#332a27"));
+  const eyeTone = blink ? skin : hex("#242b30");
+  npc.box([-0.15, 2.34 + bob, faceZ + 0.025], [0.06, blink ? 0.018 : 0.07, 0.045], eyeTone);
+  npc.box([0.15, 2.34 + bob, faceZ + 0.025], [0.06, blink ? 0.018 : 0.07, 0.045], eyeTone);
+  npc.box([-0.15, 2.41 + bob, faceZ + 0.005], [0.12, 0.045, 0.045], hex("#64483d"));
+  npc.box([0.15, 2.41 + bob, faceZ + 0.005], [0.12, 0.045, 0.045], hex("#64483d"));
+  npc.box([0, 2.24 + bob, faceZ + 0.06], [0.1, 0.16, 0.12], skinLight);
+  npc.box([0, 2.08 + bob, faceZ + 0.055], [0.17, 0.035, 0.055], hex("#704b42"));
+  npc.box([0, 2.77 + bob, 0], [0.77, 0.2, 0.63], uniform);
+  npc.box([0, 2.69 + bob, faceZ + 0.18], [0.8, 0.07, 0.34], navy);
+  npc.box([0, 2.78 + bob, faceZ + 0.32], [0.36, 0.1, 0.035], white);
+  return npc;
+}
+
 function addYPFStation(mesh: MeshBuilder) {
   const stationX = 11.2;
   const stationZ = -166;
@@ -355,67 +441,6 @@ function addYPFStation(mesh: MeshBuilder) {
   mesh.box([24.7, ground + 8.35, -160.28], [3.18, 2.76, 0.08], blue);
   addPixelText(mesh, "YPF", 24.7, ground + 8.42, -160.19, 0.24, white);
   mesh.box([24.7, ground + 6.15, -160.28], [2.95, 0.1, 0.08], white);
-
-  // Playero de YPF: uniforme con bolsillos, pantalón, botas, gorra y rostro definido.
-  const attendantX = 16.1;
-  const attendantZ = -164.7;
-  const attendantGround = terrainY(attendantX, attendantZ);
-  const skinTone = hex("#b98768");
-  const skinLight = hex("#d2a184");
-  const navy = hex("#064f83");
-  const uniform = hex("#0875b9");
-  const uniformLight = hex("#268dcc");
-  const pants = hex("#24333e");
-  const boots = hex("#141d25");
-  const faceZ = attendantZ + 0.31;
-
-  // Piernas, rodillas y zapatos de trabajo.
-  mesh.box([attendantX - 0.2, attendantGround + 0.43, attendantZ], [0.27, 0.91, 0.34], pants);
-  mesh.box([attendantX + 0.2, attendantGround + 0.43, attendantZ], [0.27, 0.91, 0.34], pants);
-  mesh.box([attendantX - 0.22, attendantGround + 0.08, attendantZ + 0.13], [0.42, 0.18, 0.58], boots);
-  mesh.box([attendantX + 0.22, attendantGround + 0.08, attendantZ + 0.13], [0.42, 0.18, 0.58], boots);
-
-  // Torso del uniforme, cuello, solapas, cinturón y bolsillo.
-  mesh.box([attendantX, attendantGround + 1.23, attendantZ], [0.92, 1.18, 0.53], uniform, navy);
-  mesh.box([attendantX, attendantGround + 1.75, attendantZ + 0.03], [0.42, 0.18, 0.56], hex("#e3e9e8"));
-  mesh.beam([attendantX - 0.12, attendantGround + 1.72, faceZ], [attendantX, attendantGround + 1.49, faceZ + 0.015], 0.045, hex("#e5eeee"));
-  mesh.beam([attendantX + 0.12, attendantGround + 1.72, faceZ], [attendantX, attendantGround + 1.49, faceZ + 0.015], 0.045, hex("#e5eeee"));
-  mesh.box([attendantX, attendantGround + 0.78, faceZ], [0.9, 0.11, 0.55], navy);
-  mesh.box([attendantX - 0.27, attendantGround + 1.39, faceZ + 0.285], [0.23, 0.31, 0.035], uniformLight);
-  mesh.box([attendantX - 0.27, attendantGround + 1.42, faceZ + 0.31], [0.16, 0.055, 0.025], white);
-  addPixelText(mesh, "YPF", attendantX - 0.27, attendantGround + 1.4, faceZ + 0.34, 0.034, white);
-
-  // Brazos: el derecho queda extendido hacia el cliente para recibir el pago.
-  mesh.beam([attendantX - 0.43, attendantGround + 1.62, attendantZ], [attendantX - 0.76, attendantGround + 1.34, attendantZ + 0.08], 0.25, navy);
-  mesh.beam([attendantX - 0.76, attendantGround + 1.34, attendantZ + 0.08], [attendantX - 1.25, attendantGround + 1.51, attendantZ + 0.16], 0.18, skinTone);
-  mesh.box([attendantX - 1.31, attendantGround + 1.52, attendantZ + 0.18], [0.28, 0.16, 0.2], skinTone, skinLight);
-  mesh.beam([attendantX + 0.43, attendantGround + 1.62, attendantZ], [attendantX + 0.7, attendantGround + 1.02, attendantZ + 0.1], 0.24, navy);
-  mesh.beam([attendantX + 0.7, attendantGround + 1.02, attendantZ + 0.1], [attendantX + 0.72, attendantGround + 0.9, attendantZ + 0.25], 0.16, skinTone);
-  mesh.box([attendantX + 0.72, attendantGround + 0.9, attendantZ + 0.29], [0.21, 0.14, 0.15], skinTone);
-
-  // Cuello, cabeza, orejas, cabello, cejas, ojos, nariz y boca.
-  mesh.box([attendantX, attendantGround + 1.9, attendantZ], [0.31, 0.31, 0.3], skinTone);
-  mesh.box([attendantX, attendantGround + 2.3, attendantZ], [0.68, 0.77, 0.57], skinTone, hex("#a9765b"));
-  mesh.box([attendantX - 0.37, attendantGround + 2.3, attendantZ], [0.13, 0.24, 0.18], skinLight);
-  mesh.box([attendantX + 0.37, attendantGround + 2.3, attendantZ], [0.13, 0.24, 0.18], skinTone);
-  mesh.box([attendantX, attendantGround + 2.61, attendantZ - 0.05], [0.64, 0.19, 0.52], hex("#42332e"));
-  mesh.box([attendantX, attendantGround + 2.68, attendantZ - 0.06], [0.58, 0.13, 0.5], hex("#332a27"));
-  mesh.box([attendantX - 0.15, attendantGround + 2.41, faceZ + 0.005], [0.12, 0.045, 0.045], hex("#64483d"));
-  mesh.box([attendantX + 0.15, attendantGround + 2.41, faceZ + 0.005], [0.12, 0.045, 0.045], hex("#64483d"));
-  mesh.box([attendantX - 0.15, attendantGround + 2.34, faceZ + 0.025], [0.06, 0.07, 0.045], hex("#242b30"));
-  mesh.box([attendantX + 0.15, attendantGround + 2.34, faceZ + 0.025], [0.06, 0.07, 0.045], hex("#242b30"));
-  mesh.box([attendantX, attendantGround + 2.24, faceZ + 0.06], [0.1, 0.16, 0.12], skinLight);
-  mesh.box([attendantX, attendantGround + 2.08, faceZ + 0.055], [0.17, 0.035, 0.055], hex("#704b42"));
-
-  // Gorra azul con visera y logo blanco de la estación.
-  mesh.box([attendantX, attendantGround + 2.77, attendantZ], [0.77, 0.2, 0.63], uniform);
-  mesh.box([attendantX, attendantGround + 2.69, faceZ + 0.18], [0.8, 0.07, 0.34], navy);
-  mesh.box([attendantX, attendantGround + 2.78, faceZ + 0.32], [0.36, 0.1, 0.035], white);
-  addPixelText(mesh, "YPF", attendantX, attendantGround + 2.78, faceZ + 0.35, 0.043, deepBlue);
-
-  // Un detalle de reloj y una insignia en el uniforme.
-  mesh.box([attendantX + 0.53, attendantGround + 1.32, attendantZ + 0.09], [0.12, 0.16, 0.12], hex("#aab7bd"));
-  mesh.box([attendantX + 0.53, attendantGround + 1.32, attendantZ + 0.16], [0.08, 0.1, 0.025], hex("#273a46"));
 
   // Farol de playa y luminarias cálidas debajo de la marquesina.
   for (const x of [4.0, 18.8]) {
@@ -806,24 +831,36 @@ function buildCockpit() {
 
   // Brazos más naturales: mangas, costuras, puños, palmas y dedos separados.
   for (const side of [-1, 1]) {
-    const palmX = side * 0.35;
+    const palmX = side * 0.37;
     const sleeveColor = hex("#202b35");
     const sleeveLight = hex("#394753");
     const cuff = hex("#65727a");
-    cockpit.beam([side * 1.42, 0.68, -1.03], [side * 0.53, 1.12, -0.87], 0.39, sleeveColor);
-    cockpit.beam([side * 1.16, 0.82, -0.98], [side * 0.62, 1.10, -0.85], 0.11, sleeveLight);
-    cockpit.box([side * 0.54, 1.13, -0.84], [0.19, 0.29, 0.3], cuff, hex("#39434a"));
-    cockpit.beam([side * 0.52, 1.15, -0.84], [palmX, 1.19, -0.79], 0.18, hex("#a77a60"));
-    cockpit.box([palmX, 1.2, -0.79], [0.34, 0.24, 0.2], hex("#b78364"), hex("#855b49"));
+    const skin = hex("#b78364");
+    const fingerSkin = hex("#c99575");
+    cockpit.beam([side * 1.42, 0.68, -1.03], [side * 0.53, 1.11, -0.88], 0.37, sleeveColor);
+    cockpit.beam([side * 1.16, 0.82, -0.98], [side * 0.62, 1.09, -0.86], 0.105, sleeveLight);
+    cockpit.box([side * 0.54, 1.12, -0.84], [0.18, 0.25, 0.25], cuff, hex("#39434a"));
+    cockpit.beam([side * 0.52, 1.13, -0.84], [palmX, 1.17, -0.79], 0.15, hex("#a77a60"));
+    cockpit.box([palmX, 1.17, -0.79], [0.29, 0.19, 0.17], skin, hex("#855b49"));
+    // Cuatro dedos articulados: falange proximal, distal y punta, separados entre sí.
     for (let finger = 0; finger < 4; finger++) {
-      const fingerX = palmX + side * ((finger - 1.5) * 0.075);
-      const fingerTop = 1.24 - Math.abs(finger - 1.5) * 0.012;
-      cockpit.beam([fingerX, fingerTop, -0.7], [fingerX + side * 0.018, 1.08, -0.59], 0.067, hex("#c18e70"));
-      cockpit.box([fingerX, fingerTop - 0.015, -0.705], [0.074, 0.062, 0.065], hex("#d09b7a"));
-      cockpit.box([fingerX + side * 0.018, 1.09, -0.59], [0.047, 0.038, 0.025], hex("#e1b596"));
+      const fingerX = palmX + side * ((finger - 1.5) * 0.061);
+      const length = 0.13 - Math.abs(finger - 1.5) * 0.012;
+      const knuckle: V3 = [fingerX, 1.13, -0.69];
+      const joint: V3 = [fingerX + side * 0.012, 1.07, -0.61];
+      const tip: V3 = [fingerX + side * 0.018, 1.025 - (0.13 - length) * 0.35, -0.565];
+      cockpit.beam(knuckle, joint, 0.052, fingerSkin);
+      cockpit.beam(joint, tip, 0.045, hex("#d4a080"));
+      cockpit.box([joint[0], joint[1], joint[2]], [0.052, 0.045, 0.045], fingerSkin);
+      cockpit.box([tip[0], tip[1], tip[2]], [0.042, 0.035, 0.035], hex("#e1b596"));
     }
-    cockpit.beam([palmX - side * 0.13, 1.18, -0.73], [palmX - side * 0.19, 1.08, -0.64], 0.09, hex("#b17c60"));
-    cockpit.box([palmX - side * 0.18, 1.08, -0.64], [0.09, 0.075, 0.06], hex("#d09b7a"));
+    // Pulgar enfrentado a los dedos, con dos segmentos y una articulación visible.
+    const thumbBase: V3 = [palmX - side * 0.13, 1.16, -0.77];
+    const thumbJoint: V3 = [palmX - side * 0.19, 1.1, -0.68];
+    const thumbTip: V3 = [palmX - side * 0.16, 1.045, -0.62];
+    cockpit.beam(thumbBase, thumbJoint, 0.075, skin);
+    cockpit.beam(thumbJoint, thumbTip, 0.062, fingerSkin);
+    cockpit.box(thumbTip, [0.07, 0.055, 0.05], hex("#d09b7a"));
     cockpit.beam([side * 0.48, 1.08, -0.7], [side * 0.61, 1.1, -0.7], 0.018, hex("#87959a"));
   }
 
@@ -844,8 +881,24 @@ function buildCockpit() {
     cockpit.beam([side * 1.95, 1.19, -2.53], [side * 1.95, 1.57, -2.53], 0.025, silverDark);
   }
 
-  // Techo tapizado, parasoles, plafón y espejo retrovisor central.
+  // Techo delantero y prolongación sobre las plazas traseras para una visión 360° coherente.
   cockpit.box([0, 2.34, -3.35], [3.58, 0.19, 2.62], hex("#20272b"), hex("#11171c"));
+  cockpit.box([0, 2.34, 0.58], [3.58, 0.19, 3.2], hex("#20272b"), hex("#11171c"));
+  // Asiento trasero, respaldo, apoyacabezas y bandeja posterior.
+  cockpit.box([0, 0.56, 2.05], [2.95, 0.28, 1.45], leather, hex("#1d2428"));
+  cockpit.box([0, 1.12, 2.63], [2.95, 1.0, 0.34], leather, hex("#343638"));
+  for (const x of [-0.88, 0, 0.88]) {
+    cockpit.box([x, 1.72, 2.55], [0.48, 0.48, 0.26], hex("#252c30"));
+  }
+  cockpit.box([0, 1.13, 3.18], [3.18, 0.12, 0.62], dashShadow);
+  // Paneles de puertas traseras y pilares C.
+  for (const side of [-1, 1]) {
+    cockpit.box([side * 1.69, 0.62, 1.34], [0.27, 0.72, 2.52], hex("#20282c"), hex("#30383b"));
+    cockpit.box([side * 1.64, 0.99, 1.34], [0.25, 0.13, 2.54], hex("#343b3e"));
+    cockpit.beam([side * 1.73, 1.78, -0.15], [side * 1.73, 2.23, -0.2], 0.11, hex("#1b2429"));
+    cockpit.beam([side * 1.52, 0.96, 2.05], [side * 1.74, 2.22, 2.75], 0.13, hex("#1b2429"));
+  }
+  cockpit.beam([-1.74, 2.22, 2.75], [1.74, 2.22, 2.75], 0.15, hex("#11181d"));
   cockpit.beam([-1.68, 2.245, -4.56], [1.68, 2.245, -4.56], 0.11, hex("#11181d"));
   for (const side of [-1, 1]) {
     cockpit.box([side * 0.94, 2.22, -2.75], [0.72, 0.11, 0.48], hex("#34393a"));
@@ -893,6 +946,10 @@ function buildWindshield() {
     [1.04, 2.01, -4.19],
     hex("#879b9d"),
   );
+  // Ventanillas laterales traseras y luneta: vidrio tenue para conservar la lectura del exterior.
+  glass.quad([-1.76, 1.2, -0.08], [-1.76, 2.12, -0.08], [-1.76, 2.12, 2.55], [-1.76, 1.2, 2.55], hex("#81999e"));
+  glass.quad([1.76, 1.2, -0.08], [1.76, 1.2, 2.55], [1.76, 2.12, 2.55], [1.76, 2.12, -0.08], hex("#81999e"));
+  glass.quad([-1.62, 1.15, 2.78], [1.62, 1.15, 2.78], [1.58, 2.12, 2.78], [-1.58, 2.12, 2.78], hex("#81999e"));
   return glass;
 }
 
@@ -1008,6 +1065,18 @@ function translation(x: number, y: number, z: number) {
   const matrix = new Float32Array(16);
   matrix[0] = 1; matrix[5] = 1; matrix[10] = 1; matrix[15] = 1;
   matrix[12] = x; matrix[13] = y; matrix[14] = z;
+  return matrix;
+}
+
+function rotationY(angle: number) {
+  const matrix = new Float32Array(16);
+  const cosine = Math.cos(angle), sine = Math.sin(angle);
+  matrix[0] = cosine;
+  matrix[2] = -sine;
+  matrix[5] = 1;
+  matrix[8] = sine;
+  matrix[10] = cosine;
+  matrix[15] = 1;
   return matrix;
 }
 
@@ -1164,7 +1233,7 @@ export function Route40LowPolyOpening() {
     };
     const onKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
-      if (["w", "a", "d", "arrowleft", "arrowright", "arrowup", "arrowdown", "q", "e"].includes(key)) {
+      if (["w", "a", "s", "d", "arrowleft", "arrowright", "arrowup", "arrowdown", "q", "e"].includes(key)) {
         if (key.startsWith("arrow")) event.preventDefault();
         keys.add(key);
       }
@@ -1183,23 +1252,62 @@ export function Route40LowPolyOpening() {
     let dragging = false;
     let pointerX = 0;
     let pointerY = 0;
+    let pointerLocked = false;
+    let pointerLockFallback = false;
+    const mouseSensitivity = 0.00235;
+    let lookYawTarget = 0;
+    let lookPitchTarget = 0;
+    const onPointerLockChange = () => {
+      pointerLocked = document.pointerLockElement === canvas;
+      if (pointerLocked) dragging = false;
+      canvas.style.cursor = pointerLocked ? "none" : "crosshair";
+    };
+    const onPointerLockError = () => { pointerLockFallback = true; };
     const onPointerDown = (event: PointerEvent) => {
       dragging = true;
       pointerX = event.clientX;
       pointerY = event.clientY;
-      try { canvas.setPointerCapture(event.pointerId); } catch { /* Captura opcional */ }
+      if (event.pointerType === "mouse") {
+        if ((stageRef.current === "driving" && performance.now() - startedAt >= DURATION * 1000) || stageRef.current === "climbing") {
+          const requestLock = (canvas as HTMLCanvasElement & { requestPointerLock?: () => void | Promise<void> }).requestPointerLock;
+          if (requestLock) {
+            try {
+              const result = requestLock.call(canvas);
+              if (result && typeof (result as Promise<void>).catch === "function") {
+                void (result as Promise<void>).catch(() => { pointerLockFallback = true; });
+              }
+            } catch {
+              pointerLockFallback = true;
+            }
+          } else {
+            pointerLockFallback = true;
+          }
+        }
+      } else {
+        try { canvas.setPointerCapture(event.pointerId); } catch { /* Captura táctil opcional */ }
+      }
     };
     const onPointerMove = (event: PointerEvent) => {
-      if (!dragging) return;
-      const dx = event.clientX - pointerX;
-      const dy = event.clientY - pointerY;
-      pointerX = event.clientX;
-      pointerY = event.clientY;
-      lookYaw = clamp(lookYaw + dx * 0.0038, -1.18, 1.18);
-      lookPitch = clamp(lookPitch - dy * 0.0023, -0.42, 0.42);
+      let dx = 0, dy = 0;
+      if (document.pointerLockElement === canvas && event.pointerType === "mouse") {
+        dx = event.movementX;
+        dy = event.movementY;
+      } else if (dragging && (event.pointerType !== "mouse" || pointerLockFallback)) {
+        dx = event.clientX - pointerX;
+        dy = event.clientY - pointerY;
+        pointerX = event.clientX;
+        pointerY = event.clientY;
+      } else {
+        return;
+      }
+      lookYawTarget += dx * mouseSensitivity;
+      lookPitchTarget = clamp(lookPitchTarget - dy * 0.0021, -0.48, 0.48);
     };
     const onPointerUp = () => { dragging = false; };
     canvas.style.touchAction = "none";
+    canvas.style.cursor = "crosshair";
+    document.addEventListener("pointerlockchange", onPointerLockChange);
+    document.addEventListener("pointerlockerror", onPointerLockError);
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerup", onPointerUp);
@@ -1212,6 +1320,8 @@ export function Route40LowPolyOpening() {
     let windshieldMesh: Mesh | null = null;
     let fuelHoseMesh: Mesh | null = null;
     let paymentMesh: Mesh | null = null;
+    let attendantMesh: Mesh | null = null;
+    let lastAttendantUpdate = 0;
     let program: WebGLProgram | null = null;
 
     try {
@@ -1236,6 +1346,7 @@ export function Route40LowPolyOpening() {
       windshieldMesh = createMesh(gl, buildWindshield());
       fuelHoseMesh = createMesh(gl, buildRefuelHose());
       paymentMesh = createMesh(gl, buildMoneyHandover());
+      attendantMesh = createMesh(gl, buildAttendantPose(0, "driving", 0));
     } catch (error) {
       console.error("No se pudo iniciar la escena low poly de Ruta 40", error);
       if (program) gl.deleteProgram(program);
@@ -1268,37 +1379,55 @@ export function Route40LowPolyOpening() {
       previousFrame = now;
 
       if (elapsed >= DURATION && stageRef.current === "driving") {
-        if (keys.has("w")) {
-          driveSpeed = Math.min(5.4, driveSpeed + dt * 3.8);
+        const braking = keys.has("s");
+        const throttle = keys.has("w") && !braking;
+        const downhillAssist = clamp((roadHeightAt(carZ + 3) - roadHeightAt(carZ - 3)) * 0.12, 0, 0.5);
+        if (throttle) {
+          driveSpeed = Math.min(5.4, driveSpeed + dt * (2.55 + downhillAssist));
           driveElapsed += dt;
+        } else if (braking) {
+          driveSpeed = Math.max(0, driveSpeed - dt * 8.2);
         } else {
-          driveSpeed = Math.max(0, driveSpeed - dt * 7.0);
+          driveSpeed = Math.max(0, driveSpeed - dt * 1.8);
         }
         if (keys.has("a")) laneOffset = clamp(laneOffset - dt * 2.15, -2.35, 2.35);
         if (keys.has("d")) laneOffset = clamp(laneOffset + dt * 2.15, -2.35, 2.35);
-        if (keys.has("arrowleft") || keys.has("q")) lookYaw = clamp(lookYaw - dt * 1.15, -1.18, 1.18);
-        if (keys.has("arrowright")) lookYaw = clamp(lookYaw + dt * 1.15, -1.18, 1.18);
-        if (keys.has("arrowup")) lookPitch = clamp(lookPitch + dt * 0.7, -0.42, 0.42);
-        if (keys.has("arrowdown")) lookPitch = clamp(lookPitch - dt * 0.7, -0.42, 0.42);
+        if (keys.has("arrowleft") || keys.has("q")) lookYawTarget -= dt * 1.15;
+        if (keys.has("arrowright")) lookYawTarget += dt * 1.15;
+        if (keys.has("arrowup")) lookPitchTarget = clamp(lookPitchTarget + dt * 0.7, -0.48, 0.48);
+        if (keys.has("arrowdown")) lookPitchTarget = clamp(lookPitchTarget - dt * 0.7, -0.48, 0.48);
+        lookYaw = mix(lookYaw, lookYawTarget, 1 - Math.exp(-dt * 18));
+        lookPitch = mix(lookPitch, lookPitchTarget, 1 - Math.exp(-dt * 18));
         travelled += driveSpeed * dt;
         if (driveElapsed >= 20) {
-          driveSpeed = 0; keys.clear(); setStage("stopped");
+          driveSpeed = 0; keys.clear();
+          if (document.pointerLockElement) document.exitPointerLock();
+          setStage("stopped");
         }
       }
       if (stageRef.current === "climbing") {
-        if (keys.has("w")) {
-          driveSpeed = Math.min(5.4, driveSpeed + dt * 2.8);
+        const braking = keys.has("s");
+        const throttle = keys.has("w") && !braking;
+        const uphillPenalty = clamp((roadHeightAt(carZ - 3) - roadHeightAt(carZ + 3)) * 0.09, 0, 0.6);
+        if (throttle) {
+          driveSpeed = Math.min(5.4, driveSpeed + dt * (2.25 - uphillPenalty));
           climbElapsed += dt;
+        } else if (braking) {
+          driveSpeed = Math.max(0, driveSpeed - dt * 8.2);
         } else {
-          driveSpeed = Math.max(0, driveSpeed - dt * 5.4);
+          driveSpeed = Math.max(0, driveSpeed - dt * 1.8);
         }
         if (keys.has("a")) laneOffset = clamp(laneOffset - dt * 1.85, -2.35, 2.35);
         if (keys.has("d")) laneOffset = clamp(laneOffset + dt * 1.85, -2.35, 2.35);
-        if (keys.has("arrowleft") || keys.has("q")) lookYaw = clamp(lookYaw - dt * 1.1, -1.18, 1.18);
-        if (keys.has("arrowright")) lookYaw = clamp(lookYaw + dt * 1.1, -1.18, 1.18);
+        if (keys.has("arrowleft") || keys.has("q")) lookYawTarget -= dt * 1.1;
+        if (keys.has("arrowright")) lookYawTarget += dt * 1.1;
+        lookYaw = mix(lookYaw, lookYawTarget, 1 - Math.exp(-dt * 18));
+        lookPitch = mix(lookPitch, lookPitchTarget, 1 - Math.exp(-dt * 18));
         travelled += driveSpeed * dt;
         if (climbElapsed >= 14) {
-          driveSpeed = 0; keys.clear(); setStage("finished");
+          driveSpeed = 0; keys.clear();
+          if (document.pointerLockElement) document.exitPointerLock();
+          setStage("finished");
         }
       }
       if (stageRef.current === "exiting" && now - exitStartedAtRef.current >= 1450) {
@@ -1314,6 +1443,9 @@ export function Route40LowPolyOpening() {
       if (stageRef.current === "returning" && now - returnStartedAtRef.current >= 1450) {
         lookYaw = 0;
         lookPitch = 0;
+        lookYawTarget = 0;
+        lookPitchTarget = 0;
+        if (document.pointerLockElement) document.exitPointerLock();
         setStage("climbing");
       }
       const rect = canvas.getBoundingClientRect();
@@ -1425,6 +1557,22 @@ export function Route40LowPolyOpening() {
       if (stageRef.current === "fueling") {
         bindMesh(gl, program, fuelHoseMesh, viewProjection, view, carModel);
       }
+      if (attendantMesh && now - lastAttendantUpdate > 70) {
+        lastAttendantUpdate = now;
+        const activeStage = stageRef.current;
+        const warningElapsed = activeStage === "warning" ? (now - warningStartedAtRef.current) / 1000 : 0;
+        const pose = buildAttendantPose(elapsed, activeStage, warningElapsed).data();
+        gl.bindBuffer(gl.ARRAY_BUFFER, attendantMesh.buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, pose, gl.DYNAMIC_DRAW);
+        attendantMesh.count = pose.length / 9;
+      }
+      if (attendantMesh) {
+        const attending = ["driving", "climbing"].includes(stageRef.current) ? 0 : 1;
+        const bodyYaw = mix(0, -1.05, attending);
+        const npcGround = terrainY(16.1, -164.7);
+        const npcModel = multiply(translation(16.1, npcGround, -164.7), rotationY(bodyYaw));
+        bindMesh(gl, program, attendantMesh, viewProjection, view, npcModel);
+      }
       if (stageRef.current === "paying" && paymentMesh) {
         const handover = smooth(0, 1, (now - payingStartedAtRef.current) / 1900);
         const handX = mix(11.2, 14.7, handover);
@@ -1435,7 +1583,10 @@ export function Route40LowPolyOpening() {
       if (engineAudioRef.current) {
         if ((stageRef.current === "driving" || stageRef.current === "climbing") &&
           (stageRef.current === "climbing" || elapsed >= DURATION)) {
-          const throttle = keys.has("w") ? 0.2 + (driveSpeed / 5.4) * 0.8 : 0.12;
+          const accelerating = keys.has("w") && !keys.has("s");
+          const throttle = accelerating
+            ? 0.24 + (driveSpeed / 5.4) * 0.76
+            : keys.has("s") ? 0.1 : 0.14 + (driveSpeed / 5.4) * 0.24;
           engineAudioRef.current.setThrottle(throttle);
         } else {
           engineAudioRef.current.stop();
@@ -1490,6 +1641,9 @@ export function Route40LowPolyOpening() {
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointercancel", onPointerUp);
+      document.removeEventListener("pointerlockchange", onPointerLockChange);
+      document.removeEventListener("pointerlockerror", onPointerLockError);
+      if (document.pointerLockElement === canvas) document.exitPointerLock();
       window.cancelAnimationFrame(frame);
       if (worldMesh) gl.deleteBuffer(worldMesh.buffer);
       if (skyMesh) gl.deleteBuffer(skyMesh.buffer);
@@ -1499,6 +1653,7 @@ export function Route40LowPolyOpening() {
       if (windshieldMesh) gl.deleteBuffer(windshieldMesh.buffer);
       if (fuelHoseMesh) gl.deleteBuffer(fuelHoseMesh.buffer);
       if (paymentMesh) gl.deleteBuffer(paymentMesh.buffer);
+      if (attendantMesh) gl.deleteBuffer(attendantMesh.buffer);
       if (program) gl.deleteProgram(program);
     };
   }, []);
@@ -1557,18 +1712,20 @@ export function Route40LowPolyOpening() {
         <div className="rounded-sm border border-amber-100/25 bg-[#101820]/70 px-4 py-2 font-mono text-[10px] tracking-[.12em] text-amber-50 shadow-[0_0_30px_rgba(255,176,105,.14)] backdrop-blur-md sm:text-xs">
           {interactionStage === "climbing" ? "W · SUBIR LA CUESTA" : "W · ACELERAR"}
           <span className="mx-2 text-amber-100/35">|</span>
-          A / D · MANTENERSE EN LA RUTA
+          A / D · DIRECCIÓN
           <span className="mx-2 text-amber-100/35">|</span>
-          ARRASTRÁ PARA MIRAR
+          S · FRENAR
+          <span className="mx-2 text-amber-100/35">|</span>
+          MOVÉ EL MOUSE PARA MIRAR
           <span className="ml-3 border-l border-amber-100/20 pl-3 tabular-nums"><span ref={speedRef}>0</span> KM/H</span>
         </div>
         <div className="h-1 w-44 overflow-hidden rounded-full bg-white/15">
           <div ref={progressRef} className="h-full w-0 bg-amber-200 shadow-[0_0_12px_rgba(255,206,137,.9)] transition-[width] duration-100" />
         </div>
         <div className="pointer-events-auto flex flex-col items-center gap-2 md:hidden">
-          <p className="font-mono text-[9px] tracking-[.18em] text-amber-50/70">MANTENÉ W PARA AVANZAR · DESLIZÁ EL FONDO PARA MIRAR</p>
+          <p className="font-mono text-[9px] tracking-[.18em] text-amber-50/70">MANTENÉ W PARA AVANZAR · S PARA FRENAR · DESLIZÁ PARA MIRAR</p>
           <div className="flex items-center gap-3">
-            {(["a", "w", "d"] as const).map((key) => (
+            {(["a", "w", "s", "d"] as const).map((key) => (
               <button
                 key={key}
                 type="button"
@@ -1583,9 +1740,9 @@ export function Route40LowPolyOpening() {
                 onLostPointerCapture={() => keysRef.current.delete(key)}
                 onPointerCancel={() => keysRef.current.delete(key)}
                 className="grid h-14 w-14 touch-none select-none place-items-center rounded-xl border border-amber-100/45 bg-[#101820]/85 font-mono text-lg font-black text-amber-50 shadow-[0_5px_22px_rgba(0,0,0,.4)] backdrop-blur-md active:translate-y-0.5 active:bg-amber-100/25"
-                aria-label={key === "w" ? "Mantener para acelerar" : key === "a" ? "Mantener para girar a la izquierda" : "Mantener para girar a la derecha"}
+                aria-label={key === "w" ? "Mantener para acelerar" : key === "s" ? "Mantener para frenar" : key === "a" ? "Mantener para girar a la izquierda" : "Mantener para girar a la derecha"}
               >
-                {key === "a" ? "◀" : key === "d" ? "▶" : "W"}
+                {key === "a" ? "◀" : key === "d" ? "▶" : key === "s" ? "S" : "W"}
               </button>
             ))}
           </div>
