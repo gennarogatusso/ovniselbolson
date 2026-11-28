@@ -1450,6 +1450,49 @@ function buildWindshield() {
   return glass;
 }
 
+function buildWindshieldCracks() {
+  const cracks = new MeshBuilder();
+  const bright = hex("#d8e0dc");
+  const shadow = hex("#91a5aa");
+  const centerX = 0.04;
+  const centerY = 1.56;
+  const glassPoint = (x: number, y: number): V3 => [
+    x,
+    y,
+    -2.18 - ((y - 0.98) / 1.22) * 2.4 + 0.035,
+  ];
+  const origin = glassPoint(centerX, centerY);
+  const rays = [
+    [-0.16, 0.99, 0.48], [0.72, 0.69, 0.55], [0.99, 0.12, 0.44],
+    [0.78, -0.63, 0.5], [0.16, -0.99, 0.4], [-0.7, -0.72, 0.49],
+    [-0.99, -0.08, 0.46], [-0.78, 0.62, 0.52], [0.42, 0.91, 0.38],
+    [-0.43, -0.9, 0.36],
+  ];
+  for (let i = 0; i < rays.length; i++) {
+    const [dx, dy, length] = rays[i]!;
+    const endX = centerX + dx * length;
+    const endY = centerY + dy * length;
+    const kinkX = centerX + dx * length * 0.54 + (i % 2 ? 0.035 : -0.028);
+    const kinkY = centerY + dy * length * 0.54 + (i % 3 ? 0.025 : -0.02);
+    const kink = glassPoint(kinkX, kinkY);
+    const end = glassPoint(endX, endY);
+    cracks.beam(origin, kink, 0.014, bright);
+    cracks.beam(kink, end, 0.01, i % 2 ? bright : shadow);
+    if (i % 2 === 0) {
+      const branchStart = glassPoint(centerX + dx * length * 0.42, centerY + dy * length * 0.42);
+      const branchEnd = glassPoint(
+        centerX + dx * length * 0.35 - dy * 0.12,
+        centerY + dy * length * 0.35 + dx * 0.12,
+      );
+      cracks.beam(branchStart, branchEnd, 0.008, shadow);
+    }
+  }
+  // Dos microfisuras que salen del punto de impacto, sin cubrir la visión frontal.
+  cracks.beam(origin, glassPoint(centerX + 0.19, centerY + 0.17), 0.018, bright);
+  cracks.beam(origin, glassPoint(centerX - 0.2, centerY - 0.14), 0.016, shadow);
+  return cracks;
+}
+
 function makeShader(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type);
   if (!shader) throw new Error("No se pudo crear el shader");
@@ -1639,6 +1682,104 @@ type EngineAudio = {
   setThrottle: (value: number) => void; setRoadSpeed: (value: number) => void;
   stop: () => void; destroy: () => void;
 };
+function playNpcImpactSequence(context: AudioContext) {
+  if (context.state === "suspended") void context.resume();
+  const now = context.currentTime;
+
+  // Golpe seco con un pequeño crujido de vidrio.
+  const noiseBuffer = context.createBuffer(1, Math.floor(context.sampleRate * 0.24), context.sampleRate);
+  const noiseData = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < noiseData.length; i++) {
+    const fade = 1 - i / noiseData.length;
+    noiseData[i] = (Math.random() * 2 - 1) * fade;
+  }
+  const impactNoise = context.createBufferSource();
+  impactNoise.buffer = noiseBuffer;
+  const impactFilter = context.createBiquadFilter();
+  impactFilter.type = "bandpass";
+  impactFilter.frequency.setValueAtTime(760, now);
+  impactFilter.Q.value = 0.72;
+  const impactGain = context.createGain();
+  impactGain.gain.setValueAtTime(0.0001, now);
+  impactGain.gain.exponentialRampToValueAtTime(0.2, now + 0.012);
+  impactGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.23);
+  impactNoise.connect(impactFilter);
+  impactFilter.connect(impactGain);
+  impactGain.connect(context.destination);
+  impactNoise.onended = () => {
+    impactNoise.disconnect();
+    impactFilter.disconnect();
+    impactGain.disconnect();
+  };
+  impactNoise.start(now);
+
+  const thump = context.createOscillator();
+  const thumpGain = context.createGain();
+  thump.type = "sine";
+  thump.frequency.setValueAtTime(112, now);
+  thump.frequency.exponentialRampToValueAtTime(43, now + 0.2);
+  thumpGain.gain.setValueAtTime(0.0001, now);
+  thumpGain.gain.exponentialRampToValueAtTime(0.22, now + 0.008);
+  thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+  thump.connect(thumpGain);
+  thumpGain.connect(context.destination);
+  thump.onended = () => {
+    thump.disconnect();
+    thumpGain.disconnect();
+  };
+  thump.start(now);
+  thump.stop(now + 0.25);
+
+  // Quejido breve sintetizado con armónicos y formantes para sugerir una exclamación de dolor.
+  const cry = context.createOscillator();
+  const cryFormant = context.createBiquadFilter();
+  const cryGain = context.createGain();
+  cry.type = "sawtooth";
+  cry.frequency.setValueAtTime(196, now + 0.035);
+  cry.frequency.exponentialRampToValueAtTime(142, now + 0.25);
+  cry.frequency.exponentialRampToValueAtTime(118, now + 0.48);
+  cryFormant.type = "bandpass";
+  cryFormant.frequency.setValueAtTime(690, now + 0.035);
+  cryFormant.frequency.exponentialRampToValueAtTime(505, now + 0.45);
+  cryFormant.Q.value = 1.15;
+  cryGain.gain.setValueAtTime(0.0001, now + 0.035);
+  cryGain.gain.exponentialRampToValueAtTime(0.075, now + 0.085);
+  cryGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.56);
+  cry.connect(cryFormant);
+  cryFormant.connect(cryGain);
+  cryGain.connect(context.destination);
+  cry.onended = () => {
+    cry.disconnect();
+    cryFormant.disconnect();
+    cryGain.disconnect();
+  };
+  cry.start(now + 0.035);
+  cry.stop(now + 0.58);
+
+  const cryHarmonic = context.createOscillator();
+  const harmonicFilter = context.createBiquadFilter();
+  const harmonicGain = context.createGain();
+  cryHarmonic.type = "triangle";
+  cryHarmonic.frequency.setValueAtTime(392, now + 0.035);
+  cryHarmonic.frequency.exponentialRampToValueAtTime(236, now + 0.49);
+  harmonicFilter.type = "bandpass";
+  harmonicFilter.frequency.value = 1180;
+  harmonicFilter.Q.value = 1.35;
+  harmonicGain.gain.setValueAtTime(0.0001, now + 0.035);
+  harmonicGain.gain.exponentialRampToValueAtTime(0.018, now + 0.09);
+  harmonicGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.48);
+  cryHarmonic.connect(harmonicFilter);
+  harmonicFilter.connect(harmonicGain);
+  harmonicGain.connect(context.destination);
+  cryHarmonic.onended = () => {
+    cryHarmonic.disconnect();
+    harmonicFilter.disconnect();
+    harmonicGain.disconnect();
+  };
+  cryHarmonic.start(now + 0.035);
+  cryHarmonic.stop(now + 0.5);
+}
+
 function createEngineAudio(): EngineAudio {
   const context = new window.AudioContext();
   const filter = context.createBiquadFilter();
@@ -1698,8 +1839,9 @@ function createEngineAudio(): EngineAudio {
 export function Route40LowPolyOpening() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const titleRef = useRef<HTMLDivElement | null>(null);
-  const blackRef = useRef<HTMLDivElement | null>(null);
-  const endingTitleRef = useRef<HTMLDivElement | null>(null);
+  const locationRef = useRef<HTMLDivElement | null>(null);
+  const driverReactionRef = useRef<HTMLDivElement | null>(null);
+  const timeJumpRef = useRef<HTMLDivElement | null>(null);
   const gameHudRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef<HTMLDivElement | null>(null);
   const speedRef = useRef<HTMLSpanElement | null>(null);
@@ -1748,6 +1890,7 @@ export function Route40LowPolyOpening() {
     let travelled = 0;
     let signalEncounterStartedAt=0,signalAimStartedAt=0,escapeStartedAt=0,npcImpactAt=0;
     let npcImpactX=0,npcImpactZ=THREAT_Z;
+    let impactEffectsPlayed=false;
     // La cinemática entrega el vehículo ya rodando; no necesita que el jugador lo arranque desde cero.
     let driveSpeed = 4.15;
     let laneOffset = 0;
@@ -1794,7 +1937,7 @@ export function Route40LowPolyOpening() {
       pointerX = event.clientX;
       pointerY = event.clientY;
       if (event.pointerType === "mouse") {
-        if ((stageRef.current === "driving" && performance.now() - startedAt >= DURATION * 1000) || stageRef.current === "climbing") {
+        if ((stageRef.current === "driving" && performance.now() - startedAt >= DURATION * 1000) || stageRef.current === "climbing" || stageRef.current === "escape") {
           startEngineAudio();
           const requestLock = (canvas as HTMLCanvasElement & { requestPointerLock?: () => void | Promise<void> }).requestPointerLock;
           if (requestLock) {
@@ -1846,6 +1989,7 @@ export function Route40LowPolyOpening() {
     let cockpitMesh: Mesh | null = null;
     let steeringAssemblyMesh: Mesh | null = null;
     let windshieldMesh: Mesh | null = null;
+    let windshieldCracksMesh: Mesh | null = null;
     let pathActors: Array<{mesh:Mesh;baseZ:number;speed:number;lateral:number;reverse:boolean}> = [];
     let trafficActors: Array<{mesh:Mesh;baseZ:number;speed:number}> = [];
     let footballActors: Array<{mesh:Mesh;baseX:number;baseZ:number;phase:number;speed:number;radiusX:number;radiusZ:number}> = [];
@@ -1878,6 +2022,7 @@ export function Route40LowPolyOpening() {
       cockpitMesh = createMesh(gl, buildCockpit());
       steeringAssemblyMesh = createMesh(gl, buildSteeringAssembly());
       windshieldMesh = createMesh(gl, buildWindshield());
+      windshieldCracksMesh = createMesh(gl, buildWindshieldCracks());
       const people=[
         // Bicicletas: circulación pausada, más lenta que la gente a pie.
         {kind:"bike" as const,baseZ:-112,speed:.28,lateral:-.34,reverse:false,color:"#bb653f"},
@@ -2030,12 +2175,35 @@ export function Route40LowPolyOpening() {
         }
       }
       if(stageRef.current==="escape"){
-        const escapeAge=(now-escapeStartedAt)/1000;
-        driveSpeed=Math.min(9.4,driveSpeed+dt*4.2);
+        const braking=keys.has("s");
+        const accelerating=keys.has("w")&&!braking;
+        if(braking)driveSpeed=Math.max(0,driveSpeed-dt*8.2);
+        else if(accelerating)driveSpeed=Math.min(9.4,driveSpeed+dt*5.1);
+        else driveSpeed=Math.min(9.4,driveSpeed+dt*4.2);
+        if(keys.has("a"))laneOffset=clamp(laneOffset-dt*1.85,-2.35,2.35);
+        if(keys.has("d"))laneOffset=clamp(laneOffset+dt*1.85,-2.35,2.35);
+        if(keys.has("arrowleft")||keys.has("q"))lookYawTarget-=dt*1.1;
+        if(keys.has("arrowright"))lookYawTarget+=dt*1.1;
+        if(keys.has("arrowup"))lookPitchTarget=clamp(lookPitchTarget+dt*.7,-.48,.48);
+        if(keys.has("arrowdown"))lookPitchTarget=clamp(lookPitchTarget-dt*.7,-.48,.48);
+        lookYaw=mix(lookYaw,lookYawTarget,1-Math.exp(-dt*18));
+        lookPitch=mix(lookPitch,lookPitchTarget,1-Math.exp(-dt*18));
         travelled+=driveSpeed*dt;
         const movingCarZ=-DURATION*4.1-travelled;
-        if(npcImpactAt===0&&movingCarZ<=npcImpactZ+2.35)npcImpactAt=now;
-        if(escapeAge>=10){driveSpeed=0;keys.clear();if(document.pointerLockElement)document.exitPointerLock();engineAudioRef.current?.stop();setStage("finished");}
+        if(npcImpactAt===0&&movingCarZ<=npcImpactZ+2.35){
+          npcImpactAt=now;
+          if(!impactEffectsPlayed){
+            impactEffectsPlayed=true;
+            const audioContext=engineAudioRef.current?.context;
+            if(audioContext)playNpcImpactSequence(audioContext);
+          }
+        }
+        // Se conserva la salida narrativa, pero recién después de mostrar el salto temporal completo.
+        if(npcImpactAt>0&&now-npcImpactAt>=15500){
+          driveSpeed=0;keys.clear();
+          if(document.pointerLockElement)document.exitPointerLock();
+          engineAudioRef.current?.stop();setStage("finished");
+        }
       }
       const rect = canvas.getBoundingClientRect();
       const width = Math.max(1, rect.width);
@@ -2258,6 +2426,9 @@ export function Route40LowPolyOpening() {
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.depthMask(false);
         bindMesh(gl, program, windshieldMesh, viewProjection, view, carModel, 0.19);
+        if(npcImpactAt>0&&windshieldCracksMesh){
+          bindMesh(gl,program,windshieldCracksMesh,viewProjection,view,carModel,.88);
+        }
         gl.depthMask(true);
         gl.disable(gl.BLEND);
       }
@@ -2279,14 +2450,23 @@ export function Route40LowPolyOpening() {
       if (titleRef.current) {
         titleRef.current.style.opacity = String(smooth(0.28, 0.9, elapsed) * (1 - smooth(4.1, 4.7, elapsed)));
       }
-      if (blackRef.current) {
-        const fadeToPlay = smooth(11.6, 12.45, elapsed) * (1 - smooth(13.05, 13.9, elapsed));
-        blackRef.current.style.opacity = String(fadeToPlay * 0.985);
+      if (locationRef.current) {
+        const locationOpacity = smooth(DURATION + 0.02, DURATION + 0.42, elapsed) *
+          (1 - smooth(DURATION + 4.6, DURATION + 5.2, elapsed));
+        locationRef.current.style.opacity = String(locationOpacity);
       }
-      if (endingTitleRef.current) {
-        endingTitleRef.current.style.opacity = String(
-          smooth(12.25, 12.75, elapsed) * (1 - smooth(13.28, 13.92, elapsed)),
-        );
+      const impactElapsed = npcImpactAt > 0 ? (now - npcImpactAt) / 1000 : -1;
+      if (driverReactionRef.current) {
+        const reactionOpacity = impactElapsed >= 0
+          ? smooth(0.08, 0.28, impactElapsed) * (1 - smooth(2.7, 3.25, impactElapsed))
+          : 0;
+        driverReactionRef.current.style.opacity = String(reactionOpacity);
+      }
+      if (timeJumpRef.current) {
+        const timeJumpOpacity = impactElapsed >= 0
+          ? smooth(10, 10.65, impactElapsed) * (1 - smooth(13.75, 14.45, impactElapsed))
+          : 0;
+        timeJumpRef.current.style.opacity = String(timeJumpOpacity);
       }
       if (gameHudRef.current) {
         gameHudRef.current.style.opacity = String(
@@ -2295,7 +2475,9 @@ export function Route40LowPolyOpening() {
         );
       }
       if (progressRef.current) {
-        const progress = stageRef.current === "escape" ? (now-escapeStartedAt)/10000 : stageRef.current === "climbing" ? climbElapsed/8.6 : driveElapsed/20;
+        const progress = stageRef.current === "escape"
+          ? (npcImpactAt>0?(now-npcImpactAt)/15500:(now-escapeStartedAt)/18500)
+          : stageRef.current === "climbing" ? climbElapsed/8.6 : driveElapsed/20;
         progressRef.current.style.width = String(clamp(progress, 0, 1) * 100) + "%";
       }
       if (speedRef.current) speedRef.current.textContent = String(Math.round(driveSpeed * 19));
@@ -2327,6 +2509,7 @@ export function Route40LowPolyOpening() {
       if (cockpitMesh) gl.deleteBuffer(cockpitMesh.buffer);
       if (steeringAssemblyMesh) gl.deleteBuffer(steeringAssemblyMesh.buffer);
       if (windshieldMesh) gl.deleteBuffer(windshieldMesh.buffer);
+      if (windshieldCracksMesh) gl.deleteBuffer(windshieldCracksMesh.buffer);
       if (crashExplosionMesh) gl.deleteBuffer(crashExplosionMesh.buffer);
       if(armedThreatBodyMesh)gl.deleteBuffer(armedThreatBodyMesh.buffer);
       if(armedThreatArmsMesh)gl.deleteBuffer(armedThreatArmsMesh.buffer);
@@ -2371,21 +2554,31 @@ export function Route40LowPolyOpening() {
       <div className="pointer-events-none absolute inset-0 z-10 opacity-[0.14] mix-blend-screen" style={{ background: "repeating-linear-gradient(0deg, rgba(0,0,0,0.45) 0px, rgba(0,0,0,0.45) 1px, transparent 1px, transparent 4px)" }} />
       <div className="pointer-events-none absolute inset-0 z-10 opacity-[0.12]" style={{ background: "linear-gradient(90deg, rgba(193,78,68,0.14), transparent 14%, transparent 86%, rgba(75,155,174,0.13)), radial-gradient(ellipse at center, transparent 48%, rgba(0,0,0,0.55) 100%)" }} />
       <div
-        ref={blackRef}
-        className="pointer-events-none absolute inset-0 z-20 bg-[#030507]"
-        style={{ opacity: 0 }}
-      />
-      <div
-        ref={endingTitleRef}
-        className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center"
+        ref={locationRef}
+        className="pointer-events-none absolute inset-x-0 top-[7%] z-30 text-center"
         style={{ opacity: 0 }}
       >
-        <div className="text-center">
-          <p className="font-serif text-4xl tracking-[0.16em] text-[#f0d8bd] drop-shadow-[0_0_32px_rgba(255,170,105,0.55)] sm:text-6xl">
-            EL BOLSÓN · RÍO NEGRO
-          </p>
-          <div className="mx-auto mt-5 h-px w-28 bg-[#c28e69]/70" />
-        </div>
+        <p className="inline-block border-y border-amber-100/25 px-5 py-2 font-serif text-lg tracking-[0.2em] text-[#f0dfc8] drop-shadow-[0_2px_14px_rgba(0,0,0,0.82)] sm:text-2xl">
+          El Bolsón, Argentina
+        </p>
+      </div>
+      <div
+        ref={driverReactionRef}
+        className="pointer-events-none absolute inset-x-4 bottom-[10%] z-40 flex justify-center text-center"
+        style={{ opacity: 0 }}
+      >
+        <p className="max-w-2xl border-y border-amber-100/30 bg-[#101820]/72 px-6 py-4 font-serif text-xl tracking-[0.09em] text-[#fff0d8] shadow-[0_0_35px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:text-3xl">
+          ¡MIERDA, MIERDA, MIERDA!
+        </p>
+      </div>
+      <div
+        ref={timeJumpRef}
+        className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center px-5 text-center"
+        style={{ opacity: 0 }}
+      >
+        <p className="font-serif text-3xl tracking-[0.12em] text-[#f4e4d1] drop-shadow-[0_3px_24px_rgba(0,0,0,0.9)] sm:text-5xl">
+          30 minutos más tarde...
+        </p>
       </div>
       <div
         ref={gameHudRef}
