@@ -1987,7 +1987,7 @@ export function Route40LowPolyOpening() {
       }
       if(stageRef.current==="signalAim"){
         driveSpeed=0;
-        if(now-signalAimStartedAt>=NPC_AIM_RAISE_MS+NPC_AIM_HOLD_MS){
+        if(now-signalAimStartedAt>=NPC_AIM_HOLD_MS){
           escapeStartedAt=now;
           npcImpactZ=THREAT_Z;
           npcImpactX=roadCenter(THREAT_Z);
@@ -2145,11 +2145,11 @@ export function Route40LowPolyOpening() {
         const threatAge=stageRef.current==="signalEncounter"
           ? clamp((now-signalEncounterStartedAt)/1000,0,3)
           : 3;
-        const aimElapsed=stageRef.current==="signalAim"?(now-signalAimStartedAt)/1000:stageRef.current==="escape"?1:0;
-        const aimProgress=stageRef.current==="signalEncounter"?0:stageRef.current==="signalAim"
-          ? smooth(0,NPC_AIM_RAISE_MS/1000,aimElapsed)
+        const aimStartSeconds=(NPC_NERVOUS_MS-NPC_AIM_RAISE_MS)/1000;
+        const aimProgress=stageRef.current==="signalEncounter"
+          ? smooth(aimStartSeconds,NPC_NERVOUS_MS/1000,threatAge)
           : 1;
-        const nervousness=stageRef.current==="signalEncounter"?1:stageRef.current==="signalAim"?1-aimProgress:0;
+        const nervousness=stageRef.current==="signalEncounter"?1-aimProgress:0;
         const anger=stageRef.current==="signalEncounter"?smooth(1.1,2.8,threatAge):1;
         const bodySway=stageRef.current==="escape"&&npcImpactAt>0
           ? 0
