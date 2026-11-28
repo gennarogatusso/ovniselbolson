@@ -15,6 +15,7 @@ const FIELD_Z_OFFSET = -149;
 const NPC_NERVOUS_MS = 3000;
 const NPC_AIM_RAISE_MS = 720;
 const NPC_AIM_HOLD_MS = 1000;
+const NPC_WARNING_TEXT = "Tené cuidado... Esta noche vienen ellos.";
 const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
 const smooth = (a: number, b: number, n: number) => {
   const t = clamp((n - a) / (b - a), 0, 1);
@@ -1617,6 +1618,20 @@ function multiply(a: Float32Array, b: Float32Array) {
   return out;
 }
 
+function projectToViewport(point: V3, viewProjection: Float32Array, width: number, height: number) {
+  const clipX = viewProjection[0]! * point[0] + viewProjection[4]! * point[1] + viewProjection[8]! * point[2] + viewProjection[12]!;
+  const clipY = viewProjection[1]! * point[0] + viewProjection[5]! * point[1] + viewProjection[9]! * point[2] + viewProjection[13]!;
+  const clipW = viewProjection[3]! * point[0] + viewProjection[7]! * point[1] + viewProjection[11]! * point[2] + viewProjection[15]!;
+  if (clipW <= 0.001) return null;
+  const ndcX = clipX / clipW;
+  const ndcY = clipY / clipW;
+  if (Math.abs(ndcX) > 1.5 || Math.abs(ndcY) > 1.5) return null;
+  return {
+    x: (ndcX * 0.5 + 0.5) * width,
+    y: (1 - (ndcY * 0.5 + 0.5)) * height,
+  };
+}
+
 function translation(x: number, y: number, z: number) {
   const matrix = new Float32Array(16);
   matrix[0] = 1; matrix[5] = 1; matrix[10] = 1; matrix[15] = 1;
@@ -1839,6 +1854,8 @@ function createEngineAudio(): EngineAudio {
 export function Route40LowPolyOpening() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const titleRef = useRef<HTMLDivElement | null>(null);
+  const npcDialogueRef = useRef<HTMLDivElement | null>(null);
+  const npcDialogueTextRef = useRef<HTMLSpanElement | null>(null);
   const locationRef = useRef<HTMLDivElement | null>(null);
   const driverReactionRef = useRef<HTMLDivElement | null>(null);
   const timeJumpRef = useRef<HTMLDivElement | null>(null);
@@ -2362,6 +2379,39 @@ export function Route40LowPolyOpening() {
         const fallRotation=rotationZ(1.48*impactFall);
         const npcRoot=multiply(translation(npcX,npcY+bodyBob,npcZ),fallRotation);
         const bodyModel=multiply(npcRoot,rotationZ(bodySway));
+        if(npcDialogueRef.current&&npcDialogueTextRef.current){
+          const warningAge=stageRef.current==="signalEncounter"
+            ? clamp((now-signalEncounterStartedAt)/1000,0,3)
+            : stageRef.current==="signalAim"
+              ? 3+clamp((now-signalAimStartedAt)/1000,0,1)
+              : -1;
+          if(warningAge>=0){
+            const reveal=smooth(0.08,1.35,warningAge);
+            const visibleCharacters=Math.min(NPC_WARNING_TEXT.length,Math.ceil(NPC_WARNING_TEXT.length*reveal));
+            npcDialogueTextRef.current.textContent=NPC_WARNING_TEXT.slice(0,visibleCharacters);
+            const opacity=smooth(0.06,0.28,warningAge)*(1-smooth(3.72,4.02,warningAge));
+            const headX=npcX-Math.sin(bodySway)*2.82;
+            const headY=npcY+bodyBob+Math.cos(bodySway)*2.82;
+            const anchor=projectToViewport([headX,headY,npcZ],viewProjection,rect.width,rect.height);
+            if(anchor){
+              const panelWidth=Math.min(320,Math.max(220,rect.width-24));
+              const halfPanel=panelWidth*.5;
+              const screenX=clamp(anchor.x,halfPanel+8,rect.width-halfPanel-8);
+              const screenY=clamp(anchor.y,92,rect.height-28);
+              npcDialogueRef.current.style.transform=
+                `translate3d(${rect.left+screenX}px,${rect.top+screenY}px,0) translate(-50%,calc(-100% - 14px))`;
+              npcDialogueRef.current.style.opacity=String(opacity);
+              npcDialogueRef.current.style.visibility=opacity>.005?"visible":"hidden";
+            }else{
+              npcDialogueRef.current.style.opacity="0";
+              npcDialogueRef.current.style.visibility="hidden";
+            }
+          }else{
+            npcDialogueRef.current.style.opacity="0";
+            npcDialogueRef.current.style.visibility="hidden";
+            npcDialogueTextRef.current.textContent="";
+          }
+        }
         bindMesh(gl,program,armedThreatBodyMesh,viewProjection,view,bodyModel);
         if(armedThreatArmsMesh){
           const jitterGain=stageRef.current==="escape"?0:(.035+.105*smooth(0,2.7,threatAge))*nervousness;
@@ -2642,16 +2692,27 @@ export function Route40LowPolyOpening() {
           </div>
         </div>
       </div>
-      {(interactionStage === "signalEncounter" || interactionStage === "signalAim") && (
-        <div className="pointer-events-none absolute inset-x-4 bottom-[10%] z-40 flex justify-center">
-          <div className="w-full max-w-2xl border border-red-200/40 bg-[#101820]/92 px-6 py-5 text-center shadow-[0_0_48px_rgba(0,0,0,.62)] backdrop-blur-md">
-            <p className="font-mono text-[9px] tracking-[.34em] text-red-200/90">
-              {interactionStage === "signalEncounter" ? "UN HOMBRE ARMADO ESTÁ NERVIOSO" : "EL HOMBRE LEVANTA EL ARMA Y TE APUNTA"}
-            </p>
-            <p className="mt-3 font-serif text-lg leading-relaxed text-[#fff0d8] sm:text-2xl">“TENE CUIDADO HOY A LA NOCHE VIENEN ELLOS, TIENES QUE ESCONDERTE”</p>
+      <div
+        ref={npcDialogueRef}
+        className="pointer-events-none absolute left-0 top-0 z-50 w-[min(320px,calc(100vw-24px))]"
+        style={{ opacity: 0, visibility: "hidden", transform: "translate3d(-1000px,-1000px,0) translate(-50%,-100%)" }}
+        aria-live="polite"
+      >
+        <div className="relative rounded-md border border-amber-100/25 bg-[#101820]/88 px-4 py-3 text-center shadow-[0_10px_34px_rgba(0,0,0,.48)] backdrop-blur-md">
+          <div className="mb-1.5 flex items-center justify-center gap-2">
+            <span className="h-px w-5 bg-amber-200/45" />
+            <span className="font-mono text-[9px] tracking-[.28em] text-amber-100/75">ADVERTENCIA</span>
+            <span className="h-px w-5 bg-amber-200/45" />
+          </div>
+          <p className="font-serif text-[15px] leading-snug tracking-[.015em] text-[#fff0dc] sm:text-base">
+            <span ref={npcDialogueTextRef} />
+          </p>
+          <div className="pointer-events-none absolute left-1/2 top-full flex -translate-x-1/2 flex-col items-center">
+            <span className="h-2.5 w-px bg-gradient-to-b from-amber-100/45 to-amber-100/10" />
+            <span className="h-1 w-1 rounded-full bg-amber-100/55 shadow-[0_0_8px_rgba(238,205,160,.55)]" />
           </div>
         </div>
-      )}
+      </div>
       {interactionStage === "crashed" && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#160b0b]/75 px-5 text-center backdrop-blur-sm">
           <div className="w-full max-w-lg border border-orange-200/30 bg-[#170f10]/95 px-8 py-10 shadow-[0_0_80px_rgba(244,89,43,.32)]">
