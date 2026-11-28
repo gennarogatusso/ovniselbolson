@@ -172,11 +172,10 @@ function roadHeightAt(z: number) {
 function terrainSurfaceY(x: number, z: number) {
   const naturalGround = terrainY(x, z);
   const distanceFromRoad = Math.abs(x - roadCenter(z));
-  // Wide clearance is intentional because the terrain grid is coarser than the road mesh.
-  const roadCorridor = 1 - smooth(8, 19, distanceFromRoad);
-  const dip = roadDipAt(z);
-  const clearance = -0.85 + dip;
-  return naturalGround + clearance * roadCorridor;
+  // El paisaje acompaña la bajada a escala amplia; una holgura local evita que el terreno atraviese el asfalto.
+  const downhillEnvelope = 1 - smooth(20, 68, distanceFromRoad);
+  const roadClearance = 1 - smooth(6.2, 19, distanceFromRoad);
+  return naturalGround + roadDipAt(z) * downhillEnvelope - 0.78 * roadClearance;
 }
 
 const PIXEL_GLYPHS: Record<string, string[]> = {
