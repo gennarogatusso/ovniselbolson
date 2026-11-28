@@ -3257,8 +3257,16 @@ export function Route40LowPolyOpening() {
       if (document.pointerLockElement === canvas) document.exitPointerLock();
       window.cancelAnimationFrame(frame);
       if (worldMesh) gl.deleteBuffer(worldMesh.buffer);
+      if (campingWorldMesh) gl.deleteBuffer(campingWorldMesh.buffer);
+      if (campingWaterMesh) gl.deleteBuffer(campingWaterMesh.buffer);
+      if (campingBridgeMesh) gl.deleteBuffer(campingBridgeMesh.buffer);
+      if (campingGateLeafMesh) gl.deleteBuffer(campingGateLeafMesh.buffer);
       if (campingCarExteriorMesh) gl.deleteBuffer(campingCarExteriorMesh.buffer);
+      if (campingDoorMesh) gl.deleteBuffer(campingDoorMesh.buffer);
       if (campingTrunkClosedMesh) gl.deleteBuffer(campingTrunkClosedMesh.buffer);
+      if (campingTrunkLidMesh) gl.deleteBuffer(campingTrunkLidMesh.buffer);
+      if (campingCharacterMesh) gl.deleteBuffer(campingCharacterMesh.buffer);
+      if (campingGearMesh) gl.deleteBuffer(campingGearMesh.buffer);
       if (destinationSignMesh) gl.deleteBuffer(destinationSignMesh.buffer);
       if (skyMesh) gl.deleteBuffer(skyMesh.buffer);
       if (carMesh) gl.deleteBuffer(carMesh.buffer);
