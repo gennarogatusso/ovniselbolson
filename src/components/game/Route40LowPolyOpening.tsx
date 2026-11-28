@@ -453,7 +453,7 @@ function buildWorld() {
   const random = randomSource(4081);
   const destinationSignZ = -53;
 
-  // Terreno patagónico irregular: una malla triangulada, no una imagen de fondo.
+  // Terreno patagónico nocturno: relieve poligonal y valores oscuros para que destaque la luz del auto.
   const xSteps = 36, zSteps = 106;
   for (let zi = 0; zi < zSteps; zi++) {
     const z0 = -304 + (zi / zSteps) * 322;
@@ -466,7 +466,7 @@ function buildWorld() {
       const b: V3 = [x0, terrainSurfaceY(x0, z1), z1];
       const c: V3 = [x1, terrainSurfaceY(x1, z1), z1];
       const d: V3 = [x1, terrainSurfaceY(x1, z0), z0];
-      const palette = random() > 0.56 ? hex("#29352f") : hex("#303a33");
+      const palette = random() > 0.56 ? hex("#1a2830") : hex("#202b33");
       const shade = 0.88 + random() * 0.18;
       world.quad(a, b, c, d, [palette[0] * shade, palette[1] * shade, palette[2] * shade]);
     }
@@ -486,9 +486,9 @@ function buildWorld() {
     const left1 = c1 - 4.15, right1 = c1 + 4.15;
     const roadY0 = roadHeightAt(z);
     const roadY1 = roadHeightAt(next);
-    world.quad([left0, roadY0, z], [left1, roadY1, next], [right1, roadY1, next], [right0, roadY0, z], hex("#383d40"));
-    world.quad([c0 - 5.25, roadY0 - 0.05, z], [c1 - 5.25, roadY1 - 0.05, next], [left1, roadY1 - 0.05, next], [left0, roadY0 - 0.05, z], hex("#716d5e"));
-    world.quad([right0, roadY0 - 0.05, z], [right1, roadY1 - 0.05, next], [c1 + 5.25, roadY1 - 0.05, next], [c0 + 5.25, roadY0 - 0.05, z], hex("#716d5e"));
+    world.quad([left0, roadY0, z], [left1, roadY1, next], [right1, roadY1, next], [right0, roadY0, z], hex("#202a33"));
+    world.quad([c0 - 5.25, roadY0 - 0.05, z], [c1 - 5.25, roadY1 - 0.05, next], [left1, roadY1 - 0.05, next], [left0, roadY0 - 0.05, z], hex("#30363b"));
+    world.quad([right0, roadY0 - 0.05, z], [right1, roadY1 - 0.05, next], [c1 + 5.25, roadY1 - 0.05, next], [c0 + 5.25, roadY0 - 0.05, z], hex("#30363b"));
     // Doble línea central amarilla, continua y gastada.
     for (const offset of [-0.105, 0.105]) {
       world.quad(
@@ -537,6 +537,27 @@ function buildWorld() {
       const height = 5.5 + random() * 8;
       addPine(world, x, z, terrainY(x, z), height, Math.floor(random() * 1000));
     }
+  }
+
+  // Bosque profundo en varias capas: pinos de tamaños y distancias diferentes, sin invadir la calzada.
+  const distantForest = randomSource(2284);
+  for (let i = 0; i < 34; i++) {
+    const z = -45 - i * 7.25 - distantForest() * 2.2;
+    for (const side of [-1, 1]) {
+      if (side === 1 && Math.abs(z + 166) < 24) continue;
+      const x = roadCenter(z) + side * (13 + distantForest() * 37);
+      const depthScale = 0.68 + (i / 34) * 0.32;
+      const height = (5.1 + distantForest() * 6.8) * depthScale;
+      addPine(world, x, z, terrainY(x, z), height, Math.floor(distantForest() * 1000));
+    }
+  }
+
+  // Pequeñas luces cálidas del valle, muy alejadas y suavizadas por la niebla.
+  for (let i = 0; i < 9; i++) {
+    const z = -188 - i * 9.2;
+    const x = roadCenter(z) + (i % 2 === 0 ? -1 : 1) * (35 + distantForest() * 30);
+    const y = terrainY(x, z) + 2.6 + distantForest() * 1.8;
+    world.box([x, y, z], [0.32, 0.24, 0.16], i % 3 === 0 ? hex("#e8b978") : hex("#d79d6d"));
   }
 
   // Taludes rocosos que acompañan la pendiente y árboles pegados al camino.
@@ -628,27 +649,35 @@ function buildWorld() {
 
 function buildSkyDressing() {
   const sky = new MeshBuilder();
-  const sunCore = hex("#fff0c4");
-  const sunGold = hex("#ffd18b");
-  const cloudLight = hex("#e4d9c6");
-  const cloudShade = hex("#b9c0c0");
-  // Sol bajo de Patagonia, con discos superpuestos para un halo suave.
-  sky.disc(-17, 31, -205, 7.2, hex("#f0a96f"), 48);
-  sky.disc(-17, 31, -204.8, 5.1, sunGold, 48);
-  sky.disc(-17, 31, -204.6, 3.35, sunCore, 48);
-  // Nubes cúmulo low-poly en varias capas, con volumen y bordes cálidos.
-  const clouds = [
-    [-37, 36, -190, 13, 3.1, 4.2], [-29, 37.2, -190, 11, 4.1, 4.8],
-    [-20, 36.2, -190, 12, 3.2, 4.2], [5, 40, -215, 15, 3.2, 5.2],
-    [16, 41.2, -215, 12, 4.1, 5.2], [27, 39.8, -215, 14, 3.2, 5.2],
-    [-48, 29, -164, 11, 2.5, 4.2], [-39, 30, -164, 9, 3.2, 4.2],
-    [39, 33, -188, 13, 2.8, 4.8], [48, 34, -188, 9, 3.5, 4.8],
+  const random = randomSource(9041);
+
+  // Luna fría y halo tenue sobre la cordillera patagónica.
+  sky.disc(-43, 39, -296, 6.2, hex("#566477"), 40);
+  sky.disc(-43, 39, -295.7, 3.9, hex("#c3cbd1"), 40);
+  sky.disc(-43, 39, -295.4, 2.8, hex("#dbe0df"), 40);
+
+  // Cordillera de siluetas lejanas; los picos quedan detrás del bosque y se funden con la niebla.
+  const peaks = [
+    [-154, -8], [-128, 5], [-106, -4], [-82, 23], [-61, -6],
+    [-39, 13], [-17, 42], [8, 5], [32, 31], [56, -5],
+    [77, 20], [101, -5], [126, 14], [154, -8],
   ];
-  for (let i = 0; i < clouds.length; i++) {
-    const [x,y,z,w,h,d] = clouds[i]!;
-    sky.box([x, y, z], [w, h, d], cloudShade, hex("#aeb8bb"));
-    sky.box([x - w * 0.2, y + h * 0.27, z - 0.08], [w * 0.58, h * 0.68, d * 0.9], cloudLight);
-    sky.box([x + w * 0.24, y + h * 0.2, z + 0.06], [w * 0.48, h * 0.56, d * 0.88], i % 2 ? cloudLight : hex("#d7d1c4"));
+  for (let i = 0; i < peaks.length - 1; i++) {
+    const [x0, y0] = peaks[i]!;
+    const [x1, y1] = peaks[i + 1]!;
+    const peakX = (x0 + x1) * 0.5;
+    const peakY = Math.max(y0, y1) + 11 + random() * 8;
+    const shade = i % 3 === 0 ? hex("#293449") : i % 3 === 1 ? hex("#354054") : hex("#30394d");
+    sky.triangle([x0, -11, -286], [peakX, peakY, -292], [x1, -11, -286], shade);
+    sky.triangle([x0, -11, -286.2], [peakX, Math.max(0, peakY * 0.5), -291.9], [x1, -11, -286.2], hex("#41495b"));
+  }
+
+  // Estrellas pequeñas; el ruido VHS sigue siendo visible, pero el cielo ya es nocturno.
+  for (let i = 0; i < 48; i++) {
+    const x = -112 + random() * 224;
+    const y = 24 + random() * 54;
+    const radius = 0.09 + random() * 0.16;
+    sky.disc(x, y, -300 + random() * 1.5, radius, i % 5 === 0 ? hex("#d8d7cf") : hex("#8e9fb4"), 5);
   }
   return sky;
 }
@@ -746,7 +775,6 @@ function buildCockpit() {
   cockpit.box([0, 0.91, -0.877], [0.58, 0.025, 0.012], screenGreen);
   cockpit.box([-0.22, 0.965, -0.874], [0.035, 0.025, 0.012], amber);
   cockpit.box([0.22, 0.965, -0.874], [0.035, 0.025, 0.012], amber);
-  addPixelText(cockpit, "R40", 0, 0.875, -0.86, 0.017, warmWhite);
 
   // Rejillas de ventilación con láminas metálicas.
   for (const x of [-0.52, 0.52]) {
@@ -880,9 +908,9 @@ function buildCockpit() {
     cockpit.beam([side * 1.95, 1.19, -2.53], [side * 1.95, 1.57, -2.53], 0.025, silverDark);
   }
 
-  // Techo delantero y prolongación sobre las plazas traseras para una visión 360° coherente.
-  cockpit.box([0, 2.34, -3.35], [3.58, 0.19, 2.62], hex("#20272b"), hex("#11171c"));
-  cockpit.box([0, 2.34, 0.58], [3.58, 0.19, 3.2], hex("#20272b"), hex("#11171c"));
+  // Techo elevado y más fino: deja respirar el parabrisas y mantiene visible el marco al mirar 360°.
+  cockpit.box([0, 2.57, -3.48], [3.48, 0.13, 1.72], hex("#303a40"), hex("#202930"));
+  cockpit.box([0, 2.57, 0.55], [3.48, 0.13, 2.72], hex("#303a40"), hex("#202930"));
   // Asiento trasero, respaldo, apoyacabezas y bandeja posterior.
   cockpit.box([0, 0.56, 2.05], [2.95, 0.28, 1.45], leather, hex("#1d2428"));
   cockpit.box([0, 1.12, 2.63], [2.95, 1.0, 0.34], leather, hex("#343638"));
@@ -897,17 +925,36 @@ function buildCockpit() {
     cockpit.beam([side * 1.73, 1.78, -0.15], [side * 1.73, 2.23, -0.2], 0.11, hex("#1b2429"));
     cockpit.beam([side * 1.52, 0.96, 2.05], [side * 1.74, 2.22, 2.75], 0.13, hex("#1b2429"));
   }
-  cockpit.beam([-1.74, 2.22, 2.75], [1.74, 2.22, 2.75], 0.15, hex("#11181d"));
-  cockpit.beam([-1.68, 2.245, -4.56], [1.68, 2.245, -4.56], 0.11, hex("#11181d"));
+  cockpit.beam([-1.74, 2.48, 2.75], [1.74, 2.48, 2.75], 0.13, hex("#182128"));
+  cockpit.beam([-1.68, 2.48, -4.56], [1.68, 2.48, -4.56], 0.11, hex("#182128"));
   for (const side of [-1, 1]) {
-    cockpit.box([side * 0.94, 2.22, -2.75], [0.72, 0.11, 0.48], hex("#34393a"));
-    cockpit.box([side * 0.94, 2.15, -2.52], [0.08, 0.08, 0.08], silverDark);
+    cockpit.box([side * 0.94, 2.44, -2.75], [0.72, 0.11, 0.48], hex("#3b454b"));
+    cockpit.box([side * 0.94, 2.37, -2.52], [0.08, 0.08, 0.08], silverDark);
   }
-  cockpit.box([0, 2.21, -3.02], [0.3, 0.07, 0.42], hex("#8a8170"));
-  cockpit.box([0, 2.16, -3.02], [0.16, 0.045, 0.28], warmWhite);
-  cockpit.beam([0, 2.08, -4.12], [0, 1.96, -4.4], 0.055, silverDark);
-  cockpit.box([0, 1.93, -4.42], [0.68, 0.18, 0.1], hex("#30383c"));
-  cockpit.box([0, 1.93, -4.35], [0.55, 0.13, 0.035], glassBlue);
+  cockpit.box([0, 2.43, -3.02], [0.3, 0.07, 0.42], hex("#8a8170"));
+  cockpit.box([0, 2.38, -3.02], [0.16, 0.045, 0.28], warmWhite);
+  cockpit.beam([0, 2.27, -4.12], [0, 2.14, -4.4], 0.055, silverDark);
+  cockpit.box([0, 2.11, -4.42], [0.68, 0.18, 0.1], hex("#30383c"));
+  cockpit.box([0, 2.11, -4.35], [0.55, 0.13, 0.035], glassBlue);
+
+  // Marcos completos de las ventanillas laterales: ahora se distinguen al mirar a izquierda y derecha.
+  for (const side of [-1, 1]) {
+    const frameX = side * 1.76;
+    cockpit.beam([frameX, 1.18, -2.12], [frameX, 1.18, 2.72], 0.09, hex("#151e25"));
+    cockpit.beam([frameX, 2.19, -4.35], [frameX, 2.19, 2.72], 0.105, hex("#151e25"));
+    cockpit.beam([frameX, 1.18, -0.08], [frameX, 2.47, -0.08], 0.13, hex("#151e25"));
+    cockpit.beam([frameX, 1.18, 2.58], [frameX, 2.47, 2.58], 0.13, hex("#151e25"));
+    // Espejo lateral con carcasa y superficie reflectante.
+    cockpit.beam([side * 1.68, 1.48, -2.35], [side * 2.02, 1.54, -2.5], 0.085, hex("#1b252c"));
+    cockpit.box([side * 2.08, 1.57, -2.52], [0.16, 0.25, 0.42], hex("#202b33"));
+    cockpit.box([side * 2.17, 1.58, -2.52], [0.025, 0.17, 0.31], hex("#6e858c"));
+  }
+
+  // Capó corto y nervaduras delanteras, como referencia visual del propio vehículo.
+  cockpit.box([0, 0.55, -5.08], [3.02, 0.13, 1.62], hex("#202a31"), hex("#111a21"));
+  cockpit.beam([-1.18, 0.64, -4.58], [-1.1, 0.64, -5.75], 0.045, hex("#46525a"));
+  cockpit.beam([1.18, 0.64, -4.58], [1.1, 0.64, -5.75], 0.045, hex("#46525a"));
+  cockpit.beam([-1.12, 0.61, -5.78], [1.12, 0.61, -5.78], 0.06, hex("#38454d"));
 
   // Marco del parabrisas con sellos de goma y limpiaparabrisas en la base.
   cockpit.beam([-1.62, 0.92, -2.15], [-1.78, 2.25, -4.65], 0.18, hex("#11181d"));
@@ -977,11 +1024,13 @@ uniform mat4 uModel;
 varying vec3 vColor;
 varying vec3 vNormal;
 varying float vDepth;
+varying vec3 vWorldPosition;
 void main() {
   vec4 world = uModel * vec4(aPosition, 1.0);
   vec4 viewPosition = uView * world;
   vDepth = length(viewPosition.xyz);
   vNormal = mat3(uModel) * aNormal;
+  vWorldPosition = world.xyz;
   vColor = aColor;
   gl_Position = uViewProjection * world;
 }
@@ -992,25 +1041,39 @@ precision mediump float;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform vec3 uFogColor;
+uniform vec3 uHeadlightPosition;
 uniform float uOpacity;
 varying vec3 vColor;
 varying vec3 vNormal;
 varying float vDepth;
+varying vec3 vWorldPosition;
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
 void main() {
   vec3 n = normalize(vNormal);
-  vec3 sun = normalize(vec3(-0.38, 0.78, 0.42));
-  float diffuse = max(dot(n, sun), 0.0);
-  float ambient = 0.62 + max(n.y, 0.0) * 0.15;
-  float light = ambient + diffuse * 0.48 + floor(diffuse * 4.0) * 0.035;
-  vec3 color = vColor * light * vec3(1.11, 1.02, 0.91);
-  color += vec3(0.045, 0.018, 0.004) * max(n.y, 0.0);
-  // Bloom aproximado de bajo costo: halo de altas luces sin un segundo render.
-  vec3 highlights = max(color - vec3(0.58, 0.56, 0.52), vec3(0.0));
-  color += highlights * 0.19;
-  float fog = smoothstep(76.0, 205.0, vDepth);
+  vec3 moon = normalize(vec3(-0.42, 0.84, 0.28));
+  float diffuse = max(dot(n, moon), 0.0);
+  float ambient = 0.37 + max(n.y, 0.0) * 0.10;
+  float light = ambient + diffuse * 0.20 + floor(diffuse * 4.0) * 0.018;
+
+  // Haz cálido de los faros: ilumina el asfalto, la vegetación cercana y los bordes del camino.
+  vec3 fromHeadlight = vWorldPosition - uHeadlightPosition;
+  float ahead = max(0.0, -fromHeadlight.z);
+  float beamWidth = 0.72 + ahead * 0.19;
+  float beamSide = 1.0 - smoothstep(beamWidth * 0.68, beamWidth, abs(fromHeadlight.x));
+  float beamDistance = 1.0 - smoothstep(5.0, 48.0, ahead);
+  float beamHeight = 1.0 - smoothstep(0.8, 5.8, fromHeadlight.y);
+  float headlight = beamSide * beamDistance * beamHeight * smoothstep(0.0, 3.0, ahead);
+  light += headlight * 1.12;
+
+  vec3 color = vColor * light * vec3(0.78, 0.88, 1.08);
+  color += vec3(1.0, 0.72, 0.43) * headlight * 0.46;
+  float emissive = smoothstep(0.70, 0.96, max(max(vColor.r, vColor.g), vColor.b));
+  color += vColor * emissive * 0.28;
+  vec3 highlights = max(color - vec3(0.52, 0.56, 0.62), vec3(0.0));
+  color += highlights * 0.24;
+  float fog = smoothstep(34.0, 255.0, vDepth);
   color = mix(color, uFogColor, fog);
   float scan = 1.0 - 0.022 * (0.5 + 0.5 * sin(gl_FragCoord.y * 3.14159));
   float grain = (hash(floor(gl_FragCoord.xy * 0.72) + floor(uTime * 8.0)) - 0.5) * 0.022;
@@ -1019,8 +1082,8 @@ void main() {
   color = color * scan + grain + tear * 0.035;
   vec2 uv = gl_FragCoord.xy / max(uResolution, vec2(1.0));
   float vignette = 1.0 - smoothstep(0.2, 0.94, length((uv - 0.5) * vec2(1.0, 0.82)));
-  color *= mix(0.66, 1.0, vignette);
-  color += vec3(0.003, 0.0, 0.004);
+  color *= mix(0.72, 1.0, vignette);
+  color += vec3(0.003, 0.006, 0.014);
   gl_FragColor = vec4(color, uOpacity);
 }
 `;
@@ -1244,7 +1307,8 @@ export function Route40LowPolyOpening() {
     let driveElapsed = 0;
     let climbElapsed = 0;
     let travelled = 0;
-    let driveSpeed = 0;
+    // La cinemática entrega el vehículo ya rodando; no necesita que el jugador lo arranque desde cero.
+    let driveSpeed = 4.15;
     let laneOffset = 0;
     let steeringAngle = 0;
     let steeringTarget = 0;
@@ -1300,6 +1364,7 @@ export function Route40LowPolyOpening() {
       pointerY = event.clientY;
       if (event.pointerType === "mouse") {
         if ((stageRef.current === "driving" && performance.now() - startedAt >= DURATION * 1000) || stageRef.current === "climbing") {
+          startEngineAudio();
           const requestLock = (canvas as HTMLCanvasElement & { requestPointerLock?: () => void | Promise<void> }).requestPointerLock;
           if (requestLock) {
             try {
@@ -1392,9 +1457,10 @@ export function Route40LowPolyOpening() {
     gl.clearColor(0, 0, 0, 0);
 
     const fogLocation = gl.getUniformLocation(program, "uFogColor");
-    gl.uniform3fv(fogLocation, new Float32Array([0.53, 0.36, 0.30]));
+    gl.uniform3fv(fogLocation, new Float32Array([0.25, 0.31, 0.41]));
     const resolutionLocation = gl.getUniformLocation(program, "uResolution");
     const timeLocation = gl.getUniformLocation(program, "uTime");
+    const headlightLocation = gl.getUniformLocation(program, "uHeadlightPosition");
 
     setFallback(false);
 
@@ -1419,12 +1485,13 @@ export function Route40LowPolyOpening() {
         const downhillAssist = clamp((roadHeightAt(roadZForPhysics + 3) - roadHeightAt(roadZForPhysics - 3)) * 0.12, 0, 0.5);
         if (throttle) {
           driveSpeed = Math.min(5.4, driveSpeed + dt * (2.55 + downhillAssist));
-          driveElapsed += dt;
         } else if (braking) {
           driveSpeed = Math.max(0, driveSpeed - dt * 8.2);
         } else {
-          driveSpeed = Math.max(0, driveSpeed - dt * 1.8);
+          // Crucero automático: mantiene marcha y recupera suavemente velocidad al soltar el freno.
+          driveSpeed = Math.min(5.1, driveSpeed + dt * 1.25);
         }
+        driveElapsed += dt * clamp(driveSpeed / 5.1, 0, 1);
         if (keys.has("a")) laneOffset = clamp(laneOffset - dt * 2.15, -2.35, 2.35);
         if (keys.has("d")) laneOffset = clamp(laneOffset + dt * 2.15, -2.35, 2.35);
         if (keys.has("arrowleft") || keys.has("q")) lookYawTarget -= dt * 1.15;
@@ -1502,6 +1569,7 @@ export function Route40LowPolyOpening() {
       const carZ = elapsed < DURATION ? -elapsed * 4.1 : -DURATION * 4.1 - travelled;
       const carX = roadCenter(carZ) + laneOffset;
       const carY = roadHeightAt(carZ) - 0.18;
+      gl.uniform3f(headlightLocation, carX, carY + 0.48, carZ - 2.08);
       const transition = smooth(4.48, 5.95, elapsed);
       const aerialEye: V3 = [0, 38 + roadHeightAt(carZ), carZ + 13];
       const aerialTarget: V3 = [0, roadHeightAt(carZ), carZ - 1.5];
@@ -1580,12 +1648,12 @@ export function Route40LowPolyOpening() {
       }
       const lightVisibility = smooth(4.8, 5.65, elapsed);
       if (lightVisibility > 0.01 && (!outsideStage || returningToCar || (stageRef.current === "exiting" && exitBlend < 0.82))) {
-        bindMesh(gl, program, lightMesh, viewProjection, view, carModel);
+        bindMesh(gl, program, lightMesh, viewProjection, view, carModel, 0.10);
         bindMesh(gl, program, cockpitMesh, viewProjection, view, carModel);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.depthMask(false);
-        bindMesh(gl, program, windshieldMesh, viewProjection, view, carModel, 0.13);
+        bindMesh(gl, program, windshieldMesh, viewProjection, view, carModel, 0.19);
         gl.depthMask(true);
         gl.disable(gl.BLEND);
       }
@@ -1704,7 +1772,7 @@ export function Route40LowPolyOpening() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 76% 48%, rgba(255,190,126,.34), transparent 36%), linear-gradient(180deg, #182333 0%, #46545e 35%, #c37d5d 66%, #e0a776 100%)",
+            "radial-gradient(ellipse at 52% 58%, rgba(133,145,172,.22), transparent 42%), linear-gradient(180deg, #070d18 0%, #121c2c 39%, #303448 72%, #514b5b 100%)",
         }}
       />
       <canvas
